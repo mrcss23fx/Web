@@ -17,7 +17,7 @@ assert '_blob' not in s.replace('fetch("/_blob/"+ids[i])',''), 'quedan /_blob'
 a=s.index('<button type="button" class="navbtn" data-sec="mentor">'); b=s.index('</button>',a)+len('</button>')
 s=s[:a]+'<button type="button" class="navbtn" data-sec="grupo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c2.6-.4 4.8 1.2 5.5 4.3"/></svg><span>Grupo</span></button>'+s[b:]
 rep('{id:"mentor",views:[["mentor","Mentor"]]},','{id:"grupo",views:[["grupo","Mis grupos"]]},{id:"mentor",views:[["mentor","Mentor"]]},')
-rep('["normas","Normas"]]}];','["normas","Normas"],["cuenta","Cuenta"]]}];')
+rep('["sistema","Ajustes"]]}];','["sistema","Ajustes"],["cuenta","Cuenta"]]}];')
 rep('mentor:viewMentor,','mentor:viewMentor,grupo:viewGroup,cuenta:viewCuenta,')
 # arranque con Supabase en vez de las capacidades de Claude
 rep('  const [db,assets,sample]=await Promise.all([cap("db"),cap("assets"),cap("sample")]);','  const W=await webBoot();const db=W.db,assets=W.assets,sample=null;')

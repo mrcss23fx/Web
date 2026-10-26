@@ -115,14 +115,14 @@ function makeAssets(uid){
 /* ---------- qué comparto con cada grupo ---------- */
 const SHARE_DEFAULTS={stats:true,streaks:true,discipline:true,trades:true,tradeNotes:false,shots:false,amounts:false,lessons:false,goals:false,vision:false};
 const SHARE_OPTS=[
-  ["stats","Resultados","R total, acierto, expectativa y tu curva"],
-  ["streaks","Rachas y camino","Días seguidos registrando, días limpios y tu fase"],
-  ["discipline","Disciplina","Días limpios y las normas que más rompes"],
-  ["trades","Operaciones","Activo, dirección, setup, resultado en R y si seguiste el plan"],
-  ["tradeNotes","Notas de las operaciones","Por qué entraste, emoción, errores y qué harías distinto"],
+  ["stats","Resultados","Número de operaciones, % de ganadas y tu resultado"],
+  ["streaks","Constancia","Días seguidos apuntando, días cumpliendo tus normas y tu camino"],
+  ["discipline","Normas","Días perfectos y las normas que más te saltas"],
+  ["trades","Operaciones","Qué operaste, si ganaste o perdiste y si cumpliste tus normas"],
+  ["tradeNotes","Notas de las operaciones","Por qué entraste, cómo te sentías y qué salió mal"],
   ["shots","Capturas de las operaciones","Las fotos que subes en cada operación"],
   ["amounts","Resultados en dinero","Los € de cada operación"],
-  ["lessons","Lo que aprendo","Tus lecciones de formación"],
+  ["lessons","Mis apuntes","Lo que vas aprendiendo"],
   ["goals","Mis metas","Tus 3 metas y el porcentaje de tu camino"],
   ["vision","Tablero de sueños","Las fotos de tus sueños"]];
 const shareCfg=gid=>Object.assign({},SHARE_DEFAULTS,S.share[gid]||{});
@@ -130,11 +130,13 @@ function buildSnapshot(gid){
   const c=shareCfg(gid),out={name:myName(),updatedAt:Date.now(),cfg:c},ph=phases(),all=allTrades();
   if(c.streaks)out.streaks={log:ph.logStreak,clean:ph.cleanStreak,ritual:streak(readOn),day:Math.max(1,diffDays(S.plan.startDate||todayStr(),todayStr())+1),phase:{n:ph.cur+1,of:ph.P.length,name:ph.P[ph.cur].name,done:ph.road.done,total:ph.road.total}};
   if(c.stats){const m=metrics(all),t=todayStr(),wk=metrics(all.filter(x=>x.date>=mondayOf(t))),mo=metrics(all.filter(x=>x.date.slice(0,7)===t.slice(0,7)));const eq=[];let cum=0;all.forEach(x=>{const r=tradeR(x);if(r!=null){cum+=r;eq.push(Math.round(cum*100)/100)}});
-    out.stats={n:m.n,nr:m.nr,total:fin(m.total),win:fin(m.win),exp:fin(m.exp),follow:fin(m.followRate),week:fin(wk.total),weekN:wk.n,month:fin(mo.total),monthN:mo.n,equity:eq.slice(-80)}}
+    const rt=x=>c.amounts&&x.hasMoney?fmtMoney(x.money):x.nr?fmtR(x.total):(x.wins||x.losses)?`${plural(x.wins,"ganada","ganadas")}, ${plural(x.losses,"perdida","perdidas")}`:"—",rv=x=>c.amounts&&x.hasMoney?x.money:x.nr?x.total:x.wins-x.losses;
+    out.stats={n:m.n,nr:m.nr,total:fin(m.total),win:fin(m.win),exp:fin(m.exp),follow:fin(m.followRate),week:fin(wk.total),weekN:wk.n,month:fin(mo.total),monthN:mo.n,equity:eq.slice(-80),
+      wins:m.wins,losses:m.losses,winPct:fin(m.winPct),resTxt:rt(m),resV:fin(rv(m)),monthTxt:rt(mo),monthV:fin(rv(mo)),weekTxt:rt(wk),weekV:fin(rv(wk)),outs:all.slice(-30).map(outcome)}}
   if(c.discipline){const lg=Object.keys(S.days).filter(isLogged),br={};lg.forEach(d=>brokenIds(S.days[d]).forEach(id=>br[id]=(br[id]||0)+1));out.discipline={clean:lg.filter(isClean).length,logged:lg.length,broken:Object.entries(br).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>[ruleText(id),n])}}
-  if(c.trades)out.trades=all.slice(-40).reverse().map(t=>{const o={id:t.id||[t.date,t.time,t.asset].join("-"),date:t.date,time:t.time||"",asset:t.asset||"",dir:t.dir||"",account:t.account||"Demo",setup:t.setup||"",r:fin(tradeR(t)),followed:t.followed||""};
+  if(c.trades)out.trades=all.slice(-40).reverse().map(t=>{const o={id:t.id||[t.date,t.time,t.asset].join("-"),date:t.date,time:t.time||"",asset:t.asset||"",dir:t.dir||"",account:t.account||"Demo",setup:t.setup||"",r:fin(tradeR(t)),outcome:outcome(t),followed:t.followed||""};
     if(c.tradeNotes){o.why=cut(t.why,600);o.emotion=t.emotion||"";o.errors=t.errors||[];o.mistakes=cut(t.mistakes,400)}
-    if(c.amounts&&String(t.pnl||"").trim())o.pnl=String(t.pnl);
+    if(c.amounts&&money(t)!=null)o.money=money(t);
     if(c.shots)o.shots=(t.media||[]).filter(m=>String(m.id).includes("/")&&m.type!=="video").slice(0,4).map(m=>blobUrl(m.id));
     return o});
   if(c.lessons)out.lessons=lessons().slice(0,12).map(l=>({title:l.title||"",course:l.course||"",num:l.num||"",date:l.date||"",level:l.level||"",tags:l.tags||[],concepts:cut(l.concepts,500)}));
@@ -175,20 +177,21 @@ const rTxt=v=>v==null?"—":fmtR(v);
 function memberCard(uid){
   const sh=shareOf(uid),d=sh&&sh.data||null,nm=memberName(uid),me=uid===S.uid;
   const kv=[];
-  if(d&&d.streaks)kv.push(["Racha",d.streaks.log+" d"],["Días limpios seguidos",d.streaks.clean],["Fase",`${d.streaks.phase.n}/${d.streaks.phase.of}`]);
-  if(d&&d.stats)kv.push(["R semana",rTxt(d.stats.week),d.stats.week],["R mes",rTxt(d.stats.month),d.stats.month],["Acierto",d.stats.win==null?"—":Math.round(d.stats.win*100)+"%"],["Expectativa",d.stats.exp==null?"—":d.stats.exp.toFixed(2)+"R",d.stats.exp]);
+  if(d&&d.streaks)kv.push(["Días seguidos apuntando",d.streaks.log],["Días cumpliendo normas",d.streaks.clean],["Camino",`Fase ${d.streaks.phase.n}/${d.streaks.phase.of}`]);
+  if(d&&d.stats)kv.push(["Operaciones",d.stats.n],["Ganadas",d.stats.winPct==null?"—":Math.round(d.stats.winPct*100)+"%"],["Este mes",d.stats.monthTxt||rTxt(d.stats.month),d.stats.monthV!=null?d.stats.monthV:d.stats.month]);
   return `<button type="button" class="mcard" data-act="gMember" data-u="${uid}">
-    <div class="mhead"><span class="avatar">${initial(nm)}</span><span class="mname"><b>${esc(nm)}</b>${me?`<span class="youchip">Tú</span>`:""}<span class="hint">${me?"Así te ven":sh?"Actualizado "+ago(sh.updated_at):"Aún no ha compartido nada"}</span></span>${d&&d.stats?sparkSVG(d.stats.equity):""}</div>
+    <div class="mhead"><span class="avatar">${initial(nm)}</span><span class="mname"><b>${esc(nm)}</b>${me?`<span class="youchip">Tú</span>`:""}<span class="hint">${me?"Así te ven":sh?"Actualizado "+ago(sh.updated_at):"Aún no ha compartido nada"}</span></span></div>
+    ${d&&d.stats&&d.stats.outs&&d.stats.outs.length?`<div class="dots">${d.stats.outs.map(o=>`<i class="dot ${o||"none"}"></i>`).join("")}</div>`:""}
     ${kv.length?`<div class="mkv">${kv.map(([k,v,n])=>`<span><i>${k}</i><b class="${typeof n==="number"?(n>0?"pos":n<0?"neg":""):""}">${v}</b></span>`).join("")}</div>`:`<p class="hint" style="margin:0">${me?"No compartes datos con este grupo. Cámbialo en «Qué comparto».":"Este miembro no comparte estadísticas."}</p>`}
   </button>`;
 }
 function tradeFeedItem(t,owner,showOwner){
-  const r=t.r,cms=(S.gData.comments||[]).filter(c=>c.target_user===owner&&c.target_ref===t.id),key=owner+"|"+t.id;
+  const o=t.outcome||(t.r>0?"win":t.r<0?"loss":t.r===0?"be":""),r=o==="win"?1:o==="loss"?-1:0,cms=(S.gData.comments||[]).filter(c=>c.target_user===owner&&c.target_ref===t.id),key=owner+"|"+t.id;
   return `<article class="fitem ${r>0?"w":r<0?"l":""}">
     <header class="fhead">${showOwner?`<span class="avatar sm">${initial(memberName(owner))}</span><b>${esc(memberName(owner))}</b>`:""}<span class="hint">${esc(fmtDM(t.date))}${t.time?" · "+esc(t.time):""}</span></header>
-    <div class="ftrade"><b class="fasset">${esc(t.asset||"Operación")}</b>${t.dir?`<span class="dirchip ${t.dir==="Long"?"up":"down"}">${t.dir==="Long"?"Compra":"Venta"}</span>`:""}<span class="gt">${esc(t.account)}</span>${t.setup?`<span class="gt">${esc(t.setup)}</span>`:""}<span class="rpill ${r>0?"w":r<0?"l":""}">${rTxt(r)}</span>${t.pnl?`<span class="mono hint">${esc(t.pnl)} €</span>`:""}${t.followed==="si"?`<span class="planok">Dentro del plan</span>`:t.followed==="no"?`<span class="planko">Fuera del plan</span>`:""}</div>
+    <div class="ftrade"><b class="fasset">${esc(t.asset||"Operación")}</b>${t.dir?`<span class="dirchip ${t.dir==="Long"?"up":"down"}">${t.dir==="Long"?"Compra":"Venta"}</span>`:""}<span class="gt">${esc(ACC_LABEL[t.account]||t.account)}</span>${t.setup?`<span class="gt">${esc(t.setup)}</span>`:""}<span class="rpill ${r>0?"w":r<0?"l":""}">${o?OUT_LABEL[o]:"Sin resultado"}</span>${t.r!=null?`<span class="mono hint">${fmtR(t.r)}</span>`:""}${t.money!=null?`<span class="mono hint">${fmtMoney(t.money)}</span>`:""}${t.followed==="si"?`<span class="planok">Cumplió sus normas</span>`:t.followed==="no"?`<span class="planko">Se saltó sus normas</span>`:""}</div>
     ${t.why?`<p class="fnote"><i>Por qué entró</i>${esc(t.why)}</p>`:""}
-    ${t.emotion||(t.errors&&t.errors.length)?`<div class="chips">${t.emotion?`<span class="gt">Emoción: ${esc(t.emotion)}</span>`:""}${(t.errors||[]).map(e=>`<span class="gt err">${esc(e)}</span>`).join("")}</div>`:""}
+    ${t.emotion||(t.errors&&t.errors.length)?`<div class="chips">${t.emotion?`<span class="gt">Se sentía: ${esc((EMO_SIMPLE.find(x=>x[0]===t.emotion)||[0,t.emotion])[1])}</span>`:""}${(t.errors||[]).map(e=>`<span class="gt err">${esc(ERR_LABEL[e]||e)}</span>`).join("")}</div>`:""}
     ${t.mistakes?`<p class="fnote"><i>Qué haría distinto</i>${esc(t.mistakes)}</p>`:""}
     ${t.shots&&t.shots.length?`<div class="media sm">${t.shots.map(u=>`<div class="mitem"><img src="${esc(u)}" alt="Captura de la operación" data-act="zoom" loading="lazy"></div>`).join("")}</div>`:""}
     <div class="fcomments">${cms.map(c=>`<div class="cmt"><span class="avatar xs">${initial(memberName(c.author))}</span><div><b>${esc(memberName(c.author))}</b> <span class="hint">${ago(c.created_at)}</span>${c.author===S.uid?` <button type="button" class="linkbtn sm" data-act="gDelComment" data-id="${c.id}">Borrar</button>`:""}<p>${esc(c.body)}</p></div></div>`).join("")}
@@ -243,20 +246,19 @@ function memberDetail(uid){
   const sh=shareOf(uid),d=sh&&sh.data||{},nm=memberName(uid);
   let h=`<div class="row"><button type="button" class="btn sm ghost" data-act="gBack">← Volver al grupo</button></div>
   <section class="card"><div class="mhead big"><span class="avatar lg">${initial(nm)}</span><span class="mname"><b>${esc(nm)}</b><span class="hint">${uid===S.uid?"Así te ve tu grupo con tus ajustes actuales":sh?"Actualizado "+ago(sh.updated_at):"Aún no ha compartido nada"}</span></span></div>`;
-  if(d.streaks)h+=`<div class="stats"><div class="stat"><span class="k">Racha registrando</span><span class="v">${d.streaks.log}</span><span class="s">días</span></div><div class="stat"><span class="k">Días limpios seguidos</span><span class="v">${d.streaks.clean}</span></div><div class="stat"><span class="k">Leyendo sus metas</span><span class="v">${d.streaks.ritual}</span><span class="s">días seguidos</span></div><div class="stat"><span class="k">Camino</span><span class="v">${d.streaks.phase.n}/${d.streaks.phase.of}</span><span class="s">${esc(d.streaks.phase.name)} · ${d.streaks.phase.done} de ${d.streaks.phase.total} pasos</span></div></div>`;
+  if(d.streaks)h+=`<div class="stats"><div class="stat"><span class="k">Días seguidos apuntando</span><span class="v">${d.streaks.log}</span><span class="s">días</span></div><div class="stat"><span class="k">Días seguidos cumpliendo normas</span><span class="v">${d.streaks.clean}</span></div><div class="stat"><span class="k">Leyendo sus metas</span><span class="v">${d.streaks.ritual}</span><span class="s">días seguidos</span></div><div class="stat"><span class="k">Camino</span><span class="v">${d.streaks.phase.n}/${d.streaks.phase.of}</span><span class="s">${esc(d.streaks.phase.name)} · ${d.streaks.phase.done} de ${d.streaks.phase.total} pasos</span></div></div>`;
   h+=`</section>`;
   if(d.stats)h+=`<section class="card"><div class="card-h"><h2>Resultados</h2></div><div class="stats">
     <div class="stat"><span class="k">Operaciones</span><span class="v">${d.stats.n}</span></div>
-    <div class="stat"><span class="k">Resultado total</span><span class="v ${d.stats.total>0?"pos":d.stats.total<0?"neg":""}">${rTxt(d.stats.total)}</span></div>
-    <div class="stat"><span class="k">Este mes</span><span class="v ${d.stats.month>0?"pos":d.stats.month<0?"neg":""}">${rTxt(d.stats.month)}</span><span class="s">${d.stats.monthN} operaciones</span></div>
-    <div class="stat"><span class="k">Acierto</span><span class="v">${d.stats.win==null?"—":Math.round(d.stats.win*100)+"%"}</span></div>
-    <div class="stat"><span class="k">Expectativa</span><span class="v">${d.stats.exp==null?"—":d.stats.exp.toFixed(2)+"R"}</span></div>
-    <div class="stat"><span class="k">Siguiendo el plan</span><span class="v">${d.stats.follow==null?"—":Math.round(d.stats.follow*100)+"%"}</span></div></div>${sparkSVG(d.stats.equity,true)}</section>`;
-  if(d.discipline)h+=`<section class="card"><div class="card-h"><h2>Disciplina</h2><span class="aside">${d.discipline.clean} días limpios de ${d.discipline.logged}</span></div>${d.discipline.broken.length?`<ul class="plainlist">${d.discipline.broken.map(([t,n])=>`<li>${esc(t)} <b class="mono">×${n}</b></li>`).join("")}</ul>`:`<p class="empty">No ha roto ninguna norma.</p>`}</section>`;
+    <div class="stat"><span class="k">Resultado total</span><span class="v ${(d.stats.resV||0)>0?"pos":(d.stats.resV||0)<0?"neg":""}">${d.stats.resTxt||rTxt(d.stats.total)}</span></div>
+    <div class="stat"><span class="k">Este mes</span><span class="v ${(d.stats.monthV||0)>0?"pos":(d.stats.monthV||0)<0?"neg":""}">${d.stats.monthTxt||rTxt(d.stats.month)}</span><span class="s">${d.stats.monthN} operaciones</span></div>
+    <div class="stat"><span class="k">Ganadas</span><span class="v">${d.stats.winPct==null?"—":Math.round(d.stats.winPct*100)+"%"}</span><span class="s">${d.stats.wins||0} ganadas · ${d.stats.losses||0} perdidas</span></div>
+    <div class="stat"><span class="k">Cumpliendo sus normas</span><span class="v">${d.stats.follow==null?"—":Math.round(d.stats.follow*100)+"%"}</span></div></div>${sparkSVG(d.stats.equity,true)}</section>`;
+  if(d.discipline)h+=`<section class="card"><div class="card-h"><h2>Normas</h2><span class="aside">${d.discipline.clean} días perfectos de ${d.discipline.logged}</span></div>${d.discipline.broken.length?`<ul class="plainlist">${d.discipline.broken.map(([t,n])=>`<li>${esc(t)} <b class="mono">×${n}</b></li>`).join("")}</ul>`:`<p class="empty">No se ha saltado ninguna norma.</p>`}</section>`;
   if(d.goals&&d.goals.long.length)h+=`<section class="card"><div class="card-h"><h2>Sus metas</h2><span class="aside">${d.goals.done} de ${d.goals.total} pasos del camino</span></div><ol class="g-long">${d.goals.long.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></section>`;
   if(d.vision&&d.vision.length)h+=`<section class="card"><div class="card-h"><h2>Su tablero de sueños</h2></div><div class="gvision">${d.vision.map(v=>`<figure><img src="${esc(v.url)}" alt="${esc(v.caption||"Sueño")}" data-act="zoom" loading="lazy">${v.caption?`<figcaption>${esc(v.caption)}</figcaption>`:""}</figure>`).join("")}</div></section>`;
   if(d.trades&&d.trades.length)h+=`<section class="card"><div class="card-h"><h2>Operaciones</h2><span class="aside">${d.trades.length} últimas</span></div><div class="feed">${d.trades.map(t=>tradeFeedItem(t,uid,false)).join("")}</div></section>`;
-  if(d.lessons&&d.lessons.length)h+=`<section class="card"><div class="card-h"><h2>Lo que está aprendiendo</h2></div><div class="feed">${d.lessons.map(l=>`<article class="fitem"><div class="ftrade"><b>${esc(l.title||"Lección")}</b>${l.level?`<span class="gt">${esc(l.level)}</span>`:""}${(l.tags||[]).slice(0,3).map(t=>`<span class="gt">${esc(t)}</span>`).join("")}<span class="hint">${esc([l.course,l.num?"#"+l.num:"",l.date?fmtDM(l.date):""].filter(Boolean).join(" · "))}</span></div>${l.concepts?`<p class="fnote">${esc(l.concepts)}</p>`:""}</article>`).join("")}</div></section>`;
+  if(d.lessons&&d.lessons.length)h+=`<section class="card"><div class="card-h"><h2>Sus apuntes</h2></div><div class="feed">${d.lessons.map(l=>`<article class="fitem"><div class="ftrade"><b>${esc(l.title||"Lección")}</b>${l.level?`<span class="gt">${esc(l.level)}</span>`:""}${(l.tags||[]).slice(0,3).map(t=>`<span class="gt">${esc(t)}</span>`).join("")}<span class="hint">${esc([l.course,l.num?"#"+l.num:"",l.date?fmtDM(l.date):""].filter(Boolean).join(" · "))}</span></div>${l.concepts?`<p class="fnote">${esc(l.concepts)}</p>`:""}</article>`).join("")}</div></section>`;
   if(!d.streaks&&!d.stats&&!d.trades&&!d.lessons&&!d.goals&&!d.vision&&!d.discipline)h+=`<section class="card"><p class="empty">${uid===S.uid?"No compartes nada con este grupo. Actívalo en «Qué comparto».":"Este miembro no comparte nada todavía."}</p></section>`;
   return h;
 }

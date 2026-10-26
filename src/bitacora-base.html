@@ -329,6 +329,43 @@ td.wrap{white-space:normal;min-width:180px}
 #lightbox img{max-width:100%;max-height:90vh;border-radius:8px}
 #lightbox button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));background:#fff;color:#111;border:0;border-radius:8px;padding:8px 12px;font-weight:600}
 
+/* ===== Modo sencillo ===== */
+.qh{display:inline-block;position:relative;vertical-align:middle;margin-left:2px}
+.qh summary{list-style:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--line-strong);display:inline-grid;place-items:center;font-size:11px;font-weight:700;color:var(--accent);cursor:pointer;line-height:1}
+.qh summary::-webkit-details-marker{display:none}
+.qh[open] summary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.qh-t{display:none}
+.qh[open] .qh-t{display:block;position:absolute;z-index:30;left:-8px;top:24px;width:min(270px,72vw);padding:10px 12px;border-radius:10px;background:var(--surface-hi);border:1px solid var(--line-strong);box-shadow:0 14px 34px -14px rgba(0,0,0,.5);font-size:13px;font-weight:400;color:var(--fg);letter-spacing:0;text-transform:none;line-height:1.45;white-space:normal}
+.moods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.moodbtn{display:grid;justify-items:center;gap:4px;padding:10px 4px;border-radius:12px;border:1px solid var(--line-strong);background:var(--input);font-size:13px;font-weight:600;color:var(--muted)}
+.moodbtn .me{font-size:26px;line-height:1}
+.moodbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--fg);box-shadow:0 0 0 1px var(--accent)}
+.callout.soft{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.callout.soft b{color:var(--accent)}
+.bigstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.bstat{display:grid;gap:2px;padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);font-size:13.5px;color:var(--muted)}
+.bnum{font-family:var(--f-display);font-size:40px;font-weight:800;line-height:1;letter-spacing:-.03em;background:linear-gradient(180deg,var(--accent-2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.dots{display:flex;flex-wrap:wrap;gap:6px}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--line-strong)}
+.dot.win{background:var(--win)} .dot.loss{background:var(--loss)} .dot.be{background:var(--muted)}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.modebtn{display:grid;gap:4px;text-align:left;padding:16px;border-radius:14px;border:1px solid var(--line-strong);background:var(--surface2);color:var(--fg)}
+.modebtn b{font-family:var(--f-display);font-size:17px}
+.modebtn span{font-size:13px;color:var(--muted);line-height:1.4}
+.modebtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent)}
+.modebtn:hover{border-color:var(--accent)}
+.ruleedit.nocat{grid-template-columns:1fr auto}
+.wbox h2{font-size:28px}
+.wdots{display:flex;gap:6px}
+.wdots i{width:22px;height:4px;border-radius:2px;background:var(--line-strong)}
+.wdots i.on{background:var(--accent)}
+.wlist,.wrules{margin:0;padding-left:20px;display:grid;gap:10px;font-size:15px;line-height:1.45}
+.wlist b{color:var(--fg)}
+.trade.simple .field>span{font-size:13px;color:var(--fg)}
+.trade.simple .seg{display:flex;width:100%;flex-wrap:nowrap}
+.trade.simple .seg button{flex:1 1 0;min-width:0;padding:9px 6px;font-size:13.5px;line-height:1.2}
+@media (max-width:560px){.moods{gap:5px}.moodbtn{font-size:11.5px;padding:8px 2px}.moodbtn .me{font-size:22px}.bnum{font-size:30px}.bstat{padding:12px 10px;font-size:12px}.bigstats{gap:6px}}
+
 /* ===== Premium ===== */
 body{background:
   radial-gradient(1100px 520px at 88% -8%,var(--bg-glow1),transparent 62%),
@@ -505,80 +542,72 @@ function md(src){
 }
 
 /* ---------- plan por defecto ---------- */
-const DEFAULT_PLAYBOOK=[
-  {id:"s1",name:"Ruptura y retesteo",conditions:"Tendencia clara en la temporalidad mayor\nRuptura de una zona relevante con vela de cuerpo amplio\nRetesteo de la zona rota con rechazo\nHay espacio para 1:2 hasta la siguiente zona",entry:"Al cierre de la vela de rechazo en el retesteo",stop:"Detrás de la mecha del retesteo",target:"Siguiente zona relevante, mínimo 2R",avoid:"Mercado lateral, noticias fuertes cerca, ruptura sin volumen",notes:"Ejemplo: cámbialo por tu propio setup.",media:[]},
-  {id:"s2",name:"Rechazo en zona clave",conditions:"Zona marcada antes de la sesión\nEl precio llega a la zona perdiendo fuerza\nVela de rechazo clara (mecha larga o envolvente)\nStop detrás de la zona con 1:2 posible",entry:"Al cierre de la vela de rechazo",stop:"Por detrás de la zona",target:"Zona opuesta o 2R",avoid:"Cuando la zona ya se ha tocado varias veces seguidas",notes:"Ejemplo: cámbialo por tu propio setup.",media:[]}
-];
+const DEFAULT_PLAYBOOK=[];
 const DEFAULT_PLAN={
   startDate:todayStr(),why:"",market:"",instruments:"",timeframe:"",session:"",capital:"",riskPct:"0.5",maxDailyLoss:"2R",maxTrades:"2",
-  playbook:DEFAULT_PLAYBOOK,
+  playbook:DEFAULT_PLAYBOOK,mode:"simple",
   goals:{long:["","",""],short:[],showAlways:true},
-  consequence:"Al día siguiente no opero: reviso mis operaciones y hago 20 operaciones de backtesting de mi setup.",
+  consequence:"Al día siguiente no opero: repaso qué pasó y practico sin dinero real.",
   rules:[
-    {id:"r1",cat:"Riesgo",text:"Arriesgo como máximo el % fijado por operación y calculo el lotaje antes de entrar."},
-    {id:"r2",cat:"Riesgo",text:"El stop loss está puesto antes de entrar y nunca lo alejo."},
-    {id:"r3",cat:"Riesgo",text:"Si llego a la pérdida máxima diaria, cierro la plataforma hasta mañana."},
-    {id:"r4",cat:"Riesgo",text:"Respeto el máximo de operaciones al día. Después de 2 pérdidas seguidas, paro."},
-    {id:"r5",cat:"Entradas",text:"Solo entro con uno de mis setups y con todas sus condiciones cumplidas."},
-    {id:"r6",cat:"Entradas",text:"Solo opero en mi horario y no entro 15 min antes ni después de noticias de alto impacto."},
-    {id:"r7",cat:"Entradas",text:"El beneficio potencial es de al menos 2 veces el riesgo (1:2)."},
-    {id:"r8",cat:"Psicología",text:"No opero cansado, enfadado ni para recuperar una pérdida."},
-    {id:"r9",cat:"Rutina",text:"Hago el análisis previo antes de mirar el gráfico de entrada."},
-    {id:"r10",cat:"Rutina",text:"Registro el día en la bitácora, opere o no."}
+    {id:"r1",cat:"Riesgo",text:"Solo uso dinero que me puedo permitir perder."},
+    {id:"r2",cat:"Riesgo",text:"Antes de entrar decido cuánto estoy dispuesto a perder y pongo el stop (mi límite de pérdida)."},
+    {id:"r3",cat:"Riesgo",text:"Si pierdo dos veces seguidas, paro por hoy."},
+    {id:"r4",cat:"Psicología",text:"No opero cansado, enfadado ni para recuperar lo que he perdido."},
+    {id:"r5",cat:"Rutina",text:"Apunto cada día cómo me ha ido, opere o no."}
   ]
 };
 /* Camino: R = trader rentable, L = libertad, M = millonario. auto = se calcula solo con lo que registras */
-const GOAL_TAGS={R:{i:2,def:"Soy un trader rentable"},L:{i:1,def:"Tengo libertad de viajar"},M:{i:0,def:"Soy millonario"}};
+const GOAL_TAGS={R:{i:2,def:"Ser rentable"},L:{i:1,def:"Tener libertad"},M:{i:0,def:"Ganar dinero"}};
 const ROADMAP=[
- {name:"Cimientos",when:"Semanas 1–4",desc:"Aprender lo básico, elegir un solo setup y crear el hábito de registrar cada día.",steps:[
-  {id:"c1",text:"Termino el bootcamp o curso que estoy siguiendo",tags:"R"},
-  {id:"c2",text:"Acumulo 20 horas de estudio registradas",tags:"R",auto:"studyHours",target:20,unit:"h"},
-  {id:"c3",text:"Defino mercado, activos, temporalidades y horario en «Mi plan»",tags:"R",auto:"planDefined",target:1,unit:"ok"},
-  {id:"c4",text:"Elijo un solo setup y escribo sus condiciones exactas en el playbook",tags:"R"},
-  {id:"c5",text:"Guardo 5 capturas de ejemplos ideales de mi setup",tags:"R",auto:"playbookMedia",target:5,unit:"n"},
-  {id:"c6",text:"Registro 21 días seguidos en la bitácora",tags:"RM",auto:"bestLogStreak",target:21,unit:"d"},
-  {id:"c7",text:"Cumplo mi plan: 10 días seguidos sin romper ninguna norma",tags:"R",auto:"bestCleanStreak",target:10,unit:"d"},
+ {name:"Empezar con buen pie",when:"Primeras semanas",desc:"Aprender lo básico y coger el hábito de apuntar cada día. Aquí todavía no hace falta arriesgar dinero.",steps:[
+  {id:"c1",text:"Termino el curso o las lecciones que estoy siguiendo",tags:"R"},
+  {id:"c2",text:"Dedico 20 horas a aprender (apúntalas en «Aprender»)",tags:"R",auto:"studyHours",target:20,unit:"h"},
+  {id:"c3",text:"Decido qué voy a operar y en qué horario («Mi plan» → Ajustes)",tags:"R",auto:"planDefined",target:1,unit:"ok"},
+  {id:"c4",text:"Escribo mi estrategia: cuándo entro y cuándo no («Mi plan» → Mi estrategia)",tags:"R"},
+  {id:"c5",text:"Guardo 5 fotos de ejemplos de mi estrategia",tags:"R",auto:"playbookMedia",target:5,unit:"n"},
+  {id:"c6",text:"Apunto 21 días seguidos cómo me ha ido",tags:"RM",auto:"bestLogStreak",target:21,unit:"d"},
+  {id:"c7",text:"Cumplo todas mis normas 10 días seguidos",tags:"R",auto:"bestCleanStreak",target:10,unit:"d"},
   {id:"c8",text:"Leo mis metas en voz alta durante 30 días",tags:"RLM",auto:"ritualDays",target:30,unit:"d"}]},
- {name:"Backtesting",when:"Meses 2–3",desc:"Demostrar con datos del pasado que tu setup tiene ventaja antes de arriesgar nada.",steps:[
-  {id:"b1",text:"Hago 50 operaciones de backtesting de mi setup",tags:"R",auto:"btTrades",target:50,unit:"n"},
-  {id:"b2",text:"Llego a 100 operaciones de backtesting",tags:"R",auto:"btTrades",target:100,unit:"n"},
-  {id:"b3",text:"Mi backtesting da una expectativa de al menos 0,3R en 100 operaciones",tags:"RM",auto:"btExp",target:0.3,min:100,unit:"R"},
-  {id:"b4",text:"Sé en qué situaciones falla mi setup y lo escribo en «Cuándo NO operarlo»",tags:"R"},
-  {id:"b5",text:"Hago mi primera revisión semanal completa",tags:"R",auto:"weeksReviewed",target:1,unit:"n"}]},
- {name:"Demo con reglas",when:"Meses 3–5",desc:"Ejecutar tu setup en tiempo real como si fuera dinero de verdad, sin saltarte el plan.",steps:[
+ {name:"Practicar con el pasado",when:"Meses 2–3",desc:"Pruebas tu estrategia en gráficos antiguos (se llama backtesting) para ver si funciona antes de arriesgar nada. Al apuntar, elige «Gráficos antiguos».",steps:[
+  {id:"b1",text:"Hago 50 operaciones de práctica en gráficos antiguos",tags:"R",auto:"btTrades",target:50,unit:"n"},
+  {id:"b2",text:"Llego a 100 operaciones de práctica",tags:"R",auto:"btTrades",target:100,unit:"n"},
+  {id:"b3",text:"En 100 operaciones de práctica, gano más de lo que pierdo",tags:"RM",auto:"btExp",target:0.3,min:100,unit:"R"},
+  {id:"b4",text:"Sé en qué situaciones falla mi estrategia y lo escribo en «Cuándo NO entro»",tags:"R"},
+  {id:"b5",text:"Hago mi primera revisión de la semana",tags:"R",auto:"weeksReviewed",target:1,unit:"n"}]},
+ {name:"Demo: dinero de mentira",when:"Meses 3–5",desc:"Operas en tiempo real con una cuenta demo, que usa dinero ficticio. Es como un entrenamiento: tómatelo en serio, como si fuera real.",steps:[
   {id:"d1",text:"Hago 25 operaciones en demo",tags:"R",auto:"demoTrades",target:25,unit:"n"},
   {id:"d2",text:"Llego a 50 operaciones en demo",tags:"R",auto:"demoTrades",target:50,unit:"n"},
-  {id:"d3",text:"Sigo el plan en el 90% de mis operaciones demo",tags:"R",auto:"demoFollow",target:90,min:30,unit:"%"},
-  {id:"d4",text:"Mi expectativa en demo es de al menos 0,2R en 50 operaciones",tags:"RM",auto:"demoExp",target:0.2,min:50,unit:"R"},
-  {id:"d5",text:"Encadeno 20 días seguidos sin romper ninguna norma",tags:"R",auto:"bestCleanStreak",target:20,unit:"d"},
-  {id:"d6",text:"Completo 8 revisiones semanales",tags:"R",auto:"weeksReviewed",target:8,unit:"n"}]},
- {name:"Real con riesgo mínimo",when:"Meses 6–9",desc:"El mismo sistema con dinero real y riesgo muy bajo. Aquí se pone a prueba tu cabeza.",steps:[
-  {id:"r1",text:"Abro una cuenta real pequeña, con dinero que puedo permitirme perder",tags:"R"},
-  {id:"r2",text:"Hago 50 operaciones reales arriesgando como máximo un 0,5% en cada una",tags:"R",auto:"realTrades",target:50,unit:"n"},
-  {id:"r3",text:"Sigo el plan en el 90% de mis operaciones reales",tags:"R",auto:"realFollow",target:90,min:30,unit:"%"},
-  {id:"r4",text:"Mi expectativa en real es de al menos 0,2R en 50 operaciones",tags:"RM",auto:"realExp",target:0.2,min:50,unit:"R"},
-  {id:"r5",text:"Cierro mi primer mes completo en positivo con dinero real",tags:"RM",auto:"realPosMonths",target:1,unit:"m"},
-  {id:"r6",text:"Encadeno 3 meses seguidos en positivo en real",tags:"RM",auto:"realPosMonths",target:3,unit:"m"}]},
- {name:"Escalar",when:"Año 1–2",desc:"Más capital con el mismo proceso. Se sube el tamaño de la cuenta, no el riesgo por operación.",steps:[
-  {id:"e1",text:"Paso una prueba de cuenta fondeada",tags:"RM"},
-  {id:"e2",text:"Cobro mi primer retiro de beneficios del trading",tags:"ML"},
-  {id:"e3",text:"Encadeno 6 meses seguidos en positivo en real",tags:"RM",auto:"realPosMonths",target:6,unit:"m"},
-  {id:"e4",text:"Gestiono más capital sin subir mi riesgo por operación",tags:"RM"},
-  {id:"e5",text:"Un mes, el trading me paga mis gastos básicos",tags:"LM"}]},
- {name:"Libertad",when:"Años 2–4",desc:"Que el trading te dé tiempo y movilidad, con un colchón que te permita operar sin presión.",steps:[
-  {id:"l1",text:"Tengo un fondo de emergencia de 6 meses de gastos fuera del trading",tags:"LM"},
-  {id:"l2",text:"El trading me paga todos mis gastos durante 6 meses seguidos",tags:"LM"},
-  {id:"l3",text:"Encadeno 12 meses seguidos en positivo en real",tags:"RLM",auto:"realPosMonths",target:12,unit:"m"},
-  {id:"l4",text:"Tengo una rutina que me permite operar desde cualquier lugar",tags:"L"},
-  {id:"l5",text:"Opero una semana entera de viaje sin romper ninguna norma",tags:"LR"}]},
- {name:"Patrimonio",when:"El largo plazo",desc:"Convertir los beneficios en patrimonio. Invertir parte de cada retiro a largo plazo, fuera del trading, hace crecer el dinero por interés compuesto.",steps:[
-  {id:"p1",text:"Invierto un porcentaje fijo de cada retiro a largo plazo, fuera del trading",tags:"M"},
+  {id:"d3",text:"Cumplo mis normas en 9 de cada 10 operaciones demo",tags:"R",auto:"demoFollow",target:90,min:30,unit:"%"},
+  {id:"d4",text:"En 50 operaciones demo, gano más de lo que pierdo",tags:"RM",auto:"demoExp",target:0.2,min:50,unit:"R"},
+  {id:"d5",text:"Cumplo todas mis normas 20 días seguidos",tags:"R",auto:"bestCleanStreak",target:20,unit:"d"},
+  {id:"d6",text:"Hago 8 revisiones de la semana",tags:"R",auto:"weeksReviewed",target:8,unit:"n"}]},
+ {name:"Dinero real, poco a poco",when:"Meses 6–9",desc:"Empiezas con dinero real pero arriesgando muy poco en cada operación. Aquí lo que se entrena es la cabeza: los nervios cambian cuando el dinero es tuyo.",steps:[
+  {id:"r1",text:"Abro una cuenta real pequeña, con dinero que me puedo permitir perder",tags:"R"},
+  {id:"r2",text:"Hago 50 operaciones con dinero real arriesgando muy poco en cada una",tags:"R",auto:"realTrades",target:50,unit:"n"},
+  {id:"r3",text:"Cumplo mis normas en 9 de cada 10 operaciones reales",tags:"R",auto:"realFollow",target:90,min:30,unit:"%"},
+  {id:"r4",text:"En 50 operaciones reales, gano más de lo que pierdo",tags:"RM",auto:"realExp",target:0.2,min:50,unit:"R"},
+  {id:"r5",text:"Termino mi primer mes completo ganando dinero",tags:"RM",auto:"realPosMonths",target:1,unit:"m"},
+  {id:"r6",text:"Gano dinero 3 meses seguidos",tags:"RM",auto:"realPosMonths",target:3,unit:"m"}]},
+ {name:"Crecer",when:"Año 1–2",desc:"Operas con más dinero, pero haciendo lo mismo que ya te funciona. Se aumenta el tamaño de la cuenta, no lo que arriesgas en cada operación.",steps:[
+  {id:"e1",text:"Paso una prueba de cuenta fondeada (una empresa te deja su dinero para operar si demuestras que sabes)",tags:"RM"},
+  {id:"e2",text:"Retiro mis primeras ganancias del trading",tags:"ML"},
+  {id:"e3",text:"Gano dinero 6 meses seguidos",tags:"RM",auto:"realPosMonths",target:6,unit:"m"},
+  {id:"e4",text:"Opero con más dinero sin arriesgar más en cada operación",tags:"RM"},
+  {id:"e5",text:"Un mes, el trading me paga los gastos básicos",tags:"LM"}]},
+ {name:"Libertad",when:"Años 2–4",desc:"Que el trading te dé tiempo y te permita vivir donde quieras, con ahorros que te dejen operar sin presión.",steps:[
+  {id:"l1",text:"Tengo ahorrados 6 meses de gastos fuera del trading",tags:"LM"},
+  {id:"l2",text:"El trading me paga todos los gastos durante 6 meses seguidos",tags:"LM"},
+  {id:"l3",text:"Gano dinero 12 meses seguidos",tags:"RLM",auto:"realPosMonths",target:12,unit:"m"},
+  {id:"l4",text:"Tengo una rutina que me permite operar desde cualquier sitio",tags:"L"},
+  {id:"l5",text:"Opero una semana de viaje cumpliendo todas mis normas",tags:"LR"}]},
+ {name:"Hacer crecer tu dinero",when:"El largo plazo",desc:"Guardar e invertir parte de lo que ganas, fuera del trading, para que tu dinero crezca con los años.",steps:[
+  {id:"p1",text:"Invierto una parte fija de cada retiro a largo plazo, fuera del trading",tags:"M"},
   {id:"p2",text:"Mi patrimonio llega a 10.000 €",tags:"M",auto:"netWorth",target:10000,unit:"€"},
   {id:"p3",text:"Mi patrimonio llega a 50.000 €",tags:"ML",auto:"netWorth",target:50000,unit:"€"},
   {id:"p4",text:"Mi patrimonio llega a 100.000 €",tags:"ML",auto:"netWorth",target:100000,unit:"€"},
   {id:"p5",text:"Mi patrimonio llega a 250.000 €",tags:"ML",auto:"netWorth",target:250000,unit:"€"},
   {id:"p6",text:"Mi patrimonio llega a 500.000 €",tags:"ML",auto:"netWorth",target:500000,unit:"€"},
-  {id:"p7",text:"Mi patrimonio llega a 1.000.000 €. Soy millonario",tags:"MLR",auto:"netWorth",target:1000000,unit:"€"}]}
+  {id:"p7",text:"Mi patrimonio llega a 1.000.000 €",tags:"MLR",auto:"netWorth",target:1000000,unit:"€"}]}
 ];
 const LEARN_TAGS=["Velas japonesas","Estructura de mercado","Tendencia","Soportes y resistencias","Oferta y demanda","Liquidez","Sesiones y horarios","Indicadores","Entradas y confirmaciones","Gestión del riesgo","Gestión de la operación","Psicología","Backtesting","Plan de trading","Otro"];
 const LEARN_LEVELS=["Principiante","Intermedio","Avanzado"];
@@ -587,6 +616,12 @@ const IDEA_STATUS=[["idea","Idea"],["hablar","Para hablar"],["hecha","Hecha"]];
 const CATS=["Riesgo","Entradas","Gestión","Psicología","Rutina"];
 const EMOS=["","Tranquilo","Confiado","Ansioso","Miedo","FOMO","Euforia","Venganza","Aburrido","Cansado"];
 const ACCOUNTS=["Demo","Real","Backtest"];
+const MOODS=[[1,"😞","Mal"],[2,"😕","Regular"],[3,"😐","Normal"],[4,"🙂","Bien"],[5,"😄","Genial"]];
+const EMO_SIMPLE=[["Tranquilo","Tranquilo"],["Confiado","Confiado"],["Ansioso","Nervioso"],["Miedo","Con miedo"],["FOMO","Con prisa por entrar"],["Venganza","Queriendo recuperar"],["Cansado","Cansado"]];
+const ERR_SIMPLE=[["Entrada sin confirmación","Entré sin estar seguro"],["Entrada tardía","Entré tarde"],["FOMO","Entré por miedo a perder la oportunidad"],["Moví el stop","Moví mi límite de pérdida"],["Salida anticipada","Cerré antes de tiempo"],["Riesgo mayor del permitido","Arriesgué más de lo normal"],["Operación de venganza","Quería recuperar lo perdido"],["Demasiadas operaciones","Operé demasiado"]];
+const ERR_LABEL=Object.fromEntries(ERR_SIMPLE);
+const ACC_LABEL={Backtest:"Gráficos antiguos",Demo:"Demo",Real:"Dinero real"};
+const OUT_LABEL={win:"Ganada",loss:"Perdida",be:"Sin ganar ni perder"};
 const STUDY_KINDS=["Vídeo","Curso","Libro","Backtesting","Revisión de operaciones","Otro"];
 const ERROR_TAGS=["Entrada sin confirmación","Entrada tardía","FOMO","Moví el stop","Salida anticipada","No dejé correr hasta el TP","Riesgo mayor del permitido","Operación de venganza","Fuera de horario","Demasiadas operaciones","Sin stop loss","Contra mi sesgo","Entré con noticias"];
 function normPlan(p){
@@ -689,7 +724,8 @@ async function init(){
       });
       if(!snap.metadata.hasPendingWrites)setStatus("Guardado ✓");
       softRender();
-      if(col==="ritual"){S.ritualReady=true;maybeShowGoals()}
+      if(col==="days")S.daysReady=true;
+      if(col==="ritual"||col==="days"){if(col==="ritual")S.ritualReady=true;maybeShowGoals()}
     },e=>setStatus(errText(e),true));
   });
 }
@@ -697,12 +733,39 @@ async function init(){
 /* ---------- metas ---------- */
 let goalsAuto=false;
 const readOn=d=>!!(S.ritual[d]&&S.ritual[d].read);
+function needsWelcome(){return !S.plan.onboarded&&!Object.keys(S.days).some(isLogged)&&!Object.keys(S.learn).length}
 function maybeShowGoals(){
   if(goalsAuto)return;
-  if(S.mode==="db"&&!(S.planReady&&S.ritualReady))return;
+  if(S.mode==="db"&&!(S.planReady&&S.ritualReady&&S.daysReady))return;
   goalsAuto=true;
+  if(needsWelcome()){openWelcome(0);return}
+  if(!S.plan.goals.long.some(x=>x.trim()))return;
   if(S.plan.goals.showAlways||!readOn(todayStr()))openGoals();
 }
+const MARKETS=["Divisas (forex)","Índices (Nasdaq, S&P 500…)","Acciones","Criptomonedas","Oro y materias primas","Aún no lo sé"];
+function welcomeHTML(step){
+  const w=S.wel||(S.wel={markets:[]});
+  const dots=`<div class="wdots">${[0,1,2,3].map(i=>`<i class="${i===step?"on":""}"></i>`).join("")}</div>`;
+  if(step===0)return `<div class="gbox wbox" role="dialog" aria-modal="true" aria-labelledby="wTitle">${dots}<h2 id="wTitle">Bienvenido a tu bitácora de trading</h2>
+    <p class="g-inst">Te ayuda a mejorar con un hábito muy sencillo. No necesitas saber nada para empezar.</p>
+    <ul class="wlist"><li><b>Apunta cada día cómo te ha ido.</b> Son 2 minutos: cómo estás, tus operaciones y qué has aprendido.</li><li><b>Cumple tus normas.</b> Unas pocas reglas que te protegen de los errores de siempre.</li><li><b>Mira tu progreso.</b> Verás cómo vas y, si quieres, lo compartes con tus amigos.</li></ul>
+    <div class="row"><button type="button" class="btn ghost" data-w="skip">Saltar</button><button type="button" class="btn primary" data-w="next" style="margin-left:auto">Empezar</button></div></div>`;
+  if(step===1)return `<div class="gbox wbox" role="dialog" aria-modal="true" aria-labelledby="wTitle">${dots}<h2 id="wTitle">¿Cuánto sabes de trading?</h2>
+    <p class="g-inst">Así te enseñamos solo lo que necesitas. Puedes cambiarlo cuando quieras.</p>
+    <div class="modes">${[["new","Estoy empezando","Aún no opero o llevo muy poco.","simple"],["some","Ya opero","Pero me cuesta ser constante o no gano lo que quiero.","simple"],["pro","Tengo experiencia","Quiero todas las opciones y estadísticas avanzadas.","advanced"]].map(([k,t,d,m])=>`<button type="button" class="modebtn" data-w="level" data-v="${k}" data-m="${m}" aria-pressed="${w.level===k}"><b>${t}</b><span>${d}</span></button>`).join("")}</div>
+    <div class="row"><button type="button" class="btn ghost" data-w="back">Atrás</button></div></div>`;
+  if(step===2)return `<div class="gbox wbox" role="dialog" aria-modal="true" aria-labelledby="wTitle">${dots}<h2 id="wTitle">¿Qué operas o quieres operar?</h2>
+    <p class="g-inst">Puedes elegir varios.</p>
+    <div class="chips">${MARKETS.map(x=>`<button type="button" class="chipbtn tagf" data-w="market" data-v="${esc(x)}" aria-pressed="${w.markets.includes(x)}">${esc(x)}</button>`).join("")}</div>
+    <div class="row"><button type="button" class="btn ghost" data-w="back">Atrás</button><button type="button" class="btn primary" data-w="next" style="margin-left:auto">Continuar</button></div></div>`;
+  return `<div class="gbox wbox" role="dialog" aria-modal="true" aria-labelledby="wTitle">${dots}<h2 id="wTitle">Todo listo</h2>
+    <p class="g-inst">Te hemos preparado ${S.plan.rules.length} normas básicas para empezar. Puedes cambiarlas cuando quieras en «Mi plan».</p>
+    <ul class="wrules">${S.plan.rules.map(r=>`<li>${esc(r.text)}</li>`).join("")}</ul>
+    <p class="hint">Consejo: escribe tus metas y sube fotos de lo que quieres conseguir en «Mi plan» → Metas y sueños. Motiva mucho.</p>
+    <div class="row"><button type="button" class="btn ghost" data-w="back">Atrás</button><button type="button" class="btn primary" data-w="done" style="margin-left:auto">Empezar mi primer día</button></div></div>`;
+}
+function openWelcome(step){S.welStep=step;const el=$("#goals");el.innerHTML=welcomeHTML(step);el.hidden=false;const b=el.querySelector(".btn.primary,.modebtn");if(b)b.focus()}
+function finishWelcome(){const w=S.wel||{};S.plan.onboarded=true;if(w.mode)S.plan.mode=w.mode;if(w.level)S.plan.level=w.level;const mk=(w.markets||[]).filter(x=>x!=="Aún no lo sé");if(mk.length&&!String(S.plan.market||"").trim())S.plan.market=mk.join(", ");touchPlan();closeGoals();S.view="hoy";S.dayOpen=null;render()}
 function goalsHTML(){
   const g=S.plan.goals,today=todayStr(),rit=S.ritual[today],R=roadState();
   const long=g.long.filter(x=>x.trim()),short=R.next.slice(0,5);
@@ -735,6 +798,14 @@ function isLogged(date){const d=S.days[date];return !!(d&&d.updatedAt)}
 function calcR(t){const e=num(t.entry),s=num(t.sl),x=num(t.exit);if([e,s,x].some(isNaN))return null;const risk=t.dir==="Short"?s-e:e-s;if(!(risk>0))return null;return Math.round(((t.dir==="Short"?e-x:x-e)/risk)*100)/100}
 function tradeR(t){const r=num(t.r);if(!isNaN(r))return r;return calcR(t)}
 function dayR(d){let s=0,any=false;(d.trades||[]).forEach(t=>{const r=tradeR(t);if(r!=null){s+=r;any=true}});return any?s:null}
+const ADV=()=>S.plan.mode==="advanced";
+function help(t){return `<details class="qh"><summary aria-label="¿Qué significa?">?</summary><span class="qh-t">${t}</span></details>`}
+function outcome(t){if(t.outcome)return t.outcome;const r=tradeR(t);if(r!=null)return r>0?"win":r<0?"loss":"be";const p=num(t.pnl);if(!isNaN(p))return p>0?"win":p<0?"loss":"be";return ""}
+function money(t){const p=num(t.pnl);if(isNaN(p))return null;if(t.outcome==="win")return Math.abs(p);if(t.outcome==="loss")return -Math.abs(p);if(t.outcome==="be")return 0;return p}
+const plural=(n,a,b)=>`${n} ${n===1?a:b}`;
+const fmtMoney=x=>(x>0?"+":x<0?"−":"")+Math.abs(x).toLocaleString("es-ES",{maximumFractionDigits:2})+" €";
+function resultText(m){return m.hasMoney?fmtMoney(m.money):m.nr?fmtR(m.total):(m.wins||m.losses)?`${plural(m.wins,"ganada","ganadas")} · ${plural(m.losses,"perdida","perdidas")}`:"—"}
+function dayScore(d){const r=dayR(d);if(r!=null)return{v:r,txt:fmtR(r)};let s=0,any=false,w=0,l=0;(d.trades||[]).forEach(t=>{const mo=money(t);if(mo!=null){s+=mo;any=true}const o=outcome(t);if(o==="win")w++;else if(o==="loss")l++});if(any)return{v:s,txt:fmtMoney(s)};if(w||l)return{v:w-l,txt:`✓${w} ✗${l}`};return null}
 function brokenIds(d){return Object.entries(d.rules||{}).filter(([,v])=>v==="broken").map(([k])=>k)}
 function brokenCount(d){return brokenIds(d).length}
 function ruleDone(d){const ids=S.plan.rules.map(r=>r.id);const m=ids.filter(id=>d.rules&&d.rules[id]).length;return{marked:m,total:ids.length,broken:brokenCount(d)}}
@@ -750,8 +821,11 @@ function metrics(trades){
   const gw=wins.reduce((a,b)=>a+b,0),gl=-loss.reduce((a,b)=>a+b,0);
   let worst=0,cur=0;rs.forEach(r=>{if(r<0){cur++;worst=Math.max(worst,cur)}else cur=0});
   const fp=trades.filter(t=>t.followed==="si").length,fn=trades.filter(t=>t.followed==="no").length;
+  const outs=trades.map(outcome),W=outs.filter(o=>o==="win").length,L=outs.filter(o=>o==="loss").length,BE=outs.filter(o=>o==="be").length;
+  const mons=trades.map(money).filter(x=>x!=null),mtot=mons.reduce((a,b)=>a+b,0);
   return{n:trades.length,nr:rs.length,total,exp:rs.length?total/rs.length:NaN,win:rs.length?wins.length/rs.length:NaN,pf:gl>0?gw/gl:(gw>0?Infinity:NaN),worst,
-    avgW:wins.length?gw/wins.length:NaN,avgL:loss.length?gl/loss.length:NaN,followRate:(fp+fn)?fp/(fp+fn):NaN,fn}
+    avgW:wins.length?gw/wins.length:NaN,avgL:loss.length?gl/loss.length:NaN,followRate:(fp+fn)?fp/(fp+fn):NaN,fn,
+    wins:W,losses:L,be:BE,winPct:(W+L)?W/(W+L):NaN,money:mtot,hasMoney:mons.length>0}
 }
 function errorCosts(trades){
   const g={};trades.forEach(t=>(t.errors||[]).forEach(e=>{(g[e]=g[e]||[]).push(t)}));
@@ -775,7 +849,7 @@ function roadMetrics(){
   const loggedDays=Object.keys(S.days).filter(isLogged);
   const studyMin=studyMinutes();
   const p=S.plan;
-  return{studyHours:studyMin/60,planDefined:[p.market,p.instruments,p.timeframe,p.session].every(x=>x&&String(x).trim())?1:0,
+  return{studyHours:studyMin/60,planDefined:[p.market,p.session].every(x=>x&&String(x).trim())?1:0,
     playbookMedia:p.playbook.reduce((a,s)=>a+(s.media||[]).length,0),bestLogStreak:bestStreak(isLogged),bestCleanStreak:bestStreak(isClean),
     ritualDays:Object.keys(S.ritual).filter(readOn).length,weeksReviewed:Object.values(S.weeks).filter(w=>w&&(w.review||w.nextGoal||w.worked)).length,
     btTrades:bt.n,btExp:bt,demoTrades:de.n,demoExp:de,demoFollow:de,realTrades:re.n,realExp:re,realFollow:re,realPosMonths:posBest,
@@ -787,7 +861,11 @@ function stepState(s,M){
   let val=M[s.auto],label;
   if(s.unit==="R"||s.unit==="%"){
     const m=val,n=m.nr;
-    if(s.unit==="R"){val=n>=s.min&&isFinite(m.exp)?m.exp:0;label=`${isFinite(m.exp)?fmtNum(m.exp,2):"0,00"}R de ${fmtNum(s.target,2)}R · ${Math.min(n,s.min)} de ${s.min} operaciones`;
+    if(s.unit==="R"){
+      if(n<s.min*.8){const cnt=m.n,pos=m.hasMoney?m.money>0:m.wins>m.losses,done=cnt>=s.min&&pos;
+        label=`${Math.min(cnt,s.min)} de ${s.min} operaciones · ${cnt?(pos?"ganas más de lo que pierdes":"todavía pierdes más de lo que ganas"):"sin operaciones aún"}`;
+        return{done,pct:done?1:Math.min(.99,Math.min(1,cnt/s.min)*.7+(pos?.3:0)),label}}
+      val=n>=s.min&&isFinite(m.exp)?m.exp:0;label=`${isFinite(m.exp)?fmtNum(m.exp,2):"0,00"}R de ${fmtNum(s.target,2)}R · ${Math.min(n,s.min)} de ${s.min} operaciones`;
       const pct=Math.min(1,(n/s.min)*.5+(isFinite(m.exp)&&m.exp>0?Math.min(1,m.exp/s.target)*.5:0));return{done:n>=s.min&&m.exp>=s.target,pct:n>=s.min&&m.exp>=s.target?1:Math.min(.99,pct),label}}
     const f=isFinite(m.followRate)?m.followRate*100:0,cnt=m.n;
     label=`${Math.round(f)}% de ${s.target}% · ${Math.min(cnt,s.min)} de ${s.min} operaciones`;
@@ -903,36 +981,39 @@ function statsText(){
 function refreshHeader(){
   const start=S.plan.startDate||todayStr();
   $("#dayNum").textContent=Math.max(1,diffDays(start,todayStr())+1);
-  $("#since").textContent=diffDays(start,todayStr())<=0?"Hoy es el día uno de tu plan. Empieza registrando cómo ha ido.":"Desde el "+fmtShort(start)+". Cada día cuenta, operes o no.";
+  $("#since").textContent=diffDays(start,todayStr())<=0?"Hoy es tu primer día. Empieza apuntando cómo te ha ido.":"Empezaste el "+fmtShort(start)+". Cada día cuenta, operes o no.";
   const ph=phases();
   $("#kpis").innerHTML=
-    `<span class="kpi">Racha registrando <b>${ph.logStreak}</b></span>`+
-    `<span class="kpi">Días limpios seguidos <b>${ph.cleanStreak}</b></span>`+
-    `<span class="kpi">Camino <b>${Math.round(ph.road.done/ph.road.total*100)}%</b></span>`+
-    `<button type="button" class="kpi kbtn" data-open-goals>Ver mis metas</button>`;
+    `<span class="kpi">Días seguidos apuntando <b>${ph.logStreak}</b></span>`+
+    `<span class="kpi">Días seguidos cumpliendo normas <b>${ph.cleanStreak}</b></span>`+
+    `<span class="kpi">Tu camino <b>${Math.round(ph.road.done/ph.road.total*100)}%</b></span>`+
+    `<button type="button" class="kpi kbtn" data-open-goals>Mis metas</button>`;
 }
 
 /* ---------- vistas ---------- */
 const SECTIONS=[
   {id:"hoy",views:[["hoy","Hoy"]]},
-  {id:"progreso",views:[["camino","Mi camino"],["cal","Calendario"],["semana","Semana"],["stats","Estadísticas"]]},
-  {id:"aprender",views:[["formacion","Lecciones"],["ideas","Ideas para la app"]]},
+  {id:"progreso",views:[["resumen","Resumen"],["camino","Mi camino"],["cal","Calendario"],["semana","Semana",1],["stats","Estadísticas",1]]},
+  {id:"aprender",views:[["formacion","Mis apuntes"],["ideas","Ideas para la app",1]]},
   {id:"mentor",views:[["mentor","Mentor"]]},
-  {id:"plan",views:[["metas","Metas y sueños"],["sistema","Mi sistema"],["playbook","Playbook"],["normas","Normas"]]}];
+  {id:"plan",views:[["metas","Metas y sueños"],["normas","Mis normas"],["playbook","Mi estrategia"],["sistema","Ajustes"]]}];
 const SEC_OF={};SECTIONS.forEach(x=>x.views.forEach(([v])=>SEC_OF[v]=x.id));
 const lastSub={};
 function part(html,name){const bits=html.split(/<!--part:([a-z]+)-->/),out={};for(let i=1;i<bits.length;i+=2)out[bits[i]]=bits[i+1];return out[name]||""}
 function render(){
   if(S.view==="plan")S.view="metas";
   if(!SEC_OF[S.view])S.view="hoy";
-  const sec=SEC_OF[S.view];lastSub[sec]=S.view;
+  let sec=SEC_OF[S.view];
+  {const sx0=SECTIONS.find(x=>x.id===sec),v0=sx0.views.find(v=>v[0]===S.view);if(v0&&v0[2]&&!ADV())S.view=sx0.views[0][0]}
+  lastSub[sec]=S.view;
   document.querySelectorAll(".navbtn").forEach(b=>{if(b.dataset.sec===sec)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   refreshHeader();
   let h="";
   if(S.mode==="local")h+=`<div class="banner">Estás usando la bitácora sin conexión a Claude: lo que escribas se guarda solo en este navegador y no se pueden subir fotos, ni usar el mentor. Ábrela desde Claude con tu sesión iniciada para tenerlo todo.</div>`;
   const sx=SECTIONS.find(x=>x.id===sec);
-  if(sx.views.length>1)h+=`<div class="subnav" role="tablist">${sx.views.map(([v,l])=>`<button type="button" role="tab" data-act="sub" data-v="${v}" aria-selected="${S.view===v}">${l}</button>`).join("")}</div>`;
-  const V={hoy:viewDay,camino:viewRoad,cal:viewCal,semana:viewWeek,stats:viewStats,mentor:viewMentor,
+  const vis=sx.views.filter(v=>!v[2]||ADV());
+  if(vis.length>1)h+=`<div class="subnav" role="tablist">${vis.map(([v,l])=>`<button type="button" role="tab" data-act="sub" data-v="${v}" aria-selected="${S.view===v}">${l}</button>`).join("")}</div>`;
+  const V={hoy:viewDay,resumen:viewSummary,camino:viewRoad,cal:viewCal,semana:viewWeek,stats:viewStats,mentor:viewMentor,
     formacion:()=>part(viewLearn(),"lecciones"),ideas:()=>part(viewLearn(),"ideas"),
     metas:viewMetas,sistema:()=>part(viewPlan(),"sistema")+exportCard(),playbook:()=>part(viewPlan(),"playbook"),normas:()=>part(viewPlan(),"normas")};
   h+=(V[S.view]||viewDay)();
@@ -959,12 +1040,36 @@ function uploader(scope,path,label,imagesOnly){
   return `<label class="btn sm upl">${label}<input type="file" accept="${imagesOnly?"image/*":"image/*,video/*"}" multiple data-upload="${scope}|${path}"></label>`;
 }
 
-const tradeIsOpen=(t,i)=>S.tradeOpen[i]===true||(S.tradeOpen[i]===undefined&&!String(t.asset||"").trim()&&tradeR(t)==null);
+const tradeIsOpen=(t,i)=>S.tradeOpen[i]===true||(S.tradeOpen[i]===undefined&&!String(t.asset||"").trim()&&!outcome(t));
 function tradeSummary(t,i){
-  const r=tradeR(t);
-  return `<button type="button" class="tsum ${r>0?"w":r<0?"l":""}" data-act="tradeToggle" data-i="${i}" id="trade-${i}"><b>Operación ${i+1}</b><span>${esc([t.asset,t.dir==="Long"?"Compra":t.dir==="Short"?"Venta":"",t.account||"Demo",t.setup].filter(Boolean).join(" · "))}</span><span class="rpill ${r>0?"w":r<0?"l":""}">${r!=null?fmtR(r):"sin resultado"}</span>${t.followed==="si"?`<span class="hint">Dentro del plan</span>`:t.followed==="no"?`<span class="hint" style="color:var(--loss)">Fuera del plan</span>`:""}<span class="hint" style="margin-left:auto">Editar</span></button>`;
+  const o=outcome(t),r=tradeR(t),mo=money(t),res=r!=null?fmtR(r):mo!=null?fmtMoney(mo):o?OUT_LABEL[o]:"Sin resultado";
+  return `<button type="button" class="tsum ${o==="win"?"w":o==="loss"?"l":""}" data-act="tradeToggle" data-i="${i}" id="trade-${i}"><b>Operación ${i+1}</b><span>${esc([t.asset,t.dir==="Long"?"Compra":t.dir==="Short"?"Venta":"",ACC_LABEL[t.account||"Demo"]].filter(Boolean).join(" · "))}</span><span class="rpill ${o==="win"?"w":o==="loss"?"l":""}">${esc(res)}</span>${t.followed==="si"?`<span class="hint">Cumplió las normas</span>`:t.followed==="no"?`<span class="hint" style="color:var(--loss)">Se saltó las normas</span>`:""}<span class="hint" style="margin-left:auto">Editar</span></button>`;
+}
+function tradeCardSimple(t,i){
+  const o=outcome(t),p=`trades.${i}`,errs=t.errors||[];
+  return `<div class="trade simple ${o==="win"?"w":o==="loss"?"l":""}" id="trade-${i}">
+   <div class="trade-h"><h3>Operación ${i+1}</h3><button class="btn sm" style="margin-left:auto" data-act="tradeToggle" data-i="${i}">Listo</button><button class="btn sm ghost danger" data-act="delTrade" data-i="${i}">${S.confirm==="trade."+i?"¿Borrar? Sí":"Borrar"}</button></div>
+   ${fld("¿Qué has operado?",txt(p+".asset",t.asset,"Ej.: oro, EURUSD, Bitcoin, Nasdaq…"))}
+   <div class="field"><span>¿Compraste o vendiste? ${help("<b>Compra:</b> ganas si el precio sube.<br><b>Venta:</b> ganas si el precio baja.")}</span><div class="seg" role="group">${["Long","Short"].map(v=>`<button type="button" data-act="dir" data-i="${i}" data-v="${v}" aria-pressed="${String(t.dir===v)}">${v==="Long"?"Compra":"Venta"}</button>`).join("")}</div></div>
+   <div class="field"><span>¿Con qué cuenta? ${help("<b>Gráficos antiguos:</b> practicas sobre el pasado, sin dinero (se llama backtesting).<br><b>Demo:</b> en tiempo real con dinero de mentira.<br><b>Dinero real:</b> tu dinero.")}</span><div class="seg" role="group">${["Backtest","Demo","Real"].map(a=>`<button type="button" data-act="acc" data-i="${i}" data-v="${a}" aria-pressed="${String((t.account||"Demo")===a)}">${ACC_LABEL[a]}</button>`).join("")}</div></div>
+   <div class="field"><span>¿Cómo salió?</span><div class="seg ok-bad" role="group"><button type="button" data-act="outcome" data-i="${i}" data-v="win" class="${o==="win"?"on-ok":""}" aria-pressed="${o==="win"}">Ganada</button><button type="button" data-act="outcome" data-i="${i}" data-v="loss" class="${o==="loss"?"on-bad":""}" aria-pressed="${o==="loss"}">Perdida</button><button type="button" data-act="outcome" data-i="${i}" data-v="be" class="${o==="be"?"on-mid":""}" aria-pressed="${o==="be"}">Ni gané ni perdí</button></div></div>
+   ${fld("¿Cuánto has ganado o perdido? (€, opcional)",txt(p+".pnl",t.pnl,"Ej.: 25","data-k",'inputmode="decimal"'))}
+   <div class="field"><span>¿Cumpliste tus normas? ${help("Tus normas son las reglas que te pusiste para no cometer errores, como no arriesgar demasiado. Las tienes en «Mi plan».")}</span><div class="seg ok-bad" role="group"><button type="button" data-act="follow" data-i="${i}" data-v="si" class="${t.followed==="si"?"on-ok":""}" aria-pressed="${t.followed==="si"}">Sí</button><button type="button" data-act="follow" data-i="${i}" data-v="no" class="${t.followed==="no"?"on-bad":""}" aria-pressed="${t.followed==="no"}">No</button></div></div>
+   <div class="field"><span>¿Cómo te sentías al entrar?</span><div class="chips">${EMO_SIMPLE.map(([v,l])=>`<button type="button" class="chipbtn tagf" data-act="emo" data-i="${i}" data-v="${v}" aria-pressed="${t.emotion===v}">${l}</button>`).join("")}</div></div>
+   ${fld("¿Por qué entraste? (opcional)",area(p+".why",t.why,"Con tus palabras: qué viste en el gráfico que te hizo entrar"))}
+   <div class="field"><span>¿Algo salió mal? (opcional)</span><div class="chips">${ERR_SIMPLE.map(([e,l])=>`<button type="button" class="chipbtn" data-act="errTag" data-i="${i}" data-v="${esc(e)}" aria-pressed="${errs.includes(e)}">${l}</button>`).join("")}</div></div>
+   ${mediaGrid(t.media||[],"day",p+".media")}
+   <div class="row">${uploader("day",p+".media","Añadir foto del gráfico")}</div>
+  </div>`;
 }
 const DAY_BODY={
+  animo:(d)=>`<div class="field"><span>¿Cómo te sientes?</span><div class="moods" role="group">${MOODS.map(([v,e,l])=>`<button type="button" class="moodbtn" data-act="mood" data-v="${v}" aria-pressed="${+d.mood===v}"><span class="me" aria-hidden="true">${e}</span><span>${l}</span></button>`).join("")}</div></div>
+    ${fld("¿Cuántas horas has dormido?",txt("sleep",d.sleep,"Ej.: 7","data-k",'inputmode="decimal"'))}
+    ${(d.mood&&+d.mood<=2)||(String(d.sleep).trim()&&num(d.sleep)<6)?`<div class="callout soft"><div><b>Consejo:</b> cuando estás cansado o de bajón es más fácil equivocarse. Hoy opera menos o tómatelo como un día para aprender.</div></div>`:""}`,
+  resumen:(d)=>`${fld("¿Qué ha ido bien hoy?",area("good",d.good,"Ej.: esperé con paciencia a que se cumpliera mi estrategia"))}
+    ${fld("¿Qué mejorarías?",area("improve",d.improve,"Ej.: entré con prisa, sin pensarlo"))}
+    ${fld("Lo que me llevo de hoy (una frase)",txt("lesson",d.lesson,"Ej.: si dudo, no entro"))}
+    <div class="field"><span>¿Qué nota te pones hoy? ${help("No va de si has ganado o perdido. Va de si has hecho las cosas bien: cumplir tus normas, esperar tu momento y no precipitarte.")}</span><div class="seg" role="group">${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button type="button" data-act="exec" data-v="${v}" aria-pressed="${String(+d.execScore===v)}">${v}</button>`).join("")}</div></div>`,
   metas:(d,c)=>`<p class="hint">${c.isToday?"Léelas en voz alta, como si ya las hubieras conseguido. Te ayuda a entrar enfocado en la sesión.":"Este paso solo se marca el mismo día."}</p>${c.isToday?`<div class="row"><button type="button" class="btn primary" data-open-goals>${readOn(c.date)?"Volver a leerlas":"Abrir mis metas"}</button></div>`:""}`,
   prep:(d)=>`  <div class="grid">
     <div class="field"><span>Estado de ánimo</span><div class="seg" role="group" aria-label="Estado de ánimo">${[1,2,3,4,5].map(v=>`<button type="button" data-act="mood" data-v="${v}" aria-pressed="${String(+d.mood===v)}">${v}</button>`).join("")}</div></div>
@@ -976,13 +1081,13 @@ const DAY_BODY={
     ${fld("Noticias del día",area("news",d.news,"Ej.: IPC EE. UU. 14:30 — no opero de 14:15 a 14:45"))}
   </div>`,
   ops:(d)=>`<label class="row" style="gap:8px"><input type="checkbox" data-k="noTrade" ${d.noTrade?"checked":""}> Hoy no he operado</label>
-    ${d.noTrade?fld("¿Por qué no has operado?",area("noTradeReason",d.noTradeReason,"No hubo setup válido, día de noticias, día de estudio… No operar también es seguir el plan.")):""}
-    ${d.trades.map((t,i)=>tradeIsOpen(t,i)?tradeCard(t,i):tradeSummary(t,i)).join("")}
+    ${d.noTrade?fld("¿Por qué no has operado?",area("noTradeReason",d.noTradeReason,"Ej.: no vi ninguna oportunidad clara, o era día de descanso. No operar también está bien.")):""}
+    ${d.trades.map((t,i)=>tradeIsOpen(t,i)?(ADV()?tradeCard(t,i):tradeCardSimple(t,i)):tradeSummary(t,i)).join("")}
     <div class="row"><button class="btn primary" data-act="addTrade">Añadir operación</button></div>`,
-  normas:(d,c)=>{const rd=c.rd;return `  <p class="hint">Marca cada norma con sinceridad al acabar la sesión. Un día limpio vale más que un día verde.</p>
-  <div class="rules">${S.plan.rules.length?S.plan.rules.map(rule=>{const st=d.rules[rule.id]||"";return `<div class="rule ${st==="broken"?"broken":st==="ok"?"ok":""}"><div class="t"><span class="c">${esc(rule.cat)}</span>${esc(rule.text)}</div>
-    <div class="seg ok-bad" role="group"><button type="button" data-act="rule" data-id="${rule.id}" data-v="ok" class="${st==="ok"?"on-ok":""}" aria-pressed="${st==="ok"}">Cumplida</button><button type="button" data-act="rule" data-id="${rule.id}" data-v="broken" class="${st==="broken"?"on-bad":""}" aria-pressed="${st==="broken"}">Rota</button></div></div>`}).join(""):`<p class="empty">Todavía no tienes normas. Escríbelas en «Mi plan».</p>`}</div>
-  ${rd.broken?`<div class="callout"><div><b>Has roto ${rd.broken} norma${rd.broken>1?"s":""}.</b> Consecuencia que tú mismo fijaste: ${esc(S.plan.consequence||"define una en «Mi plan».")}</div>${fld("¿Qué pasó exactamente y qué harás para que no se repita?",area("brokenNote",d.brokenNote,"Sé concreto: qué sentiste justo antes, qué te convenció de saltarte la norma…"))}</div>`:""}
+  normas:(d,c)=>{const rd=c.rd;return `  <p class="hint">Marca con sinceridad si has cumplido cada norma hoy. Cumplir tus normas es más importante que ganar. ${help("Tus normas son reglas sencillas para protegerte de los errores típicos. Puedes cambiarlas en «Mi plan» → Mis normas.")}</p>
+  <div class="rules">${S.plan.rules.length?S.plan.rules.map(rule=>{const st=d.rules[rule.id]||"";return `<div class="rule ${st==="broken"?"broken":st==="ok"?"ok":""}"><div class="t">${ADV()?`<span class="c">${esc(rule.cat)}</span>`:""}${esc(rule.text)}</div>
+    <div class="seg ok-bad" role="group"><button type="button" data-act="rule" data-id="${rule.id}" data-v="ok" class="${st==="ok"?"on-ok":""}" aria-pressed="${st==="ok"}">La cumplí</button><button type="button" data-act="rule" data-id="${rule.id}" data-v="broken" class="${st==="broken"?"on-bad":""}" aria-pressed="${st==="broken"}">No la cumplí</button></div></div>`}).join(""):`<p class="empty">Todavía no tienes normas. Escríbelas en «Mi plan».</p>`}</div>
+  ${rd.broken?`<div class="callout"><div><b>Hoy no has cumplido ${rd.broken} norma${rd.broken>1?"s":""}.</b> Lo que te propusiste hacer en ese caso: ${esc(S.plan.consequence||"define una en «Mi plan».")}</div>${fld("¿Qué pasó y qué harás para que no se repita?",area("brokenNote",d.brokenNote,"Ej.: perdí dos veces y quise recuperarlo rápido. La próxima vez cierro la app."))}</div>`:""}
 `},
   rev:(d)=>`  <div class="grid wide">
     ${fld("Qué he hecho bien",area("good",d.good,""))}
@@ -1018,16 +1123,21 @@ function viewDay(){
   if(S._dayFor!==date){S._dayFor=date;S.dayOpen=null;S.tradeOpen={}}
   const pd=diffDays(start,date)+1,r=dayR(d),rd=ruleDone(d),isToday=date===todayStr(),goal=currentGoal(date),R=roadState(),gs=d.goalStep||{};
   const nT=d.trades.length,nM=d.media.length+d.links.length;
-  const steps=[
+  const hasGoals=S.plan.goals.long.some(x=>x.trim()),dn=dayScore(d);
+  const opsSum=d.noTrade?"Hoy no he operado":nT?`${nT} operaci${nT>1?"ones":"ón"}${dn?" · "+dn.txt:""}`:"Apunta cada operación o marca que hoy no has operado";
+  const steps=!ADV()?[
+    {k:"animo",t:"¿Cómo estás hoy?",w:"Antes de operar",done:!!d.mood,sum:d.mood?MOODS[+d.mood-1][2]+(d.sleep?` · ${d.sleep} h de sueño`:""):"Cómo te sientes y cuánto has dormido"},
+    {k:"ops",t:"Tus operaciones",w:"Durante el día",done:nT>0||!!d.noTrade,sum:opsSum},
+    {k:"normas",t:"Tus normas",w:"Al terminar",done:rd.total>0&&rd.marked===rd.total&&!rd.broken,warn:rd.broken>0,sum:rd.broken?`${rd.broken} sin cumplir · ${rd.marked} de ${rd.total} revisadas`:`${rd.marked} de ${rd.total} revisadas`},
+    {k:"resumen",t:"Resumen del día",w:"Para acabar",done:!!(d.execScore||String(d.lesson||"").trim()||String(d.good||"").trim()||String(d.improve||"").trim()),sum:d.execScore?`Nota ${d.execScore}/10${d.lesson?" · "+cut(d.lesson,50):""}`:"Qué ha ido bien, qué mejorarías y tu nota"}]:[
     {k:"metas",t:"Leer mis metas",w:"Al empezar",done:readOn(date),sum:readOn(date)?"Leídas en voz alta":"Léelas en voz alta"},
     {k:"prep",t:"Preparación",w:"Antes de operar",done:!!(d.mood||d.bias||String(d.levels||"").trim()),sum:[d.mood?`Ánimo ${d.mood}/5`:"",d.sleep?`${d.sleep} h de sueño`:"",d.bias||""].filter(Boolean).join(" · ")||"Ánimo, sueño, niveles y noticias"},
-    {k:"ops",t:"Operaciones",w:"Durante la sesión",done:nT>0||!!d.noTrade,sum:d.noTrade?"Hoy no he operado":nT?`${nT} operaci${nT>1?"ones":"ón"} · ${r!=null?fmtR(r):"sin resultado"}`:"Apunta cada entrada o marca que no has operado"},
+    {k:"ops",t:"Operaciones",w:"Durante la sesión",done:nT>0||!!d.noTrade,sum:opsSum},
     {k:"normas",t:"Mis normas",w:"Al acabar la sesión",done:rd.total>0&&rd.marked===rd.total&&!rd.broken,warn:rd.broken>0,sum:rd.broken?`${rd.broken} rota${rd.broken>1?"s":""} · ${rd.marked} de ${rd.total} revisadas`:`${rd.marked} de ${rd.total} revisadas`},
     {k:"rev",t:"Revisión del día",w:"Después de la sesión",done:!!(d.execScore||String(d.lesson||"").trim()||String(d.good||"").trim()||String(d.improve||"").trim()),sum:d.execScore?`Ejecución ${d.execScore}/10${d.lesson?" · "+cut(d.lesson,50):""}`:"Qué hice bien, qué mejorar y la lección"},
     {k:"paso",t:"Mi paso de hoy",w:"Hacia mis metas",done:!!(gs.step||String(gs.text||"").trim()),sum:gs.text?cut(gs.text,60):"Un paso hacia tu camino"}];
-  const extras=[
-    {k:"estudio",t:"Estudio",w:"Opcional",sum:d.study.length?`${d.study.length} apunte${d.study.length>1?"s":""}`:"Backtesting, revisiones, lecturas"},
-    {k:"fotos",t:"Fotos y vídeos",w:"Opcional",sum:nM?`${nM} archivo${nM>1?"s":""}`:"Capturas o tu vídeo del día"}];
+  const extras=(ADV()?[{k:"estudio",t:"Estudio",w:"Opcional",sum:d.study.length?`${d.study.length} apunte${d.study.length>1?"s":""}`:"Backtesting, revisiones, lecturas"}]:[]).concat([
+    {k:"fotos",t:"Fotos del día",w:"Opcional",sum:nM?`${nM} archivo${nM>1?"s":""}`:"Capturas del gráfico o un vídeo tuyo"}]);
   const done=steps.filter(s=>s.done).length,order=steps.concat(extras).map(s=>s.k);
   if(S.dayOpen==null){const f=steps.find(s=>!s.done);S.dayOpen=f?f.k:"none"}
   const ctx={date,isToday,rd,r,R,gs};
@@ -1045,10 +1155,11 @@ function viewDay(){
     <input type="date" id="pickDate" value="${date}" style="width:auto;margin-left:auto" aria-label="Elegir fecha">
   </div>
   <div class="dayprog"><span class="num">${done}/${steps.length}</span><div class="bar ${done===steps.length?"done":""}"><i style="width:${Math.round(done/steps.length*100)}%"></i></div></div>
-    <p class="hint">${done===steps.length?"Día completo. Buen trabajo.":"Pasos de hoy. Toca cada uno para rellenarlo."}</p>
+    <p class="hint">${done===steps.length?"Día completo. Buen trabajo.":"Tus pasos de hoy. Toca cada uno para rellenarlo: son 2 minutos."}</p>
+    ${!ADV()&&isToday&&hasGoals&&!readOn(date)?`<div class="row"><button type="button" class="btn" data-open-goals>Leer mis metas</button><span class="hint">Leerlas cada día te ayuda a no perder el foco.</span></div>`:""}
     ${goal?`<div class="goalband"><b>Objetivo de esta semana:</b> ${esc(goal)}</div>`:""}
   </section>
-  <div class="acc">${steps.map((s,i)=>item(s,i,false)).join("")}<span class="acc-lbl">Extras</span>${extras.map((s,i)=>item(s,i,true)).join("")}</div>`;
+  <div class="acc">${steps.map((s,i)=>item(s,i,false)).join("")}<span class="acc-lbl">Opcional</span>${extras.map((s,i)=>item(s,i,true)).join("")}</div>`;
 }
 
 function tradeCard(t,i){
@@ -1066,7 +1177,7 @@ function tradeCard(t,i){
      ${fld("Activo",txt(p+".asset",t.asset,"EURUSD, NAS100…"))}
      <div class="field"><span>Dirección</span><div class="seg" role="group">${["Long","Short"].map(v=>`<button type="button" data-act="dir" data-i="${i}" data-v="${v}" aria-pressed="${String(t.dir===v)}">${v==="Long"?"Compra":"Venta"}</button>`).join("")}</div></div>
      ${fld("Hora de entrada",txt(p+".time",t.time,"09:42"))}
-     ${fld("Setup del playbook",sel(String(i),names,t.setup||"","data-setup"))}
+     ${names.length>1?fld("Estrategia",sel(String(i),names,t.setup||"","data-setup")):""}
    </div>
    ${conds.length?`<div class="conds"><div class="row"><b style="font-size:13px">Condiciones de «${esc(setup.name)}»</b><span class="cnt">${ok}/${conds.length} cumplidas</span></div>${conds.map((cx,k)=>`<label><input type="checkbox" data-act-check="cond" data-i="${i}" data-c="${k}" ${t.conds&&t.conds[k]?"checked":""}> ${esc(cx)}</label>`).join("")}</div>`:""}
    <div class="grid">
@@ -1091,6 +1202,38 @@ function tradeCard(t,i){
 }
 function calcMsg(t){const c=calcR(t);return c!=null?`Calculado con entrada, stop y salida: ${fmtR(c)}${isNaN(num(t.r))?" (se usa este valor)":""}`:"Rellena entrada, stop y salida para calcular la R automáticamente, o escríbela a mano."}
 
+function viewSummary(){
+  const ph=phases(),t=todayStr(),per=S.sumPeriod||"month";
+  const from=per==="week"?mondayOf(t):per==="month"?t.slice(0,7)+"-01":null;
+  const tr=allTrades(from),m=metrics(tr),lg=Object.keys(S.days).filter(isLogged).filter(d=>!from||d>=from),clean=lg.filter(isClean).length;
+  const br={},er={};lg.forEach(d=>brokenIds(S.days[d]).forEach(id=>br[id]=(br[id]||0)+1));tr.forEach(x=>(x.errors||[]).forEach(e=>er[e]=(er[e]||0)+1));
+  const topR=Object.entries(br).sort((a,b)=>b[1]-a[1])[0],topE=Object.entries(er).sort((a,b)=>b[1]-a[1])[0];
+  const st=(k,v,sub,cls)=>`<div class="stat"><span class="k">${k}</span><span class="v ${cls||""}">${v}</span>${sub?`<span class="s">${sub}</span>`:""}</div>`;
+  const resCls=(m.hasMoney?m.money:m.nr?m.total:m.wins-m.losses)>0?"pos":(m.hasMoney?m.money:m.nr?m.total:m.wins-m.losses)<0?"neg":"";
+  return `<section class="card"><div class="card-h"><span class="when">Tu constancia</span><h2>Así vas</h2></div>
+    <div class="bigstats">
+      <div class="bstat"><span class="bnum">${ph.logStreak}</span><span>días seguidos apuntando</span></div>
+      <div class="bstat"><span class="bnum">${ph.cleanStreak}</span><span>días seguidos cumpliendo tus normas</span></div>
+      <div class="bstat"><span class="bnum">${Math.round(ph.road.done/ph.road.total*100)}%</span><span>de tu camino · <button type="button" class="linkbtn" data-act="goRoad">ver</button></span></div>
+    </div></section>
+  <section class="card"><div class="card-h"><span class="when">Tus números</span><h2>${per==="week"?"Esta semana":per==="month"?"Este mes":"Desde el principio"}</h2>
+    <div class="seg aside" role="group">${[["week","Semana"],["month","Mes"],["all","Todo"]].map(([k,l])=>`<button type="button" data-act="sumPeriod" data-v="${k}" aria-pressed="${per===k}">${l}</button>`).join("")}</div></div>
+    ${tr.length?`<div class="stats">
+      ${st("Operaciones",m.n)}
+      ${st("Ganadas",isFinite(m.winPct)?Math.round(m.winPct*100)+"%":"—",`${plural(m.wins,"ganada","ganadas")} · ${plural(m.losses,"perdida","perdidas")}`)}
+      ${st("Resultado",resultText(m),m.hasMoney?"según lo que has apuntado en €":"",resCls)}
+      ${st("Cumpliendo tus normas",isFinite(m.followRate)?Math.round(m.followRate*100)+"%":"—","de tus operaciones")}
+    </div>
+    <div class="dots" aria-label="Últimas operaciones">${tr.slice(-40).map(x=>{const o=outcome(x);return `<i class="dot ${o||"none"}" title="${esc((x.asset||"Operación")+" · "+(OUT_LABEL[o]||"sin resultado"))}"></i>`}).join("")}</div>
+    <p class="hint">Cada punto es una operación: verde, ganada; rojo, perdida; gris, sin ganar ni perder.</p>`:`<p class="empty">Aún no has apuntado operaciones en este periodo. Cuando lo hagas, aquí verás cómo vas.</p>`}
+    <div class="stats">${st("Días apuntados",lg.length)}${st("Días perfectos "+help("Días en los que cumpliste todas tus normas."),clean)}</div>
+  </section>
+  ${topR||topE?`<section class="card"><div class="card-h"><span class="when">Para mejorar</span><h2>Lo que más te cuesta</h2></div><ul class="plainlist">
+    ${topR?`<li>La norma que más te saltas: <b>${esc(ruleText(topR[0]))}</b> (${topR[1]} ${topR[1]>1?"veces":"vez"})</li>`:""}
+    ${topE?`<li>El fallo que más repites: <b>${esc(ERR_LABEL[topE[0]]||topE[0])}</b> (${topE[1]} ${topE[1]>1?"veces":"vez"})</li>`:""}</ul>
+    <p class="hint">Trabajar en una sola cosa cada semana es la forma más rápida de mejorar.</p></section>`:""}
+  <section class="card"><p class="hint" style="margin:0">Al principio lo importante no es ganar, sino ser constante y cumplir tus normas. Los resultados llegan después.</p></section>`;
+}
 function viewCal(){
   const [Y,M]=S.month.split("-").map(Number);
   const first=new Date(Y,M-1,1,12),days=new Date(Y,M,0).getDate(),lead=(first.getDay()+6)%7;
@@ -1099,21 +1242,21 @@ function viewCal(){
   let mR=0,mTr=0,mLog=0,mClean=0,mBroken=0;
   for(let dd=1;dd<=days;dd++){
     const date=Y+"-"+pad(M)+"-"+pad(dd),d=S.days[date],logged=isLogged(date),pd=diffDays(start,date)+1;
-    const r=logged?dayR(d):null,br=logged?brokenCount(d):0;
+    const sc=logged?dayScore(d):null,r=sc?sc.v:null,br=logged?brokenCount(d):0;
     if(logged){mLog++;mTr+=(d.trades||[]).length;if(r!=null)mR+=r;if(isClean(date))mClean++;if(br)mBroken++}
     let cls="cell";if(date===today)cls+=" today";
     if(logged)cls+=r>0?" w":r<0?" l":" flat";else if(date<start)cls+=" pre";else if(date<=today)cls+=" miss";
     const icons=logged?[(d.trades||[]).length?(d.trades.length+" op."):(d.noTrade?"sin operar":""),(d.media||[]).length?"📷 "+d.media.length:"",(d.study||[]).length?"estudio":""].filter(Boolean).join(" · "):"";
     cells+=`<button type="button" class="${cls}" data-act="openDay" data-date="${date}" aria-label="${esc(fmtLong(date))}">
-      ${br?`<span class="flag" title="Norma rota"></span>`:""}<span class="dn">${dd}</span>${pd>=1&&date<=today?`<span class="pd">D${pd}</span>`:""}
-      <span class="ic">${esc(icons)}</span><span class="rv">${logged?(r!=null?fmtR(r):(isClean(date)?"✓":"·")):""}</span></button>`;
+      ${br?`<span class="flag" title="No cumpliste alguna norma"></span>`:""}<span class="dn">${dd}</span>${pd>=1&&date<=today?`<span class="pd">D${pd}</span>`:""}
+      <span class="ic">${esc(icons)}</span><span class="rv">${logged?(sc?sc.txt:(isClean(date)?"✓":"·")):""}</span></button>`;
   }
   return `<section class="card">
    <div class="monthbar"><button class="btn sm" data-act="prevMonth" aria-label="Mes anterior">←</button><h2>${MESES[M-1]} ${Y}</h2><button class="btn sm" data-act="nextMonth" aria-label="Mes siguiente">→</button>
    <button class="btn sm ghost" data-act="thisMonth">Este mes</button></div>
-   <div class="msum"><span>Resultado <b style="color:${rcolor(mR)}">${mTr?fmtR(mR):"0R"}</b></span><span>Operaciones <b>${mTr}</b></span><span>Días registrados <b>${mLog}</b></span><span>Días limpios <b>${mClean}</b></span><span>Días con normas rotas <b>${mBroken}</b></span></div>
+   ${(()=>{const mm=metrics(allTrades(Y+"-"+pad(M)+"-01",Y+"-"+pad(M)+"-31"));const v=mm.hasMoney?mm.money:mm.nr?mm.total:0;return `<div class="msum"><span>Resultado <b style="color:${rcolor(v)}">${resultText(mm)}</b></span><span>Operaciones <b>${mTr}</b></span><span>Días apuntados <b>${mLog}</b></span><span>Días perfectos <b>${mClean}</b></span><span>Días sin cumplir alguna norma <b>${mBroken}</b></span></div>`})()}
    <div class="cal">${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(w=>`<div class="wd">${w}</div>`).join("")}${cells}</div>
-   <div class="legend"><span><i style="background:var(--win-soft)"></i>Día en positivo</span><span><i style="background:var(--loss-soft)"></i>Día en negativo</span><span><i style="background:var(--surface2)"></i>Registrado sin resultado</span><span><i style="border-style:dashed"></i>Sin registrar</span><span><i style="background:var(--loss);border-radius:50%;border:0"></i>Norma rota</span></div>
+   <div class="legend"><span><i style="background:var(--win-soft)"></i>Día en positivo</span><span><i style="background:var(--loss-soft)"></i>Día en negativo</span><span><i style="background:var(--surface2)"></i>Apuntado sin resultado</span><span><i style="border-style:dashed"></i>Sin apuntar</span><span><i style="background:var(--loss);border-radius:50%;border:0"></i>No cumpliste alguna norma</span></div>
    <p class="hint">Toca un día para abrir o completar su registro.</p>
   </section>`;
 }
@@ -1397,30 +1540,30 @@ function viewLearn(){
   const all=lessons(),tagCount={};all.forEach(l=>(l.tags||[]).forEach(t=>tagCount[t]=(tagCount[t]||0)+1));
   const list=S.learnTag?all.filter(l=>(l.tags||[]).includes(S.learnTag)):all;
   const mins=all.reduce((a,l)=>a+(num(l.min)||0),0),imp=importableStudy();
-  let h=`<!--part:lecciones--><section class="card"><div class="card-h"><span class="when">Formación</span><h2>Lo que voy aprendiendo</h2><span class="aside">${all.length} lecci${all.length===1?"ón":"ones"} · ${Math.floor(mins/60)} h ${mins%60} min</span></div>
-   <p class="hint">Apunta cada vídeo del bootcamp: lo que explica con tus palabras, cómo lo aplicas y qué idea te da para la app. Cuando termines el curso, lo analizamos todo juntos para mejorar la app.</p>
-   ${Object.keys(tagCount).length?`<div class="chips"><button type="button" class="chipbtn tagf" data-act="learnTag" data-v="" aria-pressed="${!S.learnTag}">Todas</button>${LEARN_TAGS.filter(t=>tagCount[t]).map(t=>`<button type="button" class="chipbtn tagf" data-act="learnTag" data-v="${esc(t)}" aria-pressed="${S.learnTag===t}">${esc(t)} · ${tagCount[t]}</button>`).join("")}</div>`:""}
-   <div class="row"><button type="button" class="btn primary" data-act="addLesson">Nueva lección</button>${imp.length?`<button type="button" class="btn" data-act="importStudy">Traer ${imp.length} vídeo${imp.length>1?"s":""} de mi registro diario</button>`:""}</div>
+  let h=`<!--part:lecciones--><section class="card"><div class="card-h"><span class="when">Aprender</span><h2>Mis apuntes</h2><span class="aside">${all.length} lecci${all.length===1?"ón":"ones"} · ${Math.floor(mins/60)} h ${mins%60} min</span></div>
+   <p class="hint">Apunta lo que aprendes en vídeos, cursos o libros, con tus palabras, para no olvidarlo y poder repasarlo.</p>
+   ${ADV()&&Object.keys(tagCount).length?`<div class="chips"><button type="button" class="chipbtn tagf" data-act="learnTag" data-v="" aria-pressed="${!S.learnTag}">Todas</button>${LEARN_TAGS.filter(t=>tagCount[t]).map(t=>`<button type="button" class="chipbtn tagf" data-act="learnTag" data-v="${esc(t)}" aria-pressed="${S.learnTag===t}">${esc(t)} · ${tagCount[t]}</button>`).join("")}</div>`:""}
+   <div class="row"><button type="button" class="btn primary" data-act="addLesson">Nuevo apunte</button>${imp.length?`<button type="button" class="btn" data-act="importStudy">Traer ${imp.length} vídeo${imp.length>1?"s":""} de mi registro diario</button>`:""}</div>
   </section>`;
-  if(!all.length)h+=`<section class="card"><p class="empty">Aún no has apuntado ninguna lección. Pulsa «Nueva lección» cuando termines el próximo vídeo.</p></section>`;
+  if(!all.length)h+=`<section class="card"><p class="empty">Aún no tienes apuntes. Pulsa «Nuevo apunte» cuando veas tu próximo vídeo o leas algo que quieras recordar.</p></section>`;
   h+=list.map(l=>{
     const open=S.learnOpen===l.id,k=l.id+".";
-    const head=`<button type="button" class="thread-h" data-act="openLesson" data-id="${l.id}" aria-expanded="${open}">${l.num?`<span class="mono" style="color:var(--muted)">#${esc(l.num)}</span>`:""}<h3>${esc(l.title||"Lección sin título")}</h3><span class="meta">${esc([l.course,l.date?fmtDM(l.date):"",l.min?l.min+" min":"",l.level].filter(Boolean).join(" · "))}</span></button>`;
+    const head=`<button type="button" class="thread-h" data-act="openLesson" data-id="${l.id}" aria-expanded="${open}">${l.num?`<span class="mono" style="color:var(--muted)">#${esc(l.num)}</span>`:""}<h3>${esc(l.title||"Apunte sin título")}</h3><span class="meta">${esc([l.course,l.date?fmtDM(l.date):"",l.min?l.min+" min":"",l.level].filter(Boolean).join(" · "))}</span></button>`;
     if(!open)return `<div class="thread">${head}${(l.tags||[]).length?`<div class="chips" style="padding:0 16px 14px">${l.tags.map(t=>`<span class="gt">${esc(t)}</span>`).join("")}</div>`:""}</div>`;
     return `<div class="thread">${head}<div class="thread-b">
-      <div class="grid">${fld("Curso",txt(k+"course",l.course,"Ej.: Bootcamp TJR V2","data-lk"))}${fld("Nº de vídeo",txt(k+"num",l.num,"1","data-lk",'inputmode="numeric"'))}${fld("Fecha",`<input type="date" data-lk="${k}date" value="${esc(l.date)}">`)}${fld("Minutos",txt(k+"min",l.min,"25","data-lk",'inputmode="numeric"'))}</div>
-      ${fld("Título",txt(k+"title",l.title,"Ej.: Velas japonesas y dojis","data-lk"))}
+      <div class="grid">${ADV()?fld("Curso",txt(k+"course",l.course,"Ej.: Bootcamp TJR V2","data-lk"))+fld("Nº de vídeo",txt(k+"num",l.num,"1","data-lk",'inputmode="numeric"')):""}${fld("Fecha",`<input type="date" data-lk="${k}date" value="${esc(l.date)}">`)}${fld("Minutos",txt(k+"min",l.min,"25","data-lk",'inputmode="numeric"'))}</div>
+      ${fld("¿Qué has visto o leído?",txt(k+"title",l.title,"Ej.: vídeo sobre velas japonesas","data-lk"))}
       ${fld("Enlace",`<input type="url" data-lk="${k}url" value="${esc(l.url)}" placeholder="https://…">`)}
-      <div class="field"><span>¿Para qué nivel es este contenido? (servirá para adaptar la app a cada usuario)</span><div class="seg" role="group">${LEARN_LEVELS.map(v=>`<button type="button" data-act="lessonLevel" data-id="${l.id}" data-v="${v}" aria-pressed="${l.level===v}">${v}</button>`).join("")}</div></div>
-      <div class="field"><span>Temas</span><div class="chips">${LEARN_TAGS.map(t=>`<button type="button" class="chipbtn tagf" data-act="lessonTag" data-id="${l.id}" data-v="${esc(t)}" aria-pressed="${(l.tags||[]).includes(t)}">${esc(t)}</button>`).join("")}</div></div>
-      ${fld("Conceptos clave (con tus palabras)",area(k+"concepts",l.concepts,"Qué explica el vídeo, como si se lo contaras a un amigo","data-lk"))}
-      ${fld("Cómo lo aplico en mi trading",area(k+"apply",l.apply,"Qué cambia en mi análisis, mis entradas o mis normas","data-lk"))}
-      ${fld("Ejercicio o tarea del vídeo",area(k+"exercise",l.exercise,"Ej.: encontrar 10 dojis en el gráfico","data-lk"))}
+      ${ADV()?`<div class="field"><span>¿Para qué nivel es este contenido? (servirá para adaptar la app a cada usuario)</span><div class="seg" role="group">${LEARN_LEVELS.map(v=>`<button type="button" data-act="lessonLevel" data-id="${l.id}" data-v="${v}" aria-pressed="${l.level===v}">${v}</button>`).join("")}</div></div>
+      <div class="field"><span>Temas</span><div class="chips">${LEARN_TAGS.map(t=>`<button type="button" class="chipbtn tagf" data-act="lessonTag" data-id="${l.id}" data-v="${esc(t)}" aria-pressed="${(l.tags||[]).includes(t)}">${esc(t)}</button>`).join("")}</div></div>`:""}
+      ${fld("¿Qué he aprendido? (con tus palabras)",area(k+"concepts",l.concepts,"Como si se lo contaras a un amigo","data-lk"))}
+      ${fld("¿Cómo lo voy a usar?",area(k+"apply",l.apply,"Qué vas a hacer distinto cuando operes","data-lk"))}
+      ${ADV()?fld("Ejercicio o tarea del vídeo",area(k+"exercise",l.exercise,"Ej.: encontrar 10 dojis en el gráfico","data-lk")):""}
       ${fld("Dudas",area(k+"questions",l.questions,"Lo que no he entendido del todo","data-lk"))}
       ${String(l.questions||"").trim()&&S.sample?`<div class="row"><button type="button" class="btn sm" data-act="askLesson" data-id="${l.id}">Preguntar mis dudas al mentor</button></div>`:""}
-      ${fld("Idea para la app",area(k+"appIdea",l.appIdea,"¿Cómo podría la app enseñar esto o ayudar a aplicarlo a cada persona?","data-lk"))}
+      ${ADV()?fld("Idea para la app",area(k+"appIdea",l.appIdea,"¿Cómo podría la app enseñar esto o ayudar a aplicarlo a cada persona?","data-lk")):""}
       <div class="field"><span>Capturas</span>${mediaGrid(l.media||[],"learn",k+"media",true)}</div>
-      <div class="row">${uploader("learn",k+"media","Añadir capturas",true)}<button type="button" class="btn sm ghost danger" style="margin-left:auto" data-act="delLesson" data-id="${l.id}">${S.confirm==="lesson."+l.id?"¿Borrar lección? Sí":"Borrar lección"}</button></div>
+      <div class="row">${uploader("learn",k+"media","Añadir capturas",true)}<button type="button" class="btn sm ghost danger" style="margin-left:auto" data-act="delLesson" data-id="${l.id}">${S.confirm==="lesson."+l.id?"¿Borrar apunte? Sí":"Borrar apunte"}</button></div>
     </div></div>`;
   }).join("");
   const fromLessons=all.filter(l=>String(l.appIdea||"").trim());
@@ -1495,7 +1638,7 @@ function viewMetas(){
 }
 
 /* ---------- tablero de sueños ---------- */
-const TAG_NAMES={R:"Rentable",L:"Libertad",M:"Millonario"};
+const TAG_NAMES={R:"Rentable",L:"Libertad",M:"Dinero"};
 function visionCard(){
   const V=S.plan.vision;
   return `<section class="card"><div class="card-h"><span class="when">Lo que quiero</span><h2>Mi tablero de sueños</h2><span class="aside">${V.length} imagen${V.length===1?"":"es"}</span></div>
@@ -1512,12 +1655,12 @@ function visionCard(){
 /* ---------- mi camino ---------- */
 function viewRoad(){
   const R=roadState(),pct=Math.round(R.done/R.total*100),nx=R.next[0];
-  const tagRow=tags=>`<span class="gtags">${[...tags].map(t=>`<span class="gt gt-${t}">${t==="R"?"Rentable":t==="L"?"Libertad":"Millonario"}</span>`).join("")}</span>`;
+  const tagRow=tags=>`<span class="gtags">${[...tags].map(t=>`<span class="gt gt-${t}">${TAG_NAMES[t]}</span>`).join("")}</span>`;
   let h=`<section class="card road-top"><div class="card-h"><span class="when">De tus metas a tu día a día</span><h2>Mi camino</h2><span class="aside">${R.done} de ${R.total} pasos</span></div>
    <div class="road-pct"><span class="num">${pct}%</span><div class="bar ${pct>=100?"done":""}" style="flex:1"><i style="width:${pct}%"></i></div></div>
    ${nx?`<div class="goalband"><b>Tu siguiente paso:</b> ${esc(nx.text)}${nx.label?` <span class="mono" style="font-size:12px">· ${esc(nx.label)}</span>`:""}</div>`:`<div class="goalband"><b>Has completado todo el camino.</b></div>`}
-   <div class="goalcards">${["R","L","M"].map(t=>{const p=R.tagTot[t]?Math.round(R.tagDone[t]/R.tagTot[t]*100):0;return `<div class="goalcard gc-${t}"><span class="g-lbl">${t==="R"?"Meta · Rentable":t==="L"?"Meta · Libertad":"Meta · Millonario"}</span><b>${esc(goalLabel(t))}</b><div class="bar"><i style="width:${p}%"></i></div><span class="hint">${R.tagDone[t]} de ${R.tagTot[t]} pasos · ${p}%</span></div>`}).join("")}</div>
-   <p class="hint">Los pasos con barra avanzan solos con lo que registras cada día (operaciones, rachas, estudio, revisiones). Los que tienen casilla los marcas tú cuando los consigas. Las fechas son orientativas: cada fase se pasa por resultados, no por calendario.</p>
+   <div class="goalcards">${["R","L","M"].map(t=>{const p=R.tagTot[t]?Math.round(R.tagDone[t]/R.tagTot[t]*100):0;return `<div class="goalcard gc-${t}"><span class="g-lbl">Meta · ${TAG_NAMES[t]}</span><b>${esc(goalLabel(t))}</b><div class="bar"><i style="width:${p}%"></i></div><span class="hint">${R.tagDone[t]} de ${R.tagTot[t]} pasos · ${p}%</span></div>`}).join("")}</div>
+   <p class="hint">Es el camino de alguien que empieza hasta que vive del trading, paso a paso. Los pasos con barra avanzan solos con lo que apuntas cada día; los que tienen casilla los marcas tú. Las fechas son orientativas: cada fase se pasa cuando lo consigues, no por tiempo.</p>
   </section>`;
   h+=R.P.map(p=>{
     const open=p.done||p.cur||p.i===R.cur+1||S.roadOpen[p.i];
@@ -1540,53 +1683,55 @@ function viewRoad(){
 /* ---------- plan ---------- */
 function viewPlan(){
   const p=S.plan,ph=phases(),all=allTrades(),g=p.goals;
-  const longPh=["Ej.: Soy un trader rentable y consistente","Ej.: Vivo de mi trading","Ej.: Tengo libertad para trabajar desde donde quiero"];
+  const longPh=["Ej.: Gano un segundo sueldo con el trading","Ej.: Tengo libertad para trabajar desde donde quiero","Ej.: Soy un trader constante y rentable"];
   const shortPh=["Ej.: Completo 50 operaciones de backtesting de mi setup","Ej.: Registro 21 días seguidos en la bitácora","Ej.: Paso 10 días seguidos sin romper normas"];
   return `<!--part:metas--><section class="card"><div class="card-h"><span class="when">Hacia dónde voy</span><h2>Mis metas</h2><button type="button" class="btn sm aside" data-open-goals>Ver como aviso</button></div>
    <p class="hint">Escríbelas en presente, como si ya las hubieras conseguido. Cada vez que abras la bitácora te saldrán en un aviso para leerlas en voz alta.</p>
-   <h3 class="sub">3 metas a largo plazo</h3>
+   <h3 class="sub">Tus 3 metas</h3>
    ${g.long.map((x,i)=>fld("Meta "+(i+1),txt("goals.long."+i,x,longPh[i],"data-pk"))).join("")}
    <p class="hint">Los pasos para llegar a ellas están en <button type="button" class="btn sm" data-act="goRoad">Mi camino</button></p>
    <label class="row hint" style="gap:6px"><input type="checkbox" data-pk="goals.showAlways" ${g.showAlways?"checked":""}> Mostrar el aviso cada vez que abro la bitácora (si lo desactivas, solo sale hasta que las leas cada día)</label>
   </section>
-  <!--part:sistema--><section class="card"><div class="card-h"><span class="when">Tu sistema</span><h2>Plan de trading</h2></div>
+  <!--part:sistema--><section class="card"><div class="card-h"><span class="when">Cómo quieres usar la app</span><h2>Modo</h2></div>
+   <div class="modes">
+    <button type="button" class="modebtn" data-act="setMode" data-v="simple" aria-pressed="${!ADV()}"><b>Sencillo</b><span>Lo justo para empezar, sin palabras técnicas. Recomendado.</span></button>
+    <button type="button" class="modebtn" data-act="setMode" data-v="advanced" aria-pressed="${ADV()}"><b>Avanzado</b><span>Precios de entrada y stop, resultado en R, estadísticas detalladas, revisión semanal y estrategia completa.</span></button>
+   </div></section>
+  <section class="card"><div class="card-h"><span class="when">Tu forma de operar</span><h2>Ajustes</h2></div>
    <div class="grid">
-    ${fld("Fecha de inicio (día 1)",`<input type="date" data-pk="startDate" value="${esc(p.startDate)}">`)}
-    ${fld("Mercado",txt("market",p.market,"Forex, índices, cripto…","data-pk"))}
-    ${fld("Activos que opero",txt("instruments",p.instruments,"EURUSD, NAS100","data-pk"))}
-    ${fld("Temporalidades",txt("timeframe",p.timeframe,"H1 contexto · M5 entrada","data-pk"))}
-    ${fld("Horario de operativa",txt("session",p.session,"09:00–11:30","data-pk"))}
-    ${fld("Capital de la cuenta",txt("capital",p.capital,"","data-pk",'inputmode="decimal"'))}
-    ${fld("Riesgo por operación (%)",txt("riskPct",p.riskPct,"0.5","data-pk",'inputmode="decimal"'))}
-    ${fld("Pérdida máxima diaria",txt("maxDailyLoss",p.maxDailyLoss,"2R","data-pk"))}
-    ${fld("Máximo de operaciones al día",txt("maxTrades",p.maxTrades,"2","data-pk",'inputmode="numeric"'))}
+    ${fld("Día en que empezaste",`<input type="date" data-pk="startDate" value="${esc(p.startDate)}">`)}
+    ${fld("¿Qué operas?",txt("market",p.market,"Ej.: divisas, oro, Nasdaq, Bitcoin…","data-pk"))}
+    ${fld("¿En qué horario?",txt("session",p.session,"Ej.: de 9:00 a 11:30","data-pk"))}
+    ${fld("Máximo de operaciones al día",txt("maxTrades",p.maxTrades,"Ej.: 2","data-pk",'inputmode="numeric"'))}
+    ${ADV()?fld("Activos concretos",txt("instruments",p.instruments,"EURUSD, NAS100","data-pk"))+fld("Temporalidades",txt("timeframe",p.timeframe,"H1 contexto · M5 entrada","data-pk"))+fld("Capital de la cuenta",txt("capital",p.capital,"","data-pk",'inputmode="decimal"'))+fld("Riesgo por operación (%)",txt("riskPct",p.riskPct,"0.5","data-pk",'inputmode="decimal"'))+fld("Pérdida máxima diaria",txt("maxDailyLoss",p.maxDailyLoss,"2R","data-pk")):""}
    </div>
-   ${fld("Por qué hago esto",area("why",p.why,"Tu motivo real. Léelo antes de cada sesión.","data-pk"))}
+   ${fld("¿Por qué haces esto?",area("why",p.why,"Tu motivo de verdad. Te ayudará en los días malos.","data-pk"))}
   </section>
-  <!--part:playbook--><section class="card"><div class="card-h"><span class="when">Playbook</span><h2>Mis setups</h2><span class="aside">${p.playbook.length} setup${p.playbook.length===1?"":"s"}</span></div>
-   <p class="hint">Una ficha por setup con condiciones que se puedan comprobar con un sí o un no. En cada operación marcarás cuáles se cumplían. Los dos de ejemplo son genéricos: cámbialos por tu estrategia.</p>
+  <!--part:playbook--><section class="card"><div class="card-h"><span class="when">Tu forma de entrar</span><h2>Mi estrategia</h2>${p.playbook.length?`<span class="aside">${p.playbook.length}</span>`:""}</div>
+   <p class="hint">Tu estrategia es lo que tiene que pasar en el gráfico para que entres. Escríbela con tus palabras; si todavía no tienes una, no pasa nada: ve apuntando lo que aprendas. ${help("Tener las condiciones escritas evita entrar por impulso. Si no se cumplen todas, no entras.")}</p>
+   ${p.playbook.length?"":`<p class="empty">Aún no has escrito ninguna estrategia.</p>`}
    ${p.playbook.map((s,i)=>{const sm=metrics(all.filter(t=>t.setup&&t.setup===s.name));const q=`playbook.${i}`;return `<div class="trade">
-     <div class="trade-h"><h3>${esc(s.name||"Setup sin nombre")}</h3><div class="setupstat"><span>Ops. <b>${sm.n}</b></span><span>Acierto <b>${fmtPct(sm.win)}</b></span><span>Expectativa <b style="color:${rcolor(sm.exp||0)}">${isFinite(sm.exp)?sm.exp.toFixed(2)+"R":"—"}</b></span><span>Total <b style="color:${rcolor(sm.total)}">${sm.nr?fmtR(sm.total):"—"}</b></span></div>
+     <div class="trade-h"><h3>${esc(s.name||"Estrategia sin nombre")}</h3><div class="setupstat"><span>Operaciones <b>${sm.n}</b></span><span>Ganadas <b>${isFinite(sm.winPct)?Math.round(sm.winPct*100)+"%":"—"}</b></span>${ADV()?`<span>Expectativa <b style="color:${rcolor(sm.exp||0)}">${isFinite(sm.exp)?sm.exp.toFixed(2)+"R":"—"}</b></span>`:""}<span>Resultado <b>${resultText(sm)}</b></span></div>
        <button class="btn sm ghost danger" style="margin-left:auto" data-act="delSetup" data-i="${i}">${S.confirm==="setup."+i?"¿Borrar? Sí":"Borrar"}</button></div>
-     ${fld("Nombre",txt(q+".name",s.name,"Ej.: Pullback a la media de 20","data-pk"))}
-     ${fld("Condiciones (una por línea)",area(q+".conditions",s.conditions,"Tendencia en H1\nRetroceso a zona\nVela de confirmación","data-pk"))}
-     <div class="grid wide">
+     ${fld("Nombre",txt(q+".name",s.name,"Ej.: Rebote en zona importante","data-pk"))}
+     ${fld("¿Cuándo entro? (una condición por línea)",area(q+".conditions",s.conditions,"El precio llega a una zona que marqué antes\nAparece una vela que confirma el giro","data-pk"))}
+     ${fld("¿Cuándo NO entro?",area(q+".avoid",s.avoid,"Ej.: si hay noticias importantes o si ya he perdido hoy","data-pk"))}
+     ${ADV()?`<div class="grid wide">
       ${fld("Entrada",area(q+".entry",s.entry,"Cuándo y cómo entro","data-pk"))}
       ${fld("Stop loss",area(q+".stop",s.stop,"Dónde va el stop y por qué","data-pk"))}
       ${fld("Objetivo",area(q+".target",s.target,"Dónde cojo beneficios","data-pk"))}
-      ${fld("Cuándo NO operarlo",area(q+".avoid",s.avoid,"Situaciones en las que este setup falla","data-pk"))}
-     </div>
+     </div>`:""}
      ${fld("Notas",area(q+".notes",s.notes,"","data-pk"))}
-     <div class="field"><span>Ejemplos ideales</span>${mediaGrid(s.media,"plan",q+".media")||`<p class="empty">Sube capturas de ejemplos perfectos de este setup para tenerlos de referencia.</p>`}</div>
+     <div class="field"><span>Ejemplos</span>${mediaGrid(s.media,"plan",q+".media")||`<p class="empty">Sube fotos de gráficos donde se vea bien tu estrategia, para tenerlas de referencia.</p>`}</div>
      <div class="row">${uploader("plan",q+".media","Subir ejemplo",true)}</div>
    </div>`}).join("")}
-   <div class="row"><button class="btn primary" data-act="addSetup">Añadir setup</button></div>
+   <div class="row"><button class="btn primary" data-act="addSetup">Añadir estrategia</button></div>
   </section>
-  <!--part:normas--><section class="card"><div class="card-h"><span class="when">Innegociable</span><h2>Mis normas</h2><span class="aside">${p.rules.length} normas</span></div>
-   <p class="hint">Pocas, claras y comprobables con un sí o un no. Cada día las marcarás en tu registro.</p>
-   ${p.rules.map((r,i)=>`<div class="ruleedit">${sel(`rules.${i}.cat`,CATS.includes(r.cat)?CATS:[...CATS,r.cat],r.cat,"data-pk")}${area(`rules.${i}.text`,r.text,"Escribe la norma","data-pk")}<button class="btn sm ghost danger" data-act="delRule" data-i="${i}">${S.confirm==="rule."+i?"¿Borrar? Sí":"Quitar"}</button></div>`).join("")}
+  <!--part:normas--><section class="card"><div class="card-h"><span class="when">Tus reglas</span><h2>Mis normas</h2><span class="aside">${p.rules.length}</span></div>
+   <p class="hint">Reglas sencillas que te protegen de los errores típicos. Mejor pocas y claras, que puedas responder con un sí o un no. Cada día marcarás si las has cumplido.</p>
+   ${p.rules.map((r,i)=>`<div class="ruleedit${ADV()?"":" nocat"}">${ADV()?sel(`rules.${i}.cat`,CATS.includes(r.cat)?CATS:[...CATS,r.cat],r.cat,"data-pk"):""}${area(`rules.${i}.text`,r.text,"Escribe la norma","data-pk")}<button class="btn sm ghost danger" data-act="delRule" data-i="${i}">${S.confirm==="rule."+i?"¿Borrar? Sí":"Quitar"}</button></div>`).join("")}
    <div class="row"><button class="btn primary" data-act="addRule">Añadir norma</button></div>
-   ${fld("Consecuencia si rompo una norma",area("consequence",p.consequence,"Ej.: al día siguiente no opero y hago 20 operaciones de backtesting","data-pk"))}
+   ${fld("¿Qué harás si no cumples una norma?",area("consequence",p.consequence,"Ej.: al día siguiente no opero y repaso qué pasó","data-pk"))}
   </section>`;
 }
 
@@ -1686,6 +1831,10 @@ $("#main").addEventListener("click",async e=>{
     case "ideaStatus":{const x=S.ideas[b.dataset.id];x.status=b.dataset.v;touch("ideas",x.id);render();break}
     case "delIdea":{const id=b.dataset.id;if(confirmStep("idea."+id)){delete S.ideas[id];render();if(S.mode==="db"){try{await S.db.collection("ideas").doc(id).delete()}catch(err){setStatus(errText(err),true)}}else lsSave()}break}
     case "exportWeb":exportForWeb(b);break;
+    case "outcome":{const t=d().trades[i];t.outcome=t.outcome===b.dataset.v?"":b.dataset.v;touchDay(S.date);render();break}
+    case "emo":{const t=d().trades[i];t.emotion=t.emotion===b.dataset.v?"":b.dataset.v;touchDay(S.date);render();break}
+    case "sumPeriod":S.sumPeriod=b.dataset.v;render();break;
+    case "setMode":S.plan.mode=b.dataset.v;touchPlan();S.dayOpen=null;render();setStatus(b.dataset.v==="advanced"?"Modo avanzado activado":"Modo sencillo activado");break;
     case "metasEdit":S.metasEdit=!S.metasEdit;render();window.scrollTo({top:0});break;
     case "sub":S.view=b.dataset.v;S.confirm=null;render();window.scrollTo({top:0});break;
     case "dayOpen":{const k=b.dataset.k;S.dayOpen=S.dayOpen===k?"none":k;render();if(S.dayOpen===k){const el=document.getElementById("acc-"+k);if(el&&el.scrollIntoView)el.scrollIntoView({block:"start",behavior:"smooth"})}break}
@@ -1700,8 +1849,14 @@ $("#main").addEventListener("click",async e=>{
 });
 document.addEventListener("click",e=>{if(e.target.closest("[data-open-goals]"))openGoals()});
 $("#goals").addEventListener("click",e=>{
-  const b=e.target.closest("[data-g]");if(!b)return;
-  const a=b.dataset.g;
+  const b=e.target.closest("[data-g],[data-w]");if(!b)return;
+  const a=b.dataset.g||b.dataset.w;
+  if(a==="next"){openWelcome((S.welStep||0)+1);return}
+  if(a==="back"){openWelcome(Math.max(0,(S.welStep||0)-1));return}
+  if(a==="skip"){finishWelcome();return}
+  if(a==="level"){S.wel=S.wel||{markets:[]};S.wel.level=b.dataset.v;S.wel.mode=b.dataset.m;openWelcome(2);return}
+  if(a==="market"){S.wel=S.wel||{markets:[]};const v=b.dataset.v,k=S.wel.markets.indexOf(v);if(k>=0)S.wel.markets.splice(k,1);else S.wel.markets.push(v);openWelcome(2);return}
+  if(a==="done"){finishWelcome();return}
   if(a==="read"){const t=todayStr(),prev=S.ritual[t];S.ritual[t]={date:t,read:true,at:Date.now(),count:((prev&&prev.count)||0)+1};touch("ritual",t);closeGoals();render()}
   else if(a==="write"){closeGoals();S.view="metas";render();window.scrollTo({top:0})}
   else closeGoals();
