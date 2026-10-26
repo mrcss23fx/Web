@@ -1,0 +1,1751 @@
+<title>Bitácora de Trading</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: terminal premium en una columna. Oscuro con dorado (riqueza) y velas verde/rojo como detalle; versión clara porcelana */
+:root{
+  --bg:#070A12; --bg-glow1:rgba(217,180,106,.13); --bg-glow2:rgba(96,124,255,.12); --gridline:rgba(255,255,255,.028);
+  --surface:#0E1422; --surface-hi:#131B2D; --surface2:#141C2E; --input:#0A0F1B; --line:#1F2940; --line-strong:#2C3956;
+  --fg:#EEF1F7; --muted:#8C97B1; --accent:#D8B36A; --accent-2:#F2D9A2; --accent-fg:#1A1306; --accent-soft:rgba(216,179,106,.12);
+  --sapphire:#7C95FF; --win:#3DD68C; --win-soft:rgba(61,214,140,.13); --loss:#FF6B6B; --loss-soft:rgba(255,107,107,.13);
+  --warn:#F2B64B; --warn-soft:rgba(242,182,75,.13); --on-sem:#06100B;
+  --shadow:0 1px 0 rgba(255,255,255,.035) inset,0 18px 40px -24px rgba(0,0,0,.75); --candle-op:.5;
+  --f-display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:16px; color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#F2F3F7; --bg-glow1:rgba(169,124,43,.10); --bg-glow2:rgba(70,98,220,.08); --gridline:rgba(14,20,36,.035);
+  --surface:#FFFFFF; --surface-hi:#FFFFFF; --surface2:#F6F7FA; --input:#F7F8FB; --line:#E1E4EC; --line-strong:#CBD1DE;
+  --fg:#0D1322; --muted:#5A6480; --accent:#8C6820; --accent-2:#C59A45; --accent-fg:#FFFFFF; --accent-soft:rgba(169,124,43,.10);
+  --sapphire:#3F5BD6; --win:#0F8A57; --win-soft:rgba(15,138,87,.10); --loss:#D23B3B; --loss-soft:rgba(210,59,59,.09);
+  --warn:#A8680E; --warn-soft:rgba(168,104,14,.10); --on-sem:#FFFFFF;
+  --shadow:0 1px 2px rgba(13,19,34,.04),0 14px 34px -22px rgba(13,19,34,.22); --candle-op:.32; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#F2F3F7; --bg-glow1:rgba(169,124,43,.10); --bg-glow2:rgba(70,98,220,.08); --gridline:rgba(14,20,36,.035);
+  --surface:#FFFFFF; --surface-hi:#FFFFFF; --surface2:#F6F7FA; --input:#F7F8FB; --line:#E1E4EC; --line-strong:#CBD1DE;
+  --fg:#0D1322; --muted:#5A6480; --accent:#8C6820; --accent-2:#C59A45; --accent-fg:#FFFFFF; --accent-soft:rgba(169,124,43,.10);
+  --sapphire:#3F5BD6; --win:#0F8A57; --win-soft:rgba(15,138,87,.10); --loss:#D23B3B; --loss-soft:rgba(210,59,59,.09);
+  --warn:#A8680E; --warn-soft:rgba(168,104,14,.10); --on-sem:#FFFFFF;
+  --shadow:0 1px 2px rgba(13,19,34,.04),0 14px 34px -22px rgba(13,19,34,.22); --candle-op:.32; color-scheme:light}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0;font-stretch:100%}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{padding-block:20px 14px;display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap}
+.daybig{display:flex;align-items:baseline;gap:10px;line-height:.85}
+.daybig .lbl{font-family:var(--f-display);font-stretch:75%;font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.daybig .n{font-family:var(--f-display);font-stretch:125%;font-weight:800;font-size:clamp(48px,11vw,84px);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.top-meta{flex:1;min-width:240px;display:grid;gap:12px}
+.since{color:var(--muted);font-size:14px}
+.kpis{display:flex;flex-wrap:wrap;gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;display:flex;gap:8px;align-items:baseline;font-size:13px}
+.kpi b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:14px}
+.kpi.pos b{color:var(--win)} .kpi.neg b{color:var(--loss)}
+
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.tabs .wrap{display:flex;align-items:center;gap:2px;overflow-x:auto}
+.tab{background:none;border:0;padding:12px 11px 10px;font-family:var(--f-display);font-weight:650;font-size:15px;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.status{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap;padding-left:12px}
+.status.err{color:var(--loss)}
+
+main{padding-block:20px 80px;display:grid;gap:16px}
+.banner{border-radius:var(--r);padding:12px 14px;font-size:14px;background:var(--warn-soft);color:var(--fg);border:1px solid var(--warn)}
+.goalband{border-radius:8px;padding:10px 12px;background:var(--accent-soft);font-size:14px}
+.goalband b{font-family:var(--f-display);letter-spacing:.02em}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;gap:14px;min-width:0}
+.card-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.card-h h2{font-size:19px;font-weight:700}
+.card-h .when{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.card-h .aside{margin-left:auto;font-size:13px;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+h3.sub{font-size:15px;font-weight:700}
+
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.grid.wide{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.field{display:grid;gap:5px;min-width:0}
+.field>span{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+input[type=text],input[type=date],input[type=url],select,textarea{width:100%;font:inherit;color:var(--fg);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0}
+textarea{min-height:76px;resize:vertical;field-sizing:content}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+
+.btn{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:8px 14px;font-weight:600;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.ghost{background:none;border-color:transparent;color:var(--muted)}
+.btn.danger{color:var(--loss)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface2);flex-wrap:wrap}
+.seg button{border:0;background:none;padding:7px 12px;font-size:14px;font-weight:500}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.seg.ok-bad button.on-ok{background:var(--win);color:var(--on-sem)}
+.seg.ok-bad button.on-bad{background:var(--loss);color:var(--on-sem)}
+.seg.ok-bad button.on-mid{background:var(--warn);color:var(--on-sem)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chipbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:13px}
+.chipbtn[aria-pressed="true"]{background:var(--loss-soft);border-color:var(--loss);color:var(--loss);font-weight:600}
+
+.datebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.datebar .d{font-family:var(--f-display);font-weight:700;font-size:20px}
+.datebar .d::first-letter{text-transform:uppercase}
+.datebar .tag{font-family:var(--f-mono);font-size:12px;background:var(--accent-soft);color:var(--fg);padding:3px 8px;border-radius:6px}
+
+.rules{display:grid;gap:8px}
+.rule{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface2)}
+.rule.broken{border-color:var(--loss);background:var(--loss-soft)}
+.rule.ok{border-color:color-mix(in srgb,var(--win) 50%,var(--line))}
+.rule .t{min-width:0;font-size:14px}
+.rule .c{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;display:block}
+.callout{border-radius:8px;padding:12px 14px;background:var(--loss-soft);border:1px solid var(--loss);display:grid;gap:8px}
+.callout b{color:var(--loss)}
+@media (max-width:560px){.rule{grid-template-columns:1fr}}
+
+.trade{border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px;background:var(--surface2);border-left-width:4px;min-width:0}
+.trade.w{border-left-color:var(--win)} .trade.l{border-left-color:var(--loss)}
+.trade-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.trade-h h3{font-size:16px}
+.rpill{font-family:var(--f-mono);font-size:13px;padding:3px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--line)}
+.rpill.w{background:var(--win-soft);color:var(--win);border-color:transparent}
+.rpill.l{background:var(--loss-soft);color:var(--loss);border-color:transparent}
+.calc{font-size:12px;color:var(--muted)}
+.daysum{display:flex;gap:18px;flex-wrap:wrap;font-size:14px}
+.daysum b{font-family:var(--f-mono)}
+.conds{display:grid;gap:6px;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--line)}
+.conds label{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.conds input{margin-top:4px}
+.conds .cnt{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+.media{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.media.sm{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
+.mitem{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--surface2);aspect-ratio:4/3;max-width:100%}
+.mitem img,.mitem video{width:100%;height:100%;object-fit:cover;display:block}
+.mitem img{cursor:zoom-in}
+.mitem .x{position:absolute;top:6px;right:6px;background:var(--surface);border:1px solid var(--line);border-radius:6px;font-size:12px;padding:3px 7px}
+.upl{display:inline-flex;align-items:center;gap:8px;position:relative}
+.upl input{position:absolute;width:1px;height:1px;opacity:0}
+.links{display:grid;gap:6px}
+.links a{word-break:break-all;font-size:14px}
+
+.monthbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.monthbar h2{font-size:22px;text-transform:capitalize;min-width:170px}
+.msum{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.msum b{color:var(--fg);font-family:var(--f-mono)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .wd{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;text-align:center;padding-bottom:2px}
+.cell{min-height:88px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:6px 7px;text-align:left;display:flex;flex-direction:column;gap:2px;position:relative;min-width:0}
+.cell.out{background:none;border-style:dashed;opacity:.45}
+.cell.pre{background:none;opacity:.5}
+.cell.miss{border-style:dashed}
+.cell.today{outline:2px solid var(--accent);outline-offset:-2px}
+.cell.w{background:var(--win-soft)} .cell.l{background:var(--loss-soft)} .cell.flat{background:var(--surface2)}
+.cell .dn{font-family:var(--f-mono);font-size:13px;font-weight:600}
+.cell .pd{font-size:10px;color:var(--muted);font-family:var(--f-mono)}
+.cell .rv{font-family:var(--f-mono);font-size:14px;font-weight:600;margin-top:auto}
+.cell.w .rv{color:var(--win)} .cell.l .rv{color:var(--loss)}
+.cell .ic{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .flag{position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;background:var(--loss)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px;border:1px solid var(--line)}
+@media (max-width:560px){.cell{min-height:64px;padding:4px}.cell .pd,.cell .ic{display:none}.cell .rv{font-size:11px}.cal{gap:3px}}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface2);display:grid;gap:2px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);font-weight:600}
+.stat .v{font-family:var(--f-mono);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .s{font-size:12px;color:var(--muted)}
+.v.pos{color:var(--win)} .v.neg{color:var(--loss)}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:600}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+th.n{text-align:right}
+td.wrap{white-space:normal;min-width:180px}
+.chart svg{width:100%;height:auto;display:block}
+.bar{height:8px;border-radius:4px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar.done i{background:var(--win)}
+.plainlist{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+
+.phases{display:grid;gap:10px}
+.phase{border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:10px;background:var(--surface2)}
+.phase.cur{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 1px var(--accent)}
+.phase.done{opacity:.75}
+.phase-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.phase-h h3{font-size:17px}
+.chip{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.chip.cur{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.chip.done{background:var(--win-soft);color:var(--win);border-color:transparent}
+.goal{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px;align-items:center}
+.goal .bar{grid-column:1/-1}
+.goal .gv{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+
+.ruleedit{display:grid;grid-template-columns:130px 1fr auto;gap:8px;align-items:start}
+@media (max-width:560px){.ruleedit{grid-template-columns:1fr auto}.ruleedit select{grid-column:1/-1}}
+.empty{color:var(--muted);font-size:14px;padding:6px 0;margin:0}
+.setupstat{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.setupstat b{font-family:var(--f-mono);color:var(--fg)}
+
+/* Mentor y revisión */
+.md{font-size:15px;line-height:1.6;display:grid;gap:8px;min-width:0;overflow-wrap:anywhere}
+.md p,.md ul,.md ol{margin:0}
+.md ul,.md ol{padding-left:20px;display:grid;gap:4px}
+.md h4{font-size:15px;font-weight:700;margin-top:6px}
+.md code{font-family:var(--f-mono);font-size:13px;background:var(--surface2);padding:1px 5px;border-radius:4px}
+.thread{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);min-width:0}
+.thread-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;width:100%;text-align:left;background:none;border:0;padding:14px 16px}
+.thread-h h3{font-size:16px;flex:1;min-width:0;overflow-wrap:anywhere}
+.thread-h .meta{font-size:12px;color:var(--muted)}
+.thread-b{display:grid;gap:12px;padding:0 16px 16px}
+.msg{border-radius:10px;padding:12px 14px;display:grid;gap:8px;min-width:0}
+.msg.user{background:var(--accent-soft);justify-self:end;max-width:min(600px,100%)}
+.msg.ai{background:var(--surface2);border:1px solid var(--line)}
+.msg .who{font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--muted)}
+.msg .body{white-space:pre-wrap;overflow-wrap:anywhere}
+.composer{display:grid;gap:10px;padding:14px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface2)}
+.thinking{color:var(--muted);font-style:italic}
+.review{border:1px solid var(--accent);border-radius:var(--r);padding:16px;background:var(--surface);display:grid;gap:10px}
+
+.vision{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.vtile{margin:0;display:grid;gap:8px;min-width:0}
+.vimg{position:relative;aspect-ratio:4/3;max-width:100%;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--surface2)}
+.vimg img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.vtag{position:absolute;left:8px;bottom:8px;background:var(--surface)}
+.vcap{display:grid;gap:6px;min-width:0}
+.vcap select{width:auto;flex:1}
+.gvision{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.gvision figure{margin:0;position:relative;border-radius:10px;overflow:hidden;aspect-ratio:4/3;max-width:100%;background:var(--surface2)}
+.gvision img{width:100%;height:100%;object-fit:cover;display:block}
+.gvision figcaption{position:absolute;inset:auto 0 0 0;padding:18px 10px 8px;font-size:13px;font-weight:600;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72));line-height:1.3}
+@media (max-width:560px){.gvision{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chipbtn.tagf[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+.ideas{display:grid;gap:10px}
+.idea{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface2);min-width:0}
+.thread-h .mono{flex:none}
+.road-pct{display:flex;align-items:center;gap:14px}
+.road-pct .num{font-family:var(--f-display);font-stretch:125%;font-weight:800;font-size:clamp(40px,9vw,64px);line-height:1;letter-spacing:-.02em}
+.road-pct .bar{height:12px;border-radius:6px}
+.goalcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.goalcard{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface2);display:grid;gap:6px;min-width:0}
+.goalcard b{font-family:var(--f-display);font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+.road-phase{background:var(--surface)}
+.road-phase .phase-h{align-items:center}
+.steps{display:grid}
+.step{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+.step input{margin-top:4px;width:16px;height:16px}
+.sticon{font-family:var(--f-mono);font-size:15px;color:var(--muted);text-align:center;line-height:1.5}
+.step.done .sticon{color:var(--win);font-weight:700}
+.step.done .sttext{color:var(--muted)}
+.stbody{display:grid;gap:5px;min-width:0}
+.sttext{font-size:15px}
+.stprog{display:grid;grid-template-columns:minmax(80px,1fr) auto;gap:10px;align-items:center}
+.stprog .mono{font-size:12px;color:var(--muted)}
+@media (max-width:560px){.stprog{grid-template-columns:1fr}}
+.gtags{display:flex;gap:4px;flex-wrap:wrap}
+.gt{font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface2)}
+.gt-R{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.gt-L{border-color:color-mix(in srgb,var(--win) 45%,var(--line))}
+.gt-M{border-color:color-mix(in srgb,var(--warn) 55%,var(--line))}
+.gc-R .bar i{background:var(--accent)} .gc-L .bar i{background:var(--win)} .gc-M .bar i{background:var(--warn)}
+.kbtn{cursor:pointer;font-weight:600;color:var(--accent)}
+.kbtn:hover{border-color:var(--accent)}
+.gshort{display:grid;gap:8px}
+.gsrow{display:grid;grid-template-columns:auto 22px minmax(0,1fr);gap:8px;align-items:center}
+#goals{position:fixed;inset:0;z-index:40;background:rgba(8,12,20,.62);display:grid;place-items:center;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.gbox{background:var(--surface);color:var(--fg);border-radius:14px;border:1px solid var(--line);max-width:680px;width:100%;padding:24px;display:grid;gap:16px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.g-head{display:grid;gap:2px}
+.gbox h2{font-size:32px;font-stretch:115%;font-weight:800;letter-spacing:-.01em}
+.g-inst{margin:0;font-size:15px;color:var(--muted)}
+.g-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--muted)}
+.g-sec{display:grid;gap:8px}
+.g-long{margin:0;padding-left:26px;display:grid;gap:10px;font-family:var(--f-display);font-size:21px;font-weight:650;line-height:1.3}
+.g-short{margin:0;padding-left:26px;display:grid;gap:4px;font-size:15px}
+.g-short li.done{color:var(--muted);text-decoration:line-through}
+@media (max-width:560px){.gbox{padding:18px}.gbox h2{font-size:26px}.g-long{font-size:18px}}
+.top .status{margin-left:auto;align-self:flex-start;padding-left:0}
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.navin{display:flex;gap:4px}
+.navbtn{flex:1;max-width:170px;display:flex;align-items:center;justify-content:center;gap:8px;background:none;border:0;padding:12px 8px 10px;color:var(--muted);font-family:var(--f-display);font-weight:650;font-size:15px;border-bottom:3px solid transparent}
+.navbtn svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.navbtn:hover{color:var(--fg)}
+.navbtn[aria-current="page"]{color:var(--fg);border-bottom-color:var(--accent)}
+.subnav{display:flex;gap:4px;overflow-x:auto;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;scrollbar-width:none}
+.subnav button{flex:1;white-space:nowrap;border:0;background:none;border-radius:8px;padding:9px 12px;font-weight:600;font-size:14px;color:var(--muted)}
+.subnav button[aria-selected="true"]{background:var(--accent);color:var(--accent-fg)}
+.dayprog{display:flex;align-items:center;gap:12px}
+.dayprog .num{font-family:var(--f-display);font-weight:800;font-size:28px;font-stretch:115%;font-variant-numeric:tabular-nums}
+.dayprog .bar{flex:1;height:10px;border-radius:5px}
+.acc{display:grid;gap:8px}
+.accitem{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0;scroll-margin-top:64px}
+.accitem.open{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.acc-h{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;padding:14px 16px;text-align:left;border-radius:var(--r)}
+.acc-ic{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:13px;font-weight:600;border:1.5px solid var(--line);color:var(--muted)}
+.accitem.done .acc-ic{background:var(--win);border-color:var(--win);color:var(--on-sem)}
+.accitem.warn .acc-ic{background:var(--loss);border-color:var(--loss);color:var(--on-sem)}
+.acc-t{flex:1;min-width:0;display:grid;gap:1px}
+.acc-t b{font-family:var(--f-display);font-size:16px;font-weight:700}
+.acc-t .hint{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chev{color:var(--muted);font-size:14px}
+.accitem.open .chev{transform:rotate(180deg)}
+.acc-b{padding:0 16px 16px;display:grid;gap:14px;min-width:0}
+.acc-f{justify-content:flex-end;border-top:1px solid var(--line);padding-top:12px}
+.acc-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600;margin-top:10px;padding-left:4px}
+.tsum{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);border-left-width:4px;border-radius:var(--r);background:var(--surface2);padding:12px 14px;flex-wrap:wrap}
+.tsum.w{border-left-color:var(--win)} .tsum.l{border-left-color:var(--loss)}
+.tsum:hover{border-color:var(--accent)}
+@media (max-width:640px){
+  .nav{position:fixed;top:auto;bottom:0;left:0;right:0;border-bottom:0;border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+  .navin{gap:0;padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
+  .navbtn{flex-direction:column;gap:3px;font-size:11px;padding:8px 2px;border-bottom:0;border-top:3px solid transparent;font-family:var(--f-body);font-weight:600}
+  .navbtn[aria-current="page"]{border-top-color:var(--accent);color:var(--accent)}
+  main{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  .top .status{width:100%;margin-left:0;order:3}
+  .top{gap:8px 14px;align-items:center;padding-block:14px 10px}
+  .daybig .n{font-size:46px}
+  .daybig .lbl{font-size:16px}
+  .top-meta{flex:1 1 100%;min-width:0;gap:8px}
+  .kpi{padding:4px 10px;font-size:12px}
+  .kpi b{font-size:13px}
+  .datebar .d{flex:1 1 0;min-width:0;font-size:17px;text-align:center}
+}
+#lightbox{position:fixed;inset:0;z-index:50;background:rgba(5,8,14,.86);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+#lightbox img{max-width:100%;max-height:90vh;border-radius:8px}
+#lightbox button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));background:#fff;color:#111;border:0;border-radius:8px;padding:8px 12px;font-weight:600}
+
+/* ===== Premium ===== */
+body{background:
+  radial-gradient(1100px 520px at 88% -8%,var(--bg-glow1),transparent 62%),
+  radial-gradient(900px 480px at -12% 6%,var(--bg-glow2),transparent 60%),
+  linear-gradient(var(--gridline) 1px,transparent 1px) 0 0/100% 56px,
+  linear-gradient(90deg,var(--gridline) 1px,transparent 1px) 0 0/56px 100%,
+  var(--bg);background-attachment:fixed;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{letter-spacing:-.015em}
+::selection{background:var(--accent);color:var(--accent-fg)}
+.top{position:relative;overflow:hidden;isolation:isolate}
+.top>*:not(.hero-candles){position:relative;z-index:1}
+.hero-candles{position:absolute;right:0;top:0;bottom:0;width:min(620px,70%);opacity:var(--candle-op);pointer-events:none;z-index:0;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);mask-image:linear-gradient(90deg,transparent,#000 55%)}
+.hero-candles svg{width:100%;height:100%;display:block}
+.daybig .lbl{font-family:var(--f-body);font-weight:600;font-size:13px;letter-spacing:.22em;color:var(--accent)}
+.daybig .n{font-weight:800;letter-spacing:-.05em;background:linear-gradient(180deg,var(--accent-2),var(--accent) 70%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.since{font-size:14px}
+.kpi{background:color-mix(in srgb,var(--surface) 82%,transparent);border-color:var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.kpi b{color:var(--fg)}
+.kbtn{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.status{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.02em}
+.nav{background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border-bottom-color:var(--line)}
+.navbtn{font-family:var(--f-display);font-weight:600;letter-spacing:-.01em}
+.navbtn[aria-current="page"]{color:var(--fg);border-bottom-color:var(--accent);text-shadow:0 0 18px color-mix(in srgb,var(--accent) 35%,transparent)}
+.navbtn[aria-current="page"] svg{stroke:var(--accent)}
+.card,.accitem,.thread,.phase.road-phase{background:linear-gradient(180deg,var(--surface-hi),var(--surface));border-color:var(--line);box-shadow:var(--shadow)}
+.card{border-radius:var(--r)}
+.card-h h2{font-size:21px;font-weight:700}
+.card-h .when,.acc-lbl,.g-lbl{color:var(--accent);letter-spacing:.14em}
+.trade,.stat,.rule,.goalcard,.idea,.conds,.composer,.phase{background:var(--surface2);border-color:var(--line);border-radius:12px}
+input[type=text],input[type=date],input[type=url],select,textarea{background:var(--input);border-color:var(--line);border-radius:10px}
+input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--accent) 70%,transparent)}
+input[type=checkbox]{accent-color:var(--accent)}
+.btn{border-radius:10px;background:var(--surface2);border-color:var(--line-strong);transition:border-color .15s,transform .15s,box-shadow .15s}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:var(--accent-fg);border-color:transparent;box-shadow:0 8px 22px -12px var(--accent)}
+.btn.primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 12px 26px -12px var(--accent)}
+.btn.ghost{background:none;border-color:transparent}
+.seg{border-radius:10px;border-color:var(--line-strong);background:var(--input)}
+.seg button[aria-pressed="true"]{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:var(--accent-fg)}
+.subnav{background:color-mix(in srgb,var(--surface) 85%,transparent);border-color:var(--line);border-radius:14px;backdrop-filter:blur(8px)}
+.subnav button[aria-selected="true"]{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:var(--accent-fg);box-shadow:0 6px 16px -10px var(--accent)}
+.bar{background:var(--input);border-color:var(--line);border-radius:999px}
+.bar i{background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:999px}
+.bar.done i{background:linear-gradient(90deg,var(--win),color-mix(in srgb,var(--win) 60%,#fff))}
+.goalband{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:12px}
+.goalband b{color:var(--accent)}
+.accitem{border-radius:var(--r)}
+.accitem.open{border-color:color-mix(in srgb,var(--accent) 65%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent),0 20px 50px -30px color-mix(in srgb,var(--accent) 60%,transparent)}
+.acc-ic{border-color:var(--line-strong)}
+.accitem.open .acc-ic{border-color:var(--accent);color:var(--accent)}
+.dayprog .num{background:linear-gradient(180deg,var(--accent-2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.road-pct .num{background:linear-gradient(180deg,var(--accent-2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip.cur{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:var(--accent-fg)}
+.phase.cur{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent),var(--shadow)}
+.gt-R{border-color:color-mix(in srgb,var(--win) 55%,var(--line));color:var(--win)}
+.gt-L{border-color:color-mix(in srgb,var(--sapphire) 55%,var(--line));color:var(--sapphire)}
+.gt-M{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));color:var(--accent)}
+.gc-R .bar i{background:var(--win)} .gc-L .bar i{background:var(--sapphire)} .gc-M .bar i{background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.banner{border-radius:12px;background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
+.msg.user{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+.chipbtn{background:var(--surface2);border-color:var(--line-strong)}
+.chipbtn.tagf[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+.cell{border-radius:10px}
+.cell.today{outline-color:var(--accent)}
+table th{letter-spacing:.06em;text-transform:uppercase;font-size:11px}
+.tsum{border-radius:12px}
+/* Metas y sueños */
+.vhero{position:relative;overflow:hidden;border-radius:22px;padding:26px;display:grid;gap:20px;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));
+  background:radial-gradient(700px 300px at 100% 0%,var(--bg-glow1),transparent 70%),linear-gradient(180deg,var(--surface-hi),var(--surface));box-shadow:var(--shadow)}
+.vhead{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.vhead-t{flex:1 1 320px;min-width:0;display:grid;gap:6px}
+.vhead h1{font-size:clamp(28px,5vw,42px);font-weight:800;line-height:1.05;letter-spacing:-.03em}
+.vhead h1 em{font-style:normal;background:linear-gradient(180deg,var(--accent-2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.vmeta{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.vmeta b{color:var(--fg);font-family:var(--f-mono)}
+.bento{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:160px;gap:10px}
+.btile{position:relative;margin:0;border-radius:16px;overflow:hidden;background:var(--surface2);border:1px solid var(--line);min-width:0}
+.btile.big{grid-column:span 2;grid-row:span 2}
+.btile.wide{grid-column:span 2}
+.btile.solo{grid-column:1/-1;grid-row:span 2}
+.btile img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.btile figcaption{position:absolute;inset:auto 0 0 0;padding:34px 16px 14px;background:linear-gradient(180deg,transparent,rgba(4,6,12,.86));color:#fff;font-family:var(--f-display);font-weight:650;font-size:15px;line-height:1.2;letter-spacing:-.01em}
+.btile.solo figcaption,.btile.big figcaption{font-size:clamp(18px,2.6vw,26px);padding:60px 20px 18px}
+.btile .gt{position:absolute;top:10px;left:10px;background:rgba(6,8,14,.55);color:#fff;border-color:rgba(255,255,255,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.btile.empty{display:grid;place-items:center;text-align:center;padding:16px;border-style:dashed;border-color:var(--line-strong);background:repeating-linear-gradient(135deg,transparent 0 12px,var(--gridline) 12px 13px),var(--surface2)}
+.btile.empty b{font-family:var(--f-display);font-size:16px;display:block}
+.btile.empty span{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.btile img{transition:transform .8s cubic-bezier(.2,.7,.2,1)}.btile:hover img{transform:scale(1.05)}}
+@media (max-width:640px){.vhero{padding:18px;border-radius:18px}.bento{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:120px}.btile.wide{grid-column:span 2}}
+.trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.gcard{position:relative;overflow:hidden;border-radius:18px;padding:20px;display:grid;gap:14px;align-content:start;border:1px solid var(--line);background:linear-gradient(180deg,var(--surface-hi),var(--surface));box-shadow:var(--shadow);min-width:0}
+.gcard::after{content:"";position:absolute;right:-60px;top:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,var(--gc-glow),transparent 70%);pointer-events:none}
+.gcard.t-M{--gc:var(--accent);--gc-glow:color-mix(in srgb,var(--accent) 22%,transparent)}
+.gcard.t-L{--gc:var(--sapphire);--gc-glow:color-mix(in srgb,var(--sapphire) 22%,transparent)}
+.gcard.t-R{--gc:var(--win);--gc-glow:color-mix(in srgb,var(--win) 20%,transparent)}
+.gtop{display:flex;align-items:center;gap:12px}
+.gtop .g-lbl{color:var(--gc)}
+.ring{width:60px;height:60px;flex:none;margin-left:auto}
+.ring text{font-family:var(--f-mono);font-size:13px;font-weight:600;fill:var(--fg)}
+.gtext{font-family:var(--f-display);font-size:22px;font-weight:700;line-height:1.18;letter-spacing:-.02em;overflow-wrap:anywhere}
+.gtext.ph{color:var(--muted);font-weight:500;font-size:16px}
+.gfoot{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.gthumbs{display:flex;padding-left:8px}
+.gthumbs img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--surface);margin-left:-8px}
+.why{position:relative;margin:0;padding:26px 26px 22px 64px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(180deg,var(--surface-hi),var(--surface));box-shadow:var(--shadow)}
+.why::before{content:"\201C";position:absolute;left:20px;top:2px;font-family:var(--f-display);font-size:76px;line-height:1;background:linear-gradient(180deg,var(--accent-2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.why p{margin:0;font-family:var(--f-display);font-size:clamp(18px,2.4vw,23px);font-weight:500;line-height:1.35;letter-spacing:-.01em}
+.why span{display:block;margin-top:10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+/* aviso de metas */
+.gbox{background:linear-gradient(180deg,var(--surface-hi),var(--surface));border-color:color-mix(in srgb,var(--accent) 30%,var(--line));border-radius:22px;overflow:hidden}
+.g-hero{position:relative;margin:-24px -24px 0;aspect-ratio:16/7;max-width:none;background:var(--surface2)}
+.g-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.g-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,6,12,.1) 30%,rgba(4,6,12,.85))}
+.g-hero-t{position:absolute;left:24px;right:24px;bottom:18px;z-index:1;display:grid;gap:2px}
+.g-hero-t .g-lbl{color:var(--accent-2)}
+.g-hero-t h2{color:#fff}
+.g-hero-t figcaption,.g-hero-t p{margin:0;color:rgba(255,255,255,.85);font-size:14px}
+.g-long li::marker{color:var(--accent);font-family:var(--f-mono)}
+@media (max-width:560px){.g-hero{margin:-18px -18px 0}.gbox .row:last-child .btn{flex:1 1 auto}.gbox .row:last-child .hint{width:100%}}
+</style>
+
+<header class="wrap top"><div class="hero-candles" id="heroCandles" aria-hidden="true"></div>
+  <div class="daybig"><span class="lbl">Día</span><span class="n" id="dayNum">1</span></div>
+  <div class="top-meta">
+    <div class="since" id="since">Tu plan empieza hoy.</div>
+    <div class="kpis" id="kpis"></div>
+  </div>
+  <span class="status" id="status">Conectando…</span>
+</header>
+<nav class="nav" aria-label="Secciones"><div class="wrap navin"><button type="button" class="navbtn" data-sec="hoy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg><span>Hoy</span></button><button type="button" class="navbtn" data-sec="progreso"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M6 15l4-4 3 3 5-6"/><path d="M15 8h3v3"/></svg><span>Progreso</span></button><button type="button" class="navbtn" data-sec="aprender"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5V5.5M8 7h8"/></svg><span>Aprender</span></button><button type="button" class="navbtn" data-sec="mentor"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H10l-6 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg><span>Mentor</span></button><button type="button" class="navbtn" data-sec="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg><span>Mi plan</span></button></div></nav>
+<main class="wrap" id="main"></main>
+<div id="goals" hidden></div>
+<div id="lightbox" hidden><button type="button" id="lbClose">Cerrar</button><img id="lbImg" alt="Captura ampliada"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- utilidades ---------- */
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const todayStr=()=>ymd(new Date());
+const toDate=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c,12)};
+const addDays=(s,n)=>{const d=toDate(s);d.setDate(d.getDate()+n);return ymd(d)};
+const diffDays=(a,b)=>Math.round((toDate(b)-toDate(a))/864e5);
+const mondayOf=s=>{const d=toDate(s);return addDays(s,-((d.getDay()+6)%7))};
+const num=v=>{if(v===""||v==null)return NaN;return parseFloat(String(v).replace(",","."))};
+const fmtR=r=>(r>0?"+":"")+(Math.round(r*100)/100).toFixed(2)+"R";
+const fmtPct=x=>isFinite(x)?Math.round(x*100)+"%":"—";
+const clone=o=>JSON.parse(JSON.stringify(o));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const cut=(s,n)=>{s=String(s||"").trim().replace(/\s+/g," ");return s.length>n?s.slice(0,n)+"…":s};
+const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const fmtLong=s=>toDate(s).toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+const fmtShort=s=>toDate(s).toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"});
+const fmtDM=s=>toDate(s).toLocaleDateString("es-ES",{day:"numeric",month:"short"});
+const fmtStamp=t=>new Date(t).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+function setPath(o,p,v){const k=p.split(".");let c=o;for(let i=0;i<k.length-1;i++){const key=k[i];if(c[key]==null)c[key]=/^\d+$/.test(k[i+1])?[]:{};c=c[key]}c[k[k.length-1]]=v}
+function getPath(o,p){return p.split(".").reduce((c,k)=>{if(c[k]==null)c[k]=[];return c[k]},o)}
+function md(src){
+  const inline=s=>s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/`([^`]+)`/g,"<code>$1</code>");
+  let out="",list=null,para=[];
+  const flushP=()=>{if(para.length){out+=`<p>${inline(para.join("<br>"))}</p>`;para=[]}};
+  const close=()=>{if(list){out+=`</${list}>`;list=null}};
+  esc(src).split("\n").forEach(raw=>{const l=raw.replace(/\s+$/,"");let m;
+    if(!l.trim()){flushP();close();return}
+    if((m=l.match(/^#{1,6}\s+(.*)/))){flushP();close();out+=`<h4>${inline(m[1])}</h4>`;return}
+    if((m=l.match(/^\s*[-*•]\s+(.*)/))){flushP();if(list!=="ul"){close();out+="<ul>";list="ul"}out+=`<li>${inline(m[1])}</li>`;return}
+    if((m=l.match(/^\s*\d+[.)]\s+(.*)/))){flushP();if(list!=="ol"){close();out+="<ol>";list="ol"}out+=`<li>${inline(m[1])}</li>`;return}
+    close();para.push(l)});
+  flushP();close();return out;
+}
+
+/* ---------- plan por defecto ---------- */
+const DEFAULT_PLAYBOOK=[
+  {id:"s1",name:"Ruptura y retesteo",conditions:"Tendencia clara en la temporalidad mayor\nRuptura de una zona relevante con vela de cuerpo amplio\nRetesteo de la zona rota con rechazo\nHay espacio para 1:2 hasta la siguiente zona",entry:"Al cierre de la vela de rechazo en el retesteo",stop:"Detrás de la mecha del retesteo",target:"Siguiente zona relevante, mínimo 2R",avoid:"Mercado lateral, noticias fuertes cerca, ruptura sin volumen",notes:"Ejemplo: cámbialo por tu propio setup.",media:[]},
+  {id:"s2",name:"Rechazo en zona clave",conditions:"Zona marcada antes de la sesión\nEl precio llega a la zona perdiendo fuerza\nVela de rechazo clara (mecha larga o envolvente)\nStop detrás de la zona con 1:2 posible",entry:"Al cierre de la vela de rechazo",stop:"Por detrás de la zona",target:"Zona opuesta o 2R",avoid:"Cuando la zona ya se ha tocado varias veces seguidas",notes:"Ejemplo: cámbialo por tu propio setup.",media:[]}
+];
+const DEFAULT_PLAN={
+  startDate:todayStr(),why:"",market:"",instruments:"",timeframe:"",session:"",capital:"",riskPct:"0.5",maxDailyLoss:"2R",maxTrades:"2",
+  playbook:DEFAULT_PLAYBOOK,
+  goals:{long:["","",""],short:[],showAlways:true},
+  consequence:"Al día siguiente no opero: reviso mis operaciones y hago 20 operaciones de backtesting de mi setup.",
+  rules:[
+    {id:"r1",cat:"Riesgo",text:"Arriesgo como máximo el % fijado por operación y calculo el lotaje antes de entrar."},
+    {id:"r2",cat:"Riesgo",text:"El stop loss está puesto antes de entrar y nunca lo alejo."},
+    {id:"r3",cat:"Riesgo",text:"Si llego a la pérdida máxima diaria, cierro la plataforma hasta mañana."},
+    {id:"r4",cat:"Riesgo",text:"Respeto el máximo de operaciones al día. Después de 2 pérdidas seguidas, paro."},
+    {id:"r5",cat:"Entradas",text:"Solo entro con uno de mis setups y con todas sus condiciones cumplidas."},
+    {id:"r6",cat:"Entradas",text:"Solo opero en mi horario y no entro 15 min antes ni después de noticias de alto impacto."},
+    {id:"r7",cat:"Entradas",text:"El beneficio potencial es de al menos 2 veces el riesgo (1:2)."},
+    {id:"r8",cat:"Psicología",text:"No opero cansado, enfadado ni para recuperar una pérdida."},
+    {id:"r9",cat:"Rutina",text:"Hago el análisis previo antes de mirar el gráfico de entrada."},
+    {id:"r10",cat:"Rutina",text:"Registro el día en la bitácora, opere o no."}
+  ]
+};
+/* Camino: R = trader rentable, L = libertad, M = millonario. auto = se calcula solo con lo que registras */
+const GOAL_TAGS={R:{i:2,def:"Soy un trader rentable"},L:{i:1,def:"Tengo libertad de viajar"},M:{i:0,def:"Soy millonario"}};
+const ROADMAP=[
+ {name:"Cimientos",when:"Semanas 1–4",desc:"Aprender lo básico, elegir un solo setup y crear el hábito de registrar cada día.",steps:[
+  {id:"c1",text:"Termino el bootcamp o curso que estoy siguiendo",tags:"R"},
+  {id:"c2",text:"Acumulo 20 horas de estudio registradas",tags:"R",auto:"studyHours",target:20,unit:"h"},
+  {id:"c3",text:"Defino mercado, activos, temporalidades y horario en «Mi plan»",tags:"R",auto:"planDefined",target:1,unit:"ok"},
+  {id:"c4",text:"Elijo un solo setup y escribo sus condiciones exactas en el playbook",tags:"R"},
+  {id:"c5",text:"Guardo 5 capturas de ejemplos ideales de mi setup",tags:"R",auto:"playbookMedia",target:5,unit:"n"},
+  {id:"c6",text:"Registro 21 días seguidos en la bitácora",tags:"RM",auto:"bestLogStreak",target:21,unit:"d"},
+  {id:"c7",text:"Cumplo mi plan: 10 días seguidos sin romper ninguna norma",tags:"R",auto:"bestCleanStreak",target:10,unit:"d"},
+  {id:"c8",text:"Leo mis metas en voz alta durante 30 días",tags:"RLM",auto:"ritualDays",target:30,unit:"d"}]},
+ {name:"Backtesting",when:"Meses 2–3",desc:"Demostrar con datos del pasado que tu setup tiene ventaja antes de arriesgar nada.",steps:[
+  {id:"b1",text:"Hago 50 operaciones de backtesting de mi setup",tags:"R",auto:"btTrades",target:50,unit:"n"},
+  {id:"b2",text:"Llego a 100 operaciones de backtesting",tags:"R",auto:"btTrades",target:100,unit:"n"},
+  {id:"b3",text:"Mi backtesting da una expectativa de al menos 0,3R en 100 operaciones",tags:"RM",auto:"btExp",target:0.3,min:100,unit:"R"},
+  {id:"b4",text:"Sé en qué situaciones falla mi setup y lo escribo en «Cuándo NO operarlo»",tags:"R"},
+  {id:"b5",text:"Hago mi primera revisión semanal completa",tags:"R",auto:"weeksReviewed",target:1,unit:"n"}]},
+ {name:"Demo con reglas",when:"Meses 3–5",desc:"Ejecutar tu setup en tiempo real como si fuera dinero de verdad, sin saltarte el plan.",steps:[
+  {id:"d1",text:"Hago 25 operaciones en demo",tags:"R",auto:"demoTrades",target:25,unit:"n"},
+  {id:"d2",text:"Llego a 50 operaciones en demo",tags:"R",auto:"demoTrades",target:50,unit:"n"},
+  {id:"d3",text:"Sigo el plan en el 90% de mis operaciones demo",tags:"R",auto:"demoFollow",target:90,min:30,unit:"%"},
+  {id:"d4",text:"Mi expectativa en demo es de al menos 0,2R en 50 operaciones",tags:"RM",auto:"demoExp",target:0.2,min:50,unit:"R"},
+  {id:"d5",text:"Encadeno 20 días seguidos sin romper ninguna norma",tags:"R",auto:"bestCleanStreak",target:20,unit:"d"},
+  {id:"d6",text:"Completo 8 revisiones semanales",tags:"R",auto:"weeksReviewed",target:8,unit:"n"}]},
+ {name:"Real con riesgo mínimo",when:"Meses 6–9",desc:"El mismo sistema con dinero real y riesgo muy bajo. Aquí se pone a prueba tu cabeza.",steps:[
+  {id:"r1",text:"Abro una cuenta real pequeña, con dinero que puedo permitirme perder",tags:"R"},
+  {id:"r2",text:"Hago 50 operaciones reales arriesgando como máximo un 0,5% en cada una",tags:"R",auto:"realTrades",target:50,unit:"n"},
+  {id:"r3",text:"Sigo el plan en el 90% de mis operaciones reales",tags:"R",auto:"realFollow",target:90,min:30,unit:"%"},
+  {id:"r4",text:"Mi expectativa en real es de al menos 0,2R en 50 operaciones",tags:"RM",auto:"realExp",target:0.2,min:50,unit:"R"},
+  {id:"r5",text:"Cierro mi primer mes completo en positivo con dinero real",tags:"RM",auto:"realPosMonths",target:1,unit:"m"},
+  {id:"r6",text:"Encadeno 3 meses seguidos en positivo en real",tags:"RM",auto:"realPosMonths",target:3,unit:"m"}]},
+ {name:"Escalar",when:"Año 1–2",desc:"Más capital con el mismo proceso. Se sube el tamaño de la cuenta, no el riesgo por operación.",steps:[
+  {id:"e1",text:"Paso una prueba de cuenta fondeada",tags:"RM"},
+  {id:"e2",text:"Cobro mi primer retiro de beneficios del trading",tags:"ML"},
+  {id:"e3",text:"Encadeno 6 meses seguidos en positivo en real",tags:"RM",auto:"realPosMonths",target:6,unit:"m"},
+  {id:"e4",text:"Gestiono más capital sin subir mi riesgo por operación",tags:"RM"},
+  {id:"e5",text:"Un mes, el trading me paga mis gastos básicos",tags:"LM"}]},
+ {name:"Libertad",when:"Años 2–4",desc:"Que el trading te dé tiempo y movilidad, con un colchón que te permita operar sin presión.",steps:[
+  {id:"l1",text:"Tengo un fondo de emergencia de 6 meses de gastos fuera del trading",tags:"LM"},
+  {id:"l2",text:"El trading me paga todos mis gastos durante 6 meses seguidos",tags:"LM"},
+  {id:"l3",text:"Encadeno 12 meses seguidos en positivo en real",tags:"RLM",auto:"realPosMonths",target:12,unit:"m"},
+  {id:"l4",text:"Tengo una rutina que me permite operar desde cualquier lugar",tags:"L"},
+  {id:"l5",text:"Opero una semana entera de viaje sin romper ninguna norma",tags:"LR"}]},
+ {name:"Patrimonio",when:"El largo plazo",desc:"Convertir los beneficios en patrimonio. Invertir parte de cada retiro a largo plazo, fuera del trading, hace crecer el dinero por interés compuesto.",steps:[
+  {id:"p1",text:"Invierto un porcentaje fijo de cada retiro a largo plazo, fuera del trading",tags:"M"},
+  {id:"p2",text:"Mi patrimonio llega a 10.000 €",tags:"M",auto:"netWorth",target:10000,unit:"€"},
+  {id:"p3",text:"Mi patrimonio llega a 50.000 €",tags:"ML",auto:"netWorth",target:50000,unit:"€"},
+  {id:"p4",text:"Mi patrimonio llega a 100.000 €",tags:"ML",auto:"netWorth",target:100000,unit:"€"},
+  {id:"p5",text:"Mi patrimonio llega a 250.000 €",tags:"ML",auto:"netWorth",target:250000,unit:"€"},
+  {id:"p6",text:"Mi patrimonio llega a 500.000 €",tags:"ML",auto:"netWorth",target:500000,unit:"€"},
+  {id:"p7",text:"Mi patrimonio llega a 1.000.000 €. Soy millonario",tags:"MLR",auto:"netWorth",target:1000000,unit:"€"}]}
+];
+const LEARN_TAGS=["Velas japonesas","Estructura de mercado","Tendencia","Soportes y resistencias","Oferta y demanda","Liquidez","Sesiones y horarios","Indicadores","Entradas y confirmaciones","Gestión del riesgo","Gestión de la operación","Psicología","Backtesting","Plan de trading","Otro"];
+const LEARN_LEVELS=["Principiante","Intermedio","Avanzado"];
+const IDEA_AREAS=["Aprendizaje","Personalización","Registro y análisis","Psicología","Mentor IA","Motivación","Comunidad","Otro"];
+const IDEA_STATUS=[["idea","Idea"],["hablar","Para hablar"],["hecha","Hecha"]];
+const CATS=["Riesgo","Entradas","Gestión","Psicología","Rutina"];
+const EMOS=["","Tranquilo","Confiado","Ansioso","Miedo","FOMO","Euforia","Venganza","Aburrido","Cansado"];
+const ACCOUNTS=["Demo","Real","Backtest"];
+const STUDY_KINDS=["Vídeo","Curso","Libro","Backtesting","Revisión de operaciones","Otro"];
+const ERROR_TAGS=["Entrada sin confirmación","Entrada tardía","FOMO","Moví el stop","Salida anticipada","No dejé correr hasta el TP","Riesgo mayor del permitido","Operación de venganza","Fuera de horario","Demasiadas operaciones","Sin stop loss","Contra mi sesgo","Entré con noticias"];
+function normPlan(p){
+  const out=Object.assign(clone(DEFAULT_PLAN),p||{});
+  if(!Array.isArray(out.playbook)){
+    const names=String(out.setups||"").split(",").map(s=>s.trim()).filter(Boolean);
+    out.playbook=names.map((n,i)=>DEFAULT_PLAYBOOK.find(s=>s.name===n)?clone(DEFAULT_PLAYBOOK.find(s=>s.name===n)):{id:"s"+uid(),name:n,conditions:"",entry:"",stop:"",target:"",avoid:"",notes:"",media:[]});
+  }
+  out.playbook.forEach(s=>{if(!Array.isArray(s.media))s.media=[]});
+  if(!Array.isArray(out.rules))out.rules=[];
+  const g=out.goals&&typeof out.goals==="object"?out.goals:{};
+  const long=Array.isArray(g.long)?g.long.slice(0,3).map(x=>String(x||"")):[];while(long.length<3)long.push("");
+  const short=Array.isArray(g.short)?g.short.slice(0,10).map(x=>typeof x==="string"?{text:x,done:false}:{text:String((x&&x.text)||""),done:!!(x&&x.done)}):[];
+  while(short.length<10)short.push({text:"",done:false});
+  out.goals={long,short,showAlways:g.showAlways!==false};
+  out.vision=Array.isArray(out.vision)?out.vision.filter(v=>v&&v.id).map(v=>({id:v.id,type:"image",name:v.name||"",caption:v.caption||"",tag:v.tag||""})):[];
+  const rd=out.road&&typeof out.road==="object"?out.road:{};
+  out.road={done:rd.done&&typeof rd.done==="object"?rd.done:{},netWorth:rd.netWorth==null?"":String(rd.netWorth)};
+  return out;
+}
+const condList=s=>String((s&&s.conditions)||"").split("\n").map(x=>x.trim()).filter(Boolean);
+
+/* ---------- estado ---------- */
+const S={plan:normPlan(null),days:{},weeks:{},mentor:{},ritual:{},learn:{},ideas:{},learnOpen:null,learnTag:"",planReady:false,ritualReady:false,view:"hoy",date:todayStr(),month:todayStr().slice(0,7),week:mondayOf(todayStr()),
+  statsAcc:"Todas",mode:"connecting",db:null,assets:null,sample:null,imgLimits:null,confirm:null,uploading:"",
+  drafts:{},pending:{},openThread:null,roadOpen:{},dayOpen:null,tradeOpen:{},metasEdit:null,streaming:null,aiErr:{},mentorMode:"breve",mentorDays:false};
+const MAX_IMGS=2;
+let planDirty=false;
+
+/* ---------- almacenamiento ---------- */
+const LS_KEY="bitacora-trading-v1";
+function lsLoad(){try{const r=JSON.parse(localStorage.getItem(LS_KEY)||"null");if(r){if(r.plan)S.plan=normPlan(r.plan);S.days=r.days||{};S.weeks=r.weeks||{};S.mentor=r.mentor||{};S.ritual=r.ritual||{};S.learn=r.learn||{};S.ideas=r.ideas||{}}}catch(e){}}
+function lsSave(){try{localStorage.setItem(LS_KEY,JSON.stringify({plan:S.plan,days:S.days,weeks:S.weeks,mentor:S.mentor,ritual:S.ritual,learn:S.learn,ideas:S.ideas}))}catch(e){}}
+async function cap(n){try{return window.claude&&window.claude.use?await window.claude.use(n):null}catch(e){return null}}
+
+const timers={},busy={},again={};
+function setStatus(t,err){const el=$("#status");el.textContent=t;el.classList.toggle("err",!!err)}
+function errText(e){
+  const c=e&&e.code;
+  if(c==="quota_exceeded")return "Sin espacio: borra días o fotos antiguas.";
+  if(c==="invalid_argument")return "No tienes permiso para guardar aquí.";
+  if(c==="revoked")return "Acceso retirado. Recarga la página.";
+  return "No se pudo guardar. Revisa tu conexión.";
+}
+function touch(col,id){
+  const o=S[col][id];o.updatedAt=Date.now();
+  if(S.mode!=="db"){lsSave();setStatus(S.mode==="local"?"Guardado en este navegador":"Sin guardar");refreshHeader();return}
+  const key=col+"/"+id;setStatus("Guardando…");clearTimeout(timers[key]);timers[key]=setTimeout(()=>flush(col,id),700);
+}
+const touchDay=date=>touch("days",date);
+async function flush(col,id){
+  const key=col+"/"+id;
+  if(busy[key]){again[key]=true;return}
+  busy[key]=true;timers[key]=null;
+  const write=()=>S.db.collection(col).doc(id).set(clone(S[col][id]));
+  try{await write();setStatus("Guardado ✓")}
+  catch(e){if(e&&e.code==="unavailable"){await new Promise(r=>setTimeout(r,800+Math.random()*800));try{await write();setStatus("Guardado ✓")}catch(e2){setStatus(errText(e2),true)}}else setStatus(errText(e),true)}
+  busy[key]=false;
+  if(again[key]){again[key]=false;flush(col,id)}
+  refreshHeader();
+}
+let planTimer=null,planBusy=false,planAgain=false;
+function touchPlan(){
+  planDirty=true;
+  if(S.mode!=="db"){lsSave();setStatus(S.mode==="local"?"Guardado en este navegador":"Sin guardar");refreshHeader();return}
+  setStatus("Guardando…");clearTimeout(planTimer);planTimer=setTimeout(flushPlan,700);
+}
+async function flushPlan(){
+  if(planBusy){planAgain=true;return}
+  planBusy=true;
+  try{await S.db.doc("config/plan").set(clone(S.plan));setStatus("Guardado ✓")}catch(e){setStatus(errText(e),true)}
+  planBusy=false;
+  if(planAgain){planAgain=false;flushPlan()}else planDirty=false;
+  refreshHeader();
+}
+function editingInside(){const a=document.activeElement;return a&&$("#main").contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=="file"}
+
+async function init(){
+  drawCandles();
+  const mm=loadPref("mentorMode","breve");S.mentorMode=MENTOR_MODES[mm]?mm:"breve";S.mentorDays=!!loadPref("mentorDays",false);
+  render();
+  const [db,assets,sample]=await Promise.all([cap("db"),cap("assets"),cap("sample")]);
+  S.assets=assets;S.sample=sample;
+  try{S.dl=await cap("downloads")}catch(e){S.dl=null}
+  if(sample){try{const l=await sample.limits();S.imgLimits=l&&l.images||null}catch(e){S.imgLimits=null}}
+  if(!db){S.mode="local";lsLoad();setStatus("Guardado en este navegador");render();maybeShowGoals();return}
+  S.db=db;S.mode="db";setStatus("Cargando…");
+  db.doc("config/plan").onSnapshot(snap=>{
+    S.planReady=true;
+    if(!(planDirty||planBusy)){if(snap.exists)S.plan=normPlan(clone(snap.data()));softRender()}
+    maybeShowGoals();
+  },e=>setStatus(errText(e),true));
+  ["days","weeks","mentor","ritual","learn","ideas"].forEach(col=>{
+    db.collection(col).onSnapshot(snap=>{
+      snap.docChanges().forEach(ch=>{
+        const id=ch.doc.id,key=col+"/"+id;
+        if(timers[key]||busy[key])return;
+        if(S.streaming&&S.streaming.col===col&&S.streaming.id===id)return;
+        if(ch.type==="removed")delete S[col][id];else S[col][id]=clone(ch.doc.data());
+      });
+      if(!snap.metadata.hasPendingWrites)setStatus("Guardado ✓");
+      softRender();
+      if(col==="ritual"){S.ritualReady=true;maybeShowGoals()}
+    },e=>setStatus(errText(e),true));
+  });
+}
+
+/* ---------- metas ---------- */
+let goalsAuto=false;
+const readOn=d=>!!(S.ritual[d]&&S.ritual[d].read);
+function maybeShowGoals(){
+  if(goalsAuto)return;
+  if(S.mode==="db"&&!(S.planReady&&S.ritualReady))return;
+  goalsAuto=true;
+  if(S.plan.goals.showAlways||!readOn(todayStr()))openGoals();
+}
+function goalsHTML(){
+  const g=S.plan.goals,today=todayStr(),rit=S.ritual[today],R=roadState();
+  const long=g.long.filter(x=>x.trim()),short=R.next.slice(0,5);
+  const head=`<div class="g-head"><span class="g-lbl">${esc(fmtLong(today))}</span><h2 id="gTitle">Mis metas</h2></div>`;
+  if(!long.length)return `<div class="gbox" role="dialog" aria-modal="true" aria-labelledby="gTitle">${head}
+    <p style="margin:0">Todavía no has escrito tus metas. Escribe tus 3 metas a largo plazo en «Mi plan». Después te aparecerán aquí, junto a tus próximos pasos, cada vez que abras la bitácora.</p>
+    <div class="row"><button type="button" class="btn" data-g="close" style="margin-left:auto">Ahora no</button><button type="button" class="btn primary" data-g="write">Escribir mis metas</button></div></div>`;
+  const read=rit&&rit.read,V=S.plan.vision,hero=V[0];
+  const top=hero?`<figure class="g-hero"><img src="/_blob/${encodeURIComponent(hero.id)}" alt="${esc(hero.caption||"Mi sueño")}"><div class="g-hero-t"><span class="g-lbl">${esc(fmtLong(today))}</span><h2 id="gTitle">Mis metas</h2>${hero.caption?`<p>${esc(hero.caption)}</p>`:""}</div></figure>`:head;
+  return `<div class="gbox" role="dialog" aria-modal="true" aria-labelledby="gTitle">${top}
+    <p class="g-inst">Léelas en voz alta, despacio, como si ya las hubieras conseguido.</p>
+    ${V.length>1?`<div class="gvision">${V.slice(1,5).map(v=>`<figure><img src="/_blob/${encodeURIComponent(v.id)}" alt="${esc(v.caption||"Mi sueño")}">${v.caption?`<figcaption>${esc(v.caption)}</figcaption>`:""}</figure>`).join("")}</div>`:V.length?"":`<p class="hint">Añade fotos de lo que quieres en «Mi plan» → Metas y sueños y aparecerán aquí.</p>`}
+    ${long.length?`<div class="g-sec"><span class="g-lbl">A largo plazo</span><ol class="g-long">${long.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div>`:""}
+    <div class="g-sec"><span class="g-lbl">Mi camino · Fase ${R.cur+1} de ${R.P.length}: ${esc(R.P[R.cur].name)} · ${R.done} de ${R.total} pasos</span><div class="bar ${R.done===R.total?"done":""}"><i style="width:${Math.round(R.done/R.total*100)}%"></i></div></div>
+    ${short.length?`<div class="g-sec"><span class="g-lbl">Mis próximos pasos</span><ol class="g-short">${short.map(s=>`<li>${esc(s.text)}${s.label?` <span class="mono" style="color:var(--muted);font-size:12px">· ${esc(s.label)}</span>`:""}</li>`).join("")}</ol></div>`:""}
+    <p class="hint">Cada día da al menos un paso hacia uno de ellos y apúntalo en «Mi paso de hoy».</p>
+    <div class="row">${read?`<span class="hint">Leídas hoy ✓ · ${rit.count||1} ${(rit.count||1)>1?"veces":"vez"}</span>`:`<span class="hint">Racha leyéndolas: ${streak(readOn)} días</span>`}
+      <button type="button" class="btn" data-g="close" style="margin-left:auto">Cerrar</button>
+      <button type="button" class="btn primary" data-g="read">${read?"Las he vuelto a leer":"Las he leído en voz alta"}</button></div></div>`;
+}
+function openGoals(){const el=$("#goals");el.innerHTML=goalsHTML();el.hidden=false;const b=el.querySelector('[data-g="read"],[data-g="write"]');if(b)b.focus()}
+function closeGoals(){$("#goals").hidden=true}
+function softRender(){refreshHeader();if(editingInside()||S.streaming)return;render()}
+
+/* ---------- modelo ---------- */
+function emptyDay(date){return{date,mood:"",sleep:"",bias:"",levels:"",news:"",noTrade:false,noTradeReason:"",rules:{},brokenNote:"",trades:[],study:[],good:"",improve:"",lesson:"",execScore:"",media:[],links:[]}}
+function getDay(date){if(!S.days[date])S.days[date]=emptyDay(date);const d=S.days[date];["trades","study","media","links"].forEach(k=>{if(!Array.isArray(d[k]))d[k]=[]});if(!d.rules||typeof d.rules!=="object")d.rules={};return d}
+function getWeek(m){if(!S.weeks[m])S.weeks[m]={week:m,worked:"",notWorked:"",ruleFocus:"",nextGoal:"",goalMet:"",review:"",reviewedAt:0};return S.weeks[m]}
+function isLogged(date){const d=S.days[date];return !!(d&&d.updatedAt)}
+function calcR(t){const e=num(t.entry),s=num(t.sl),x=num(t.exit);if([e,s,x].some(isNaN))return null;const risk=t.dir==="Short"?s-e:e-s;if(!(risk>0))return null;return Math.round(((t.dir==="Short"?e-x:x-e)/risk)*100)/100}
+function tradeR(t){const r=num(t.r);if(!isNaN(r))return r;return calcR(t)}
+function dayR(d){let s=0,any=false;(d.trades||[]).forEach(t=>{const r=tradeR(t);if(r!=null){s+=r;any=true}});return any?s:null}
+function brokenIds(d){return Object.entries(d.rules||{}).filter(([,v])=>v==="broken").map(([k])=>k)}
+function brokenCount(d){return brokenIds(d).length}
+function ruleDone(d){const ids=S.plan.rules.map(r=>r.id);const m=ids.filter(id=>d.rules&&d.rules[id]).length;return{marked:m,total:ids.length,broken:brokenCount(d)}}
+function isClean(date){const d=S.days[date];if(!d||!d.updatedAt)return false;const r=ruleDone(d);return r.broken===0&&r.marked===r.total&&r.total>0}
+function ruleText(id){const r=S.plan.rules.find(x=>x.id===id);return r?r.text:"Norma eliminada"}
+
+function allTrades(from,to){const out=[];Object.keys(S.days).sort().forEach(date=>{if(from&&date<from)return;if(to&&date>to)return;const d=S.days[date];if(!d.updatedAt)return;(d.trades||[]).forEach(t=>out.push(Object.assign({date},t)))});return out}
+function streak(test){let t=todayStr();if(!test(t))t=addDays(t,-1);let n=0;while(test(t)&&n<3650){n++;t=addDays(t,-1)}return n}
+function metrics(trades){
+  const rs=trades.map(tradeR).filter(r=>r!=null);
+  const wins=rs.filter(r=>r>0),loss=rs.filter(r=>r<0);
+  const total=rs.reduce((a,b)=>a+b,0);
+  const gw=wins.reduce((a,b)=>a+b,0),gl=-loss.reduce((a,b)=>a+b,0);
+  let worst=0,cur=0;rs.forEach(r=>{if(r<0){cur++;worst=Math.max(worst,cur)}else cur=0});
+  const fp=trades.filter(t=>t.followed==="si").length,fn=trades.filter(t=>t.followed==="no").length;
+  return{n:trades.length,nr:rs.length,total,exp:rs.length?total/rs.length:NaN,win:rs.length?wins.length/rs.length:NaN,pf:gl>0?gw/gl:(gw>0?Infinity:NaN),worst,
+    avgW:wins.length?gw/wins.length:NaN,avgL:loss.length?gl/loss.length:NaN,followRate:(fp+fn)?fp/(fp+fn):NaN,fn}
+}
+function errorCosts(trades){
+  const g={};trades.forEach(t=>(t.errors||[]).forEach(e=>{(g[e]=g[e]||[]).push(t)}));
+  return Object.entries(g).map(([e,ts])=>{const m=metrics(ts);return{tag:e,n:ts.length,total:m.total,exp:m.exp,nr:m.nr}}).sort((a,b)=>a.total-b.total||b.n-a.n);
+}
+
+/* ---------- camino ---------- */
+function bestStreak(test){
+  const dates=Object.keys(S.days).concat(Object.keys(S.ritual)).sort();
+  if(!dates.length)return 0;
+  let d=dates[0],end=todayStr(),best=0,cur=0,guard=0;
+  while(d<=end&&guard<4000){if(test(d)){cur++;best=Math.max(best,cur)}else cur=0;d=addDays(d,1);guard++}
+  return best;
+}
+function roadMetrics(){
+  const tr=allTrades(),by=a=>tr.filter(t=>(t.account||"Demo")===a);
+  const bt=metrics(by("Backtest")),de=metrics(by("Demo")),re=metrics(by("Real"));
+  const months={};by("Real").forEach(t=>{const r=tradeR(t);if(r!=null){const m=t.date.slice(0,7);months[m]=(months[m]||0)+r}});
+  let posBest=0;{const keys=Object.keys(months).sort();if(keys.length){let [y,m]=keys[0].split("-").map(Number);const cur=todayStr().slice(0,7);let run=0,k=keys[0],guard=0;
+    while(k<cur&&guard<600){if((months[k]||0)>0){run++;posBest=Math.max(posBest,run)}else run=0;m++;if(m>12){m=1;y++}k=y+"-"+pad(m);guard++}}}
+  const loggedDays=Object.keys(S.days).filter(isLogged);
+  const studyMin=studyMinutes();
+  const p=S.plan;
+  return{studyHours:studyMin/60,planDefined:[p.market,p.instruments,p.timeframe,p.session].every(x=>x&&String(x).trim())?1:0,
+    playbookMedia:p.playbook.reduce((a,s)=>a+(s.media||[]).length,0),bestLogStreak:bestStreak(isLogged),bestCleanStreak:bestStreak(isClean),
+    ritualDays:Object.keys(S.ritual).filter(readOn).length,weeksReviewed:Object.values(S.weeks).filter(w=>w&&(w.review||w.nextGoal||w.worked)).length,
+    btTrades:bt.n,btExp:bt,demoTrades:de.n,demoExp:de,demoFollow:de,realTrades:re.n,realExp:re,realFollow:re,realPosMonths:posBest,
+    netWorth:num(String(p.road.netWorth).replace(/\./g,""))||0};
+}
+const fmtNum=(v,d)=>Number(v).toLocaleString("es-ES",{maximumFractionDigits:d==null?0:d,minimumFractionDigits:d||0});
+function stepState(s,M){
+  if(!s.auto){const done=!!S.plan.road.done[s.id];return{done,pct:done?1:0,label:"",manual:true}}
+  let val=M[s.auto],label;
+  if(s.unit==="R"||s.unit==="%"){
+    const m=val,n=m.nr;
+    if(s.unit==="R"){val=n>=s.min&&isFinite(m.exp)?m.exp:0;label=`${isFinite(m.exp)?fmtNum(m.exp,2):"0,00"}R de ${fmtNum(s.target,2)}R · ${Math.min(n,s.min)} de ${s.min} operaciones`;
+      const pct=Math.min(1,(n/s.min)*.5+(isFinite(m.exp)&&m.exp>0?Math.min(1,m.exp/s.target)*.5:0));return{done:n>=s.min&&m.exp>=s.target,pct:n>=s.min&&m.exp>=s.target?1:Math.min(.99,pct),label}}
+    const f=isFinite(m.followRate)?m.followRate*100:0,cnt=m.n;
+    label=`${Math.round(f)}% de ${s.target}% · ${Math.min(cnt,s.min)} de ${s.min} operaciones`;
+    const done=cnt>=s.min&&f>=s.target;return{done,pct:done?1:Math.min(.99,(Math.min(1,cnt/s.min)*.5)+(Math.min(1,f/s.target)*.5)),label}
+  }
+  const u={h:" h",d:" días",n:"",m:" meses",ok:"","€":" €"}[s.unit]||"";
+  if(s.unit==="ok")label=val>=1?"Hecho":"Pendiente";
+  else label=`${fmtNum(Math.min(val,s.target),s.unit==="h"?1:0)} de ${fmtNum(s.target)}${u}`;
+  const pct=Math.max(0,Math.min(1,val/s.target));
+  return{done:pct>=1,pct,label};
+}
+function roadState(){
+  const M=roadMetrics();let total=0,done=0,cur=-1;const next=[],tagTot={R:0,L:0,M:0},tagDone={R:0,L:0,M:0};
+  const P=ROADMAP.map((ph,i)=>{
+    const steps=ph.steps.map(s=>Object.assign({},s,stepState(s,M)));
+    const dn=steps.filter(s=>s.done).length;
+    steps.forEach(s=>{total++;if(s.done)done++;[...s.tags].forEach(t=>{tagTot[t]++;if(s.done)tagDone[t]++})});
+    return{i,name:ph.name,when:ph.when,desc:ph.desc,steps,dn,n:steps.length,done:dn===steps.length};
+  });
+  P.forEach((p,i)=>{if(cur<0&&!p.done)cur=i});if(cur<0)cur=P.length-1;
+  P.forEach((p,i)=>{p.cur=i===cur;if(i>=cur)p.steps.forEach(s=>{if(!s.done)next.push(Object.assign({phase:i},s))})});
+  return{P,cur,total,done,next,tagTot,tagDone,M};
+}
+function goalLabel(t){const g=S.plan.goals.long[GOAL_TAGS[t].i];return(g&&g.trim())||GOAL_TAGS[t].def}
+function phases(){
+  const R=roadState();
+  return{P:R.P,cur:R.cur,logStreak:streak(isLogged),cleanStreak:streak(isClean),road:R};
+}
+function oldPhases(){
+  const tr=allTrades();
+  const by=a=>tr.filter(t=>(t.account||"Demo")===a);
+  const bt=by("Backtest"),de=metrics(by("Demo")),re=metrics(by("Real"));
+  const logStreak=streak(isLogged),cleanStreak=streak(isClean);
+  const months={};by("Real").forEach(t=>{const r=tradeR(t);if(r!=null){const m=t.date.slice(0,7);months[m]=(months[m]||0)+r}});
+  let posMonths=0;{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);for(let i=0;i<24;i++){const k=ymd(d).slice(0,7);if((months[k]||0)>0)posMonths++;else break;d.setMonth(d.getMonth()-1)}}
+  const g=(label,val,target,fmt)=>({label,val,target,pct:Math.max(0,Math.min(1,(isFinite(val)?val:0)/target)),fmt:fmt||(v=>Math.max(0,isFinite(v)?Math.floor(v):0)+" / "+target)});
+  const P=[
+    {name:"Fase 1 · Hábito y método",desc:"Construye la rutina antes que la cuenta. Elige un solo setup, pruébalo en histórico y registra cada día.",
+      goals:[g("Días seguidos registrando",logStreak,21),g("Días seguidos sin romper normas",cleanStreak,10),g("Operaciones de backtesting registradas",bt.length,50)]},
+    {name:"Fase 2 · Demo con reglas",desc:"Opera tu setup en demo como si fuera real. Lo que cuenta es seguir el plan y que la expectativa sea positiva.",
+      goals:[g("Operaciones en demo",de.n,50),g("Expectativa en demo (R por operación)",isFinite(de.exp)?de.exp:0,0.2,v=>(isFinite(v)?v.toFixed(2):"0.00")+" / 0.20R"),g("Operaciones demo siguiendo el plan",isFinite(de.followRate)?de.followRate*100:0,90,v=>Math.round(v)+"% / 90%")]},
+    {name:"Fase 3 · Real con riesgo mínimo",desc:"Mismo sistema con dinero real y riesgo muy bajo (0,25–0,5% por operación). Aquí se prueba la cabeza.",
+      goals:[g("Operaciones reales",re.n,50),g("Expectativa en real (R por operación)",isFinite(re.exp)?re.exp:0,0.2,v=>(isFinite(v)?v.toFixed(2):"0.00")+" / 0.20R"),g("Operaciones reales siguiendo el plan",isFinite(re.followRate)?re.followRate*100:0,90,v=>Math.round(v)+"% / 90%")]},
+    {name:"Fase 4 · Escalar con calma",desc:"Sube el riesgo poco a poco solo después de meses positivos seguidos. Si un mes sale negativo, vuelves a bajar.",
+      goals:[g("Meses positivos seguidos en real",posMonths,3)]}
+  ];
+  let cur=-1;P.forEach((p,i)=>{p.done=p.goals.every(x=>x.pct>=1);if(cur<0&&!p.done)cur=i});
+  if(cur<0)cur=P.length-1;P.forEach((p,i)=>p.cur=i===cur);
+  return{P,cur,logStreak,cleanStreak};
+}
+
+/* ---------- semana ---------- */
+function weekSummary(m){
+  const end=addDays(m,6),dates=[];for(let i=0;i<7;i++)dates.push(addDays(m,i));
+  const logged=dates.filter(isLogged);
+  const tr=allTrades(m,end),mt=metrics(tr);
+  const broken={};logged.forEach(d=>brokenIds(S.days[d]).forEach(id=>broken[id]=(broken[id]||0)+1));
+  const withR=tr.map(t=>({t,r:tradeR(t)})).filter(x=>x.r!=null).sort((a,b)=>b.r-a.r);
+  const exec=logged.map(d=>num(S.days[d].execScore)).filter(x=>!isNaN(x));
+  const study=studyMinutes(m,end);
+  return{m,end,dates,logged,tr,mt,clean:logged.filter(isClean).length,broken:Object.entries(broken).sort((a,b)=>b[1]-a[1]),
+    errors:errorCosts(tr),best:withR[0]||null,worst:withR.length?withR[withR.length-1]:null,
+    execAvg:exec.length?exec.reduce((a,b)=>a+b,0)/exec.length:NaN,study,lessons:logged.map(d=>[d,S.days[d].lesson]).filter(x=>x[1])};
+}
+const currentGoal=date=>{const w=S.weeks[addDays(mondayOf(date),-7)];return w&&w.nextGoal?w.nextGoal:""};
+
+/* ---------- contexto para Claude ---------- */
+function planText(){
+  const p=S.plan;
+  return [
+    `Mercado: ${p.market||"sin definir"} · Activos: ${p.instruments||"sin definir"} · Temporalidades: ${p.timeframe||"sin definir"} · Horario: ${p.session||"sin definir"}`,
+    `Riesgo por operación: ${p.riskPct||"?"}% · Pérdida máxima diaria: ${p.maxDailyLoss||"?"} · Máximo de operaciones al día: ${p.maxTrades||"?"}`,
+    `Por qué hago esto: ${p.why||"(sin escribir)"}`,
+    `Normas:\n${p.rules.map(r=>`- [${r.cat}] ${r.text}`).join("\n")}`,
+    `Consecuencia si rompo una norma: ${p.consequence||"(sin definir)"}`,
+    `Playbook de setups:\n${p.playbook.map(s=>`- ${s.name}. Condiciones: ${condList(s).join("; ")||"(sin definir)"}. Entrada: ${s.entry||"-"}. Stop: ${s.stop||"-"}. Objetivo: ${s.target||"-"}. No operarlo cuando: ${s.avoid||"-"}`).join("\n")}`
+  ].join("\n");
+}
+function tradeText(t,long){
+  const r=tradeR(t);
+  return `  · ${t.account||"Demo"} ${t.asset||"?"} ${t.dir==="Short"?"venta":t.dir==="Long"?"compra":""} ${t.time||""} setup:${t.setup||"?"} resultado:${r!=null?fmtR(r):"sin dato"} siguió el plan:${t.followed||"?"} emoción:${t.emotion||"-"} errores:${(t.errors||[]).join(", ")||"ninguno marcado"}${t.why?` | por qué entró: ${cut(t.why,long?400:160)}`:""}${long&&t.mistakes?` | gestión/errores: ${cut(t.mistakes,300)}`:""}`;
+}
+function dayText(date,long){
+  const d=S.days[date];if(!d||!d.updatedAt)return `${date}: sin registrar`;
+  const r=dayR(d),br=brokenIds(d).map(ruleText);
+  let s=`${date} (${fmtLong(date)}): ${d.noTrade?"no operó"+(d.noTradeReason?` (${cut(d.noTradeReason,150)})`:""):(d.trades.length+" operaciones")}, resultado ${r!=null?fmtR(r):"—"}, ánimo ${d.mood||"?"}/5, sueño ${d.sleep||"?"} h, nota de ejecución ${d.execScore||"?"}/10.`;
+  if(br.length)s+=`\n  Normas rotas: ${br.join(" | ")}${d.brokenNote?` · Explicación: ${cut(d.brokenNote,long?300:150)}`:""}`;
+  (d.trades||[]).forEach(t=>s+="\n"+tradeText(t,long));
+  if(long){
+    if(d.levels)s+=`\n  Plan previo: ${cut(d.levels,250)}`;
+    if(d.good)s+=`\n  Hizo bien: ${cut(d.good,250)}`;
+    if(d.improve)s+=`\n  A mejorar: ${cut(d.improve,250)}`;
+    (d.study||[]).forEach(x=>s+=`\n  Estudio (${x.kind}, ${x.min||"?"} min): ${cut(x.title,100)}${x.notes?` — ${cut(x.notes,200)}`:""}`);
+  }
+  if(d.lesson)s+=`\n  Lección: ${cut(d.lesson,200)}`;
+  return s;
+}
+function statsText(){
+  const all=allTrades(),m=metrics(all),ph=phases();
+  const loggedDays=Object.keys(S.days).filter(isLogged);
+  const br={};loggedDays.forEach(d=>brokenIds(S.days[d]).forEach(id=>br[id]=(br[id]||0)+1));
+  const errs=errorCosts(all).slice(0,5);
+  return [
+    `Día ${Math.max(1,diffDays(S.plan.startDate||todayStr(),todayStr())+1)} del plan (empezó el ${S.plan.startDate}). Fase actual de mi camino: ${ph.cur+1} de ${ph.P.length}, ${ph.P[ph.cur].name} (${ph.road.done} de ${ph.road.total} pasos hechos). Próximos pasos: ${ph.road.next.slice(0,3).map(s=>s.text).join(" | ")||"ninguno"}.`,
+    `Racha registrando: ${ph.logStreak} días · racha sin romper normas: ${ph.cleanStreak} días · días registrados: ${loggedDays.length} · días limpios: ${loggedDays.filter(isClean).length}.`,
+    `Operaciones totales: ${m.n} · resultado ${m.nr?fmtR(m.total):"—"} · expectativa ${isFinite(m.exp)?m.exp.toFixed(2)+"R":"—"} · acierto ${fmtPct(m.win)} · siguiendo el plan ${fmtPct(m.followRate)}.`,
+    `Normas más rotas: ${Object.entries(br).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([id,n])=>`${ruleText(id)} (${n})`).join(" | ")||"ninguna"}.`,
+    `Errores más caros: ${errs.map(e=>`${e.tag} (${e.n} veces, ${e.nr?fmtR(e.total):"sin R"})`).join(" | ")||"ninguno marcado"}.`
+  ].join("\n");
+}
+
+/* ---------- cabecera ---------- */
+function refreshHeader(){
+  const start=S.plan.startDate||todayStr();
+  $("#dayNum").textContent=Math.max(1,diffDays(start,todayStr())+1);
+  $("#since").textContent=diffDays(start,todayStr())<=0?"Hoy es el día uno de tu plan. Empieza registrando cómo ha ido.":"Desde el "+fmtShort(start)+". Cada día cuenta, operes o no.";
+  const ph=phases();
+  $("#kpis").innerHTML=
+    `<span class="kpi">Racha registrando <b>${ph.logStreak}</b></span>`+
+    `<span class="kpi">Días limpios seguidos <b>${ph.cleanStreak}</b></span>`+
+    `<span class="kpi">Camino <b>${Math.round(ph.road.done/ph.road.total*100)}%</b></span>`+
+    `<button type="button" class="kpi kbtn" data-open-goals>Ver mis metas</button>`;
+}
+
+/* ---------- vistas ---------- */
+const SECTIONS=[
+  {id:"hoy",views:[["hoy","Hoy"]]},
+  {id:"progreso",views:[["camino","Mi camino"],["cal","Calendario"],["semana","Semana"],["stats","Estadísticas"]]},
+  {id:"aprender",views:[["formacion","Lecciones"],["ideas","Ideas para la app"]]},
+  {id:"mentor",views:[["mentor","Mentor"]]},
+  {id:"plan",views:[["metas","Metas y sueños"],["sistema","Mi sistema"],["playbook","Playbook"],["normas","Normas"]]}];
+const SEC_OF={};SECTIONS.forEach(x=>x.views.forEach(([v])=>SEC_OF[v]=x.id));
+const lastSub={};
+function part(html,name){const bits=html.split(/<!--part:([a-z]+)-->/),out={};for(let i=1;i<bits.length;i+=2)out[bits[i]]=bits[i+1];return out[name]||""}
+function render(){
+  if(S.view==="plan")S.view="metas";
+  if(!SEC_OF[S.view])S.view="hoy";
+  const sec=SEC_OF[S.view];lastSub[sec]=S.view;
+  document.querySelectorAll(".navbtn").forEach(b=>{if(b.dataset.sec===sec)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+  refreshHeader();
+  let h="";
+  if(S.mode==="local")h+=`<div class="banner">Estás usando la bitácora sin conexión a Claude: lo que escribas se guarda solo en este navegador y no se pueden subir fotos, ni usar el mentor. Ábrela desde Claude con tu sesión iniciada para tenerlo todo.</div>`;
+  const sx=SECTIONS.find(x=>x.id===sec);
+  if(sx.views.length>1)h+=`<div class="subnav" role="tablist">${sx.views.map(([v,l])=>`<button type="button" role="tab" data-act="sub" data-v="${v}" aria-selected="${S.view===v}">${l}</button>`).join("")}</div>`;
+  const V={hoy:viewDay,camino:viewRoad,cal:viewCal,semana:viewWeek,stats:viewStats,mentor:viewMentor,
+    formacion:()=>part(viewLearn(),"lecciones"),ideas:()=>part(viewLearn(),"ideas"),
+    metas:viewMetas,sistema:()=>part(viewPlan(),"sistema")+exportCard(),playbook:()=>part(viewPlan(),"playbook"),normas:()=>part(viewPlan(),"normas")};
+  h+=(V[S.view]||viewDay)();
+  $("#main").innerHTML=h;
+}
+
+const sel=(k,opts,val,attr)=>`<select ${attr||"data-k"}="${k}">${opts.map(o=>`<option value="${esc(o)}"${o===val?" selected":""}>${esc(o||"—")}</option>`).join("")}</select>`;
+const txt=(k,val,ph,attr,extra)=>`<input type="text" ${attr||"data-k"}="${k}" value="${esc(val)}" placeholder="${esc(ph||"")}" ${extra||""}>`;
+const area=(k,val,ph,attr)=>`<textarea ${attr||"data-k"}="${k}" placeholder="${esc(ph||"")}">${esc(val)}</textarea>`;
+const fld=(label,inner)=>`<label class="field"><span>${label}</span>${inner}</label>`;
+const rcolor=r=>`var(${r>0?"--win":r<0?"--loss":"--fg"})`;
+function mediaGrid(list,scope,path,small){
+  if(!list||!list.length)return "";
+  return `<div class="media${small?" sm":""}">${list.map((m,i)=>{
+    const src="/_blob/"+encodeURIComponent(m.id);
+    const key=scope+":"+path+"."+i,confirming=S.confirm===key;
+    const x=scope?`<button type="button" class="x${confirming?" btn danger":""}" data-act="delMedia" data-scope="${scope}" data-path="${path}" data-i="${i}">${confirming?"¿Borrar? Sí":"Quitar"}</button>`:"";
+    return m.type==="video"?`<div class="mitem"><video src="${src}" controls preload="metadata"></video>${x}</div>`:`<div class="mitem"><img src="${src}" alt="${esc(m.name||"Captura")}" data-act="zoom" loading="lazy">${x}</div>`;
+  }).join("")}</div>`;
+}
+function uploader(scope,path,label,imagesOnly){
+  if(S.mode!=="db")return "";
+  if(!S.assets)return `<p class="hint">Solo quien puede editar esta bitácora puede subir archivos.</p>`;
+  return `<label class="btn sm upl">${label}<input type="file" accept="${imagesOnly?"image/*":"image/*,video/*"}" multiple data-upload="${scope}|${path}"></label>`;
+}
+
+const tradeIsOpen=(t,i)=>S.tradeOpen[i]===true||(S.tradeOpen[i]===undefined&&!String(t.asset||"").trim()&&tradeR(t)==null);
+function tradeSummary(t,i){
+  const r=tradeR(t);
+  return `<button type="button" class="tsum ${r>0?"w":r<0?"l":""}" data-act="tradeToggle" data-i="${i}" id="trade-${i}"><b>Operación ${i+1}</b><span>${esc([t.asset,t.dir==="Long"?"Compra":t.dir==="Short"?"Venta":"",t.account||"Demo",t.setup].filter(Boolean).join(" · "))}</span><span class="rpill ${r>0?"w":r<0?"l":""}">${r!=null?fmtR(r):"sin resultado"}</span>${t.followed==="si"?`<span class="hint">Dentro del plan</span>`:t.followed==="no"?`<span class="hint" style="color:var(--loss)">Fuera del plan</span>`:""}<span class="hint" style="margin-left:auto">Editar</span></button>`;
+}
+const DAY_BODY={
+  metas:(d,c)=>`<p class="hint">${c.isToday?"Léelas en voz alta, como si ya las hubieras conseguido. Te ayuda a entrar enfocado en la sesión.":"Este paso solo se marca el mismo día."}</p>${c.isToday?`<div class="row"><button type="button" class="btn primary" data-open-goals>${readOn(c.date)?"Volver a leerlas":"Abrir mis metas"}</button></div>`:""}`,
+  prep:(d)=>`  <div class="grid">
+    <div class="field"><span>Estado de ánimo</span><div class="seg" role="group" aria-label="Estado de ánimo">${[1,2,3,4,5].map(v=>`<button type="button" data-act="mood" data-v="${v}" aria-pressed="${String(+d.mood===v)}">${v}</button>`).join("")}</div></div>
+    ${fld("Horas de sueño",txt("sleep",d.sleep,"7","data-k",'inputmode="decimal"'))}
+    ${fld("Sesgo del mercado",sel("bias",["","Alcista","Bajista","Lateral","Sin sesgo claro"],d.bias))}
+  </div>
+  <div class="grid wide">
+    ${fld("Niveles clave y plan para hoy",area("levels",d.levels,"Zonas que vigilo, qué tiene que pasar para entrar y qué invalida la idea"))}
+    ${fld("Noticias del día",area("news",d.news,"Ej.: IPC EE. UU. 14:30 — no opero de 14:15 a 14:45"))}
+  </div>`,
+  ops:(d)=>`<label class="row" style="gap:8px"><input type="checkbox" data-k="noTrade" ${d.noTrade?"checked":""}> Hoy no he operado</label>
+    ${d.noTrade?fld("¿Por qué no has operado?",area("noTradeReason",d.noTradeReason,"No hubo setup válido, día de noticias, día de estudio… No operar también es seguir el plan.")):""}
+    ${d.trades.map((t,i)=>tradeIsOpen(t,i)?tradeCard(t,i):tradeSummary(t,i)).join("")}
+    <div class="row"><button class="btn primary" data-act="addTrade">Añadir operación</button></div>`,
+  normas:(d,c)=>{const rd=c.rd;return `  <p class="hint">Marca cada norma con sinceridad al acabar la sesión. Un día limpio vale más que un día verde.</p>
+  <div class="rules">${S.plan.rules.length?S.plan.rules.map(rule=>{const st=d.rules[rule.id]||"";return `<div class="rule ${st==="broken"?"broken":st==="ok"?"ok":""}"><div class="t"><span class="c">${esc(rule.cat)}</span>${esc(rule.text)}</div>
+    <div class="seg ok-bad" role="group"><button type="button" data-act="rule" data-id="${rule.id}" data-v="ok" class="${st==="ok"?"on-ok":""}" aria-pressed="${st==="ok"}">Cumplida</button><button type="button" data-act="rule" data-id="${rule.id}" data-v="broken" class="${st==="broken"?"on-bad":""}" aria-pressed="${st==="broken"}">Rota</button></div></div>`}).join(""):`<p class="empty">Todavía no tienes normas. Escríbelas en «Mi plan».</p>`}</div>
+  ${rd.broken?`<div class="callout"><div><b>Has roto ${rd.broken} norma${rd.broken>1?"s":""}.</b> Consecuencia que tú mismo fijaste: ${esc(S.plan.consequence||"define una en «Mi plan».")}</div>${fld("¿Qué pasó exactamente y qué harás para que no se repita?",area("brokenNote",d.brokenNote,"Sé concreto: qué sentiste justo antes, qué te convenció de saltarte la norma…"))}</div>`:""}
+`},
+  rev:(d)=>`  <div class="grid wide">
+    ${fld("Qué he hecho bien",area("good",d.good,""))}
+    ${fld("Qué tengo que mejorar",area("improve",d.improve,""))}
+  </div>
+  ${fld("Lección del día (una frase)",txt("lesson",d.lesson,"Ej.: si dudo en la entrada, no entro"))}
+  <div class="field"><span>Nota de ejecución (cómo seguí mi proceso, no el resultado)</span><div class="seg" role="group">${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button type="button" data-act="exec" data-v="${v}" aria-pressed="${String(+d.execScore===v)}">${v}</button>`).join("")}</div></div>
+`,
+  paso:(d,c)=>{const R=c.R,gs=c.gs,all=R.P.flatMap(p=>p.steps.map(s=>Object.assign({phase:p.i},s)));const opts=R.next.slice(0,10);const chosen=all.find(s=>s.id===gs.step);if(chosen&&!opts.find(s=>s.id===chosen.id))opts.unshift(chosen);
+    return `<p class="hint">Fase ${R.cur+1} de tu camino: ${esc(R.P[R.cur].name)}. Llevas ${R.done} de ${R.total} pasos.</p>
+    <div class="grid wide"><label class="field"><span>¿Hacia qué paso he avanzado hoy?</span><select data-k="goalStep.step"><option value="">—</option>${opts.map(s=>`<option value="${s.id}"${gs.step===s.id?" selected":""}>F${s.phase+1} · ${esc(cut(s.text,70))}${s.done?" ✓":""}</option>`).join("")}</select></label>
+    ${fld("¿Qué he hecho hoy para acercarme?",txt("goalStep.text",gs.text||"","Ej.: 2 horas de backtesting de mi setup"))}</div>
+    <div class="row"><button type="button" class="btn sm ghost" data-act="goRoad">Ver mi camino completo</button></div>`},
+  estudio:(d)=>`  <p class="hint">Backtesting, revisión de operaciones o lecturas sueltas. Los vídeos del bootcamp apúntalos mejor en <button type="button" class="btn sm" data-act="goLearn">Aprender</button>, con su ficha completa.</p>
+  ${d.study.map((s,i)=>`<div class="trade"><div class="grid">
+      ${fld("Tipo",sel(`study.${i}.kind`,STUDY_KINDS,s.kind))}
+      ${fld("Título",txt(`study.${i}.title`,s.title,"Nombre del vídeo o tema"))}
+      ${fld("Minutos",txt(`study.${i}.min`,s.min,"30","data-k",'inputmode="numeric"'))}
+    </div>
+    ${fld("Enlace",`<input type="url" data-k="study.${i}.url" value="${esc(s.url)}" placeholder="https://…">`)}
+    ${fld("Qué he aprendido y cómo lo aplico",area(`study.${i}.notes`,s.notes,"La idea principal y si cambia algo de mi plan"))}
+    <div class="row"><button class="btn sm ghost danger" data-act="delStudy" data-i="${i}">Quitar</button></div></div>`).join("")}
+  <div class="row"><button class="btn" data-act="addStudy">Añadir estudio</button></div>`,
+  fotos:(d)=>`  <p class="hint">Capturas del gráfico, tu vídeo resumen del día… Hasta 20 MB por archivo. Para vídeos más largos, súbelos a YouTube (oculto) o Drive y pega el enlace.</p>
+  ${mediaGrid(d.media,"day","media")}
+  <div class="row">${uploader("day","media","Subir fotos o vídeos")}</div>
+  ${d.links.length?`<div class="links">${d.links.map((l,i)=>`<div class="row"><a href="${esc(l)}" target="_blank" rel="noopener">${esc(l)}</a><button class="btn sm ghost danger" data-act="delLink" data-i="${i}">Quitar</button></div>`).join("")}</div>`:""}
+  <div class="row"><input type="url" id="newLink" placeholder="Pega un enlace a tu vídeo (YouTube, Drive…)" style="flex:1;min-width:200px"><button class="btn" data-act="addLink">Añadir enlace</button></div>
+`
+};
+function viewDay(){
+  const date=S.date,d=getDay(date),start=S.plan.startDate||todayStr();
+  if(S._dayFor!==date){S._dayFor=date;S.dayOpen=null;S.tradeOpen={}}
+  const pd=diffDays(start,date)+1,r=dayR(d),rd=ruleDone(d),isToday=date===todayStr(),goal=currentGoal(date),R=roadState(),gs=d.goalStep||{};
+  const nT=d.trades.length,nM=d.media.length+d.links.length;
+  const steps=[
+    {k:"metas",t:"Leer mis metas",w:"Al empezar",done:readOn(date),sum:readOn(date)?"Leídas en voz alta":"Léelas en voz alta"},
+    {k:"prep",t:"Preparación",w:"Antes de operar",done:!!(d.mood||d.bias||String(d.levels||"").trim()),sum:[d.mood?`Ánimo ${d.mood}/5`:"",d.sleep?`${d.sleep} h de sueño`:"",d.bias||""].filter(Boolean).join(" · ")||"Ánimo, sueño, niveles y noticias"},
+    {k:"ops",t:"Operaciones",w:"Durante la sesión",done:nT>0||!!d.noTrade,sum:d.noTrade?"Hoy no he operado":nT?`${nT} operaci${nT>1?"ones":"ón"} · ${r!=null?fmtR(r):"sin resultado"}`:"Apunta cada entrada o marca que no has operado"},
+    {k:"normas",t:"Mis normas",w:"Al acabar la sesión",done:rd.total>0&&rd.marked===rd.total&&!rd.broken,warn:rd.broken>0,sum:rd.broken?`${rd.broken} rota${rd.broken>1?"s":""} · ${rd.marked} de ${rd.total} revisadas`:`${rd.marked} de ${rd.total} revisadas`},
+    {k:"rev",t:"Revisión del día",w:"Después de la sesión",done:!!(d.execScore||String(d.lesson||"").trim()||String(d.good||"").trim()||String(d.improve||"").trim()),sum:d.execScore?`Ejecución ${d.execScore}/10${d.lesson?" · "+cut(d.lesson,50):""}`:"Qué hice bien, qué mejorar y la lección"},
+    {k:"paso",t:"Mi paso de hoy",w:"Hacia mis metas",done:!!(gs.step||String(gs.text||"").trim()),sum:gs.text?cut(gs.text,60):"Un paso hacia tu camino"}];
+  const extras=[
+    {k:"estudio",t:"Estudio",w:"Opcional",sum:d.study.length?`${d.study.length} apunte${d.study.length>1?"s":""}`:"Backtesting, revisiones, lecturas"},
+    {k:"fotos",t:"Fotos y vídeos",w:"Opcional",sum:nM?`${nM} archivo${nM>1?"s":""}`:"Capturas o tu vídeo del día"}];
+  const done=steps.filter(s=>s.done).length,order=steps.concat(extras).map(s=>s.k);
+  if(S.dayOpen==null){const f=steps.find(s=>!s.done);S.dayOpen=f?f.k:"none"}
+  const ctx={date,isToday,rd,r,R,gs};
+  const item=(s,i,isExtra)=>{const open=S.dayOpen===s.k,next=order[order.indexOf(s.k)+1];
+    return `<section class="accitem${open?" open":""}${s.done?" done":""}${s.warn?" warn":""}" id="acc-${s.k}">
+      <button type="button" class="acc-h" data-act="dayOpen" data-k="${s.k}" aria-expanded="${open}"><span class="acc-ic">${s.warn?"!":s.done?"✓":isExtra?"+":i+1}</span><span class="acc-t"><b>${s.t}</b><span class="hint">${esc(s.w)} · ${esc(s.sum)}</span></span><span class="chev" aria-hidden="true">▾</span></button>
+      ${open?`<div class="acc-b">${DAY_BODY[s.k](d,ctx)}<div class="row acc-f">${next?`<button type="button" class="btn" data-act="dayOpen" data-k="${next}">Siguiente paso →</button>`:`<button type="button" class="btn" data-act="dayOpen" data-k="${s.k}">Cerrar</button>`}</div></div>`:""}
+    </section>`};
+  return `<section class="card"><div class="datebar">
+    <button class="btn sm" data-act="prevDay" aria-label="Día anterior">←</button>
+    <span class="d">${esc(fmtLong(date))}</span>
+    <button class="btn sm" data-act="nextDay" aria-label="Día siguiente">→</button>
+    ${pd>=1?`<span class="tag">Día ${pd} del plan</span>`:`<span class="tag">Antes del inicio</span>`}
+    ${isToday?"":`<button class="btn sm ghost" data-act="goToday">Ir a hoy</button>`}
+    <input type="date" id="pickDate" value="${date}" style="width:auto;margin-left:auto" aria-label="Elegir fecha">
+  </div>
+  <div class="dayprog"><span class="num">${done}/${steps.length}</span><div class="bar ${done===steps.length?"done":""}"><i style="width:${Math.round(done/steps.length*100)}%"></i></div></div>
+    <p class="hint">${done===steps.length?"Día completo. Buen trabajo.":"Pasos de hoy. Toca cada uno para rellenarlo."}</p>
+    ${goal?`<div class="goalband"><b>Objetivo de esta semana:</b> ${esc(goal)}</div>`:""}
+  </section>
+  <div class="acc">${steps.map((s,i)=>item(s,i,false)).join("")}<span class="acc-lbl">Extras</span>${extras.map((s,i)=>item(s,i,true)).join("")}</div>`;
+}
+
+function tradeCard(t,i){
+  const r=tradeR(t),c=calcR(t);
+  const names=["",...S.plan.playbook.map(s=>s.name).filter(Boolean)];
+  if(t.setup&&!names.includes(t.setup))names.push(t.setup);
+  const setup=S.plan.playbook.find(s=>s.name===t.setup),conds=condList(setup);
+  const ok=conds.filter((_,k)=>t.conds&&t.conds[k]).length;
+  const p=`trades.${i}`,errs=t.errors||[];
+  return `<div class="trade ${r>0?"w":r<0?"l":""}" id="trade-${i}">
+   <div class="trade-h"><h3>Operación ${i+1}</h3><span class="rpill ${r>0?"w":r<0?"l":""}" id="rp-${i}">${r!=null?fmtR(r):"sin resultado"}</span>
+     <div class="seg" role="group" aria-label="Cuenta">${ACCOUNTS.map(a=>`<button type="button" data-act="acc" data-i="${i}" data-v="${a}" aria-pressed="${String((t.account||"Demo")===a)}">${a}</button>`).join("")}</div>
+     <button class="btn sm" style="margin-left:auto" data-act="tradeToggle" data-i="${i}">Cerrar</button><button class="btn sm ghost danger" data-act="delTrade" data-i="${i}">${S.confirm==="trade."+i?"¿Borrar? Sí":"Borrar"}</button></div>
+   <div class="grid">
+     ${fld("Activo",txt(p+".asset",t.asset,"EURUSD, NAS100…"))}
+     <div class="field"><span>Dirección</span><div class="seg" role="group">${["Long","Short"].map(v=>`<button type="button" data-act="dir" data-i="${i}" data-v="${v}" aria-pressed="${String(t.dir===v)}">${v==="Long"?"Compra":"Venta"}</button>`).join("")}</div></div>
+     ${fld("Hora de entrada",txt(p+".time",t.time,"09:42"))}
+     ${fld("Setup del playbook",sel(String(i),names,t.setup||"","data-setup"))}
+   </div>
+   ${conds.length?`<div class="conds"><div class="row"><b style="font-size:13px">Condiciones de «${esc(setup.name)}»</b><span class="cnt">${ok}/${conds.length} cumplidas</span></div>${conds.map((cx,k)=>`<label><input type="checkbox" data-act-check="cond" data-i="${i}" data-c="${k}" ${t.conds&&t.conds[k]?"checked":""}> ${esc(cx)}</label>`).join("")}</div>`:""}
+   <div class="grid">
+     ${fld("Precio de entrada",txt(p+".entry",t.entry,"","data-k",'inputmode="decimal" data-calc="'+i+'"'))}
+     ${fld("Stop loss",txt(p+".sl",t.sl,"","data-k",'inputmode="decimal" data-calc="'+i+'"'))}
+     ${fld("Take profit",txt(p+".tp",t.tp,"","data-k",'inputmode="decimal"'))}
+     ${fld("Precio de salida",txt(p+".exit",t.exit,"","data-k",'inputmode="decimal" data-calc="'+i+'"'))}
+     ${fld("Resultado en R",txt(p+".r",t.r,c!=null?String(c):"Ej.: 2 o -1","data-k",'inputmode="decimal" data-calc="'+i+'"'))}
+     ${fld("Resultado en €",txt(p+".pnl",t.pnl,"","data-k",'inputmode="decimal"'))}
+   </div>
+   <p class="calc" id="calc-${i}">${calcMsg(t)}</p>
+   ${fld("¿Por qué entré? (qué vi, qué confirmaciones tenía)",area(p+".why",t.why,"Describe el setup como si se lo explicaras a otra persona"))}
+   <div class="grid">
+     ${fld("Emoción al entrar",sel(p+".emotion",EMOS,t.emotion||""))}
+     <div class="field"><span>¿Seguí mi plan?</span><div class="seg ok-bad" role="group"><button type="button" data-act="follow" data-i="${i}" data-v="si" class="${t.followed==="si"?"on-ok":""}" aria-pressed="${t.followed==="si"}">Sí</button><button type="button" data-act="follow" data-i="${i}" data-v="no" class="${t.followed==="no"?"on-bad":""}" aria-pressed="${t.followed==="no"}">No</button></div></div>
+   </div>
+   <div class="field"><span>Errores en esta operación (déjalo vacío si la ejecución fue limpia)</span><div class="chips">${ERROR_TAGS.map(e=>`<button type="button" class="chipbtn" data-act="errTag" data-i="${i}" data-v="${esc(e)}" aria-pressed="${errs.includes(e)}">${esc(e)}</button>`).join("")}</div></div>
+   ${fld("Gestión y errores (qué haría distinto)",area(p+".mistakes",t.mistakes,"Moví el stop, salí antes de tiempo, entré tarde…"))}
+   ${mediaGrid(t.media||[],"day",p+".media")}
+   <div class="row">${uploader("day",p+".media","Añadir captura")}</div>
+  </div>`;
+}
+function calcMsg(t){const c=calcR(t);return c!=null?`Calculado con entrada, stop y salida: ${fmtR(c)}${isNaN(num(t.r))?" (se usa este valor)":""}`:"Rellena entrada, stop y salida para calcular la R automáticamente, o escríbela a mano."}
+
+function viewCal(){
+  const [Y,M]=S.month.split("-").map(Number);
+  const first=new Date(Y,M-1,1,12),days=new Date(Y,M,0).getDate(),lead=(first.getDay()+6)%7;
+  const start=S.plan.startDate||todayStr(),today=todayStr();
+  let cells="";for(let i=0;i<lead;i++)cells+=`<div class="cell out" aria-hidden="true"></div>`;
+  let mR=0,mTr=0,mLog=0,mClean=0,mBroken=0;
+  for(let dd=1;dd<=days;dd++){
+    const date=Y+"-"+pad(M)+"-"+pad(dd),d=S.days[date],logged=isLogged(date),pd=diffDays(start,date)+1;
+    const r=logged?dayR(d):null,br=logged?brokenCount(d):0;
+    if(logged){mLog++;mTr+=(d.trades||[]).length;if(r!=null)mR+=r;if(isClean(date))mClean++;if(br)mBroken++}
+    let cls="cell";if(date===today)cls+=" today";
+    if(logged)cls+=r>0?" w":r<0?" l":" flat";else if(date<start)cls+=" pre";else if(date<=today)cls+=" miss";
+    const icons=logged?[(d.trades||[]).length?(d.trades.length+" op."):(d.noTrade?"sin operar":""),(d.media||[]).length?"📷 "+d.media.length:"",(d.study||[]).length?"estudio":""].filter(Boolean).join(" · "):"";
+    cells+=`<button type="button" class="${cls}" data-act="openDay" data-date="${date}" aria-label="${esc(fmtLong(date))}">
+      ${br?`<span class="flag" title="Norma rota"></span>`:""}<span class="dn">${dd}</span>${pd>=1&&date<=today?`<span class="pd">D${pd}</span>`:""}
+      <span class="ic">${esc(icons)}</span><span class="rv">${logged?(r!=null?fmtR(r):(isClean(date)?"✓":"·")):""}</span></button>`;
+  }
+  return `<section class="card">
+   <div class="monthbar"><button class="btn sm" data-act="prevMonth" aria-label="Mes anterior">←</button><h2>${MESES[M-1]} ${Y}</h2><button class="btn sm" data-act="nextMonth" aria-label="Mes siguiente">→</button>
+   <button class="btn sm ghost" data-act="thisMonth">Este mes</button></div>
+   <div class="msum"><span>Resultado <b style="color:${rcolor(mR)}">${mTr?fmtR(mR):"0R"}</b></span><span>Operaciones <b>${mTr}</b></span><span>Días registrados <b>${mLog}</b></span><span>Días limpios <b>${mClean}</b></span><span>Días con normas rotas <b>${mBroken}</b></span></div>
+   <div class="cal">${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(w=>`<div class="wd">${w}</div>`).join("")}${cells}</div>
+   <div class="legend"><span><i style="background:var(--win-soft)"></i>Día en positivo</span><span><i style="background:var(--loss-soft)"></i>Día en negativo</span><span><i style="background:var(--surface2)"></i>Registrado sin resultado</span><span><i style="border-style:dashed"></i>Sin registrar</span><span><i style="background:var(--loss);border-radius:50%;border:0"></i>Norma rota</span></div>
+   <p class="hint">Toca un día para abrir o completar su registro.</p>
+  </section>`;
+}
+
+/* ---------- semana ---------- */
+function aiUnavailable(){return S.mode!=="db"?"Disponible al abrir la bitácora desde Claude con tu sesión iniciada.":"Claude no está disponible en esta vista."}
+function viewWeek(){
+  const m=S.week,w=getWeek(m),ws=weekSummary(m),prev=S.weeks[addDays(m,-7)],prevGoal=prev&&prev.nextGoal;
+  const st=(k,v,s,cls)=>`<div class="stat"><span class="k">${k}</span><span class="v ${cls||""}">${v}</span>${s?`<span class="s">${s}</span>`:""}</div>`;
+  const isThis=m===mondayOf(todayStr());
+  const streaming=S.streaming&&S.streaming.col==="weeks"&&S.streaming.id===m;
+  let h=`<section class="card"><div class="monthbar"><button class="btn sm" data-act="prevWeek" aria-label="Semana anterior">←</button><h2>Semana del ${fmtDM(m)} al ${fmtDM(ws.end)}</h2><button class="btn sm" data-act="nextWeek" aria-label="Semana siguiente">→</button>${isThis?"":`<button class="btn sm ghost" data-act="thisWeek">Esta semana</button>`}</div>
+   ${prevGoal?`<div class="goalband"><b>Objetivo que te pusiste para esta semana:</b> ${esc(prevGoal)}</div>
+   <div class="field"><span>¿Lo has cumplido?</span><div class="seg ok-bad" role="group">${[["si","Sí","on-ok"],["parcial","A medias","on-mid"],["no","No","on-bad"]].map(([v,l,c])=>`<button type="button" data-act="goalMet" data-v="${v}" class="${w.goalMet===v?c:""}" aria-pressed="${w.goalMet===v}">${l}</button>`).join("")}</div></div>`:`<p class="hint">Al final de cada semana te pondrás un único objetivo para la siguiente. Aparecerá aquí y en tu registro diario.</p>`}
+  </section>
+  <section class="card"><div class="card-h"><span class="when">Automático</span><h2>Resumen de la semana</h2></div>
+   <div class="stats">
+    ${st("Días registrados",ws.logged.length+" / 7")}
+    ${st("Operaciones",ws.mt.n)}
+    ${st("Resultado",ws.mt.nr?fmtR(ws.mt.total):"—","",ws.mt.total>0?"pos":ws.mt.total<0?"neg":"")}
+    ${st("% de acierto",fmtPct(ws.mt.win))}
+    ${st("Siguiendo el plan",fmtPct(ws.mt.followRate))}
+    ${st("Días limpios",ws.clean+" / "+ws.logged.length)}
+    ${st("Nota de ejecución media",isFinite(ws.execAvg)?ws.execAvg.toFixed(1):"—")}
+    ${st("Estudio",Math.floor(ws.study/60)+" h "+(ws.study%60)+" min")}
+   </div>
+   <div class="grid wide">
+    <div class="field"><span>Normas rotas</span>${ws.broken.length?`<ul class="plainlist">${ws.broken.map(([id,n])=>`<li>${esc(ruleText(id))} <b class="mono">×${n}</b></li>`).join("")}</ul>`:`<p class="empty">Ninguna esta semana.</p>`}</div>
+    <div class="field"><span>Errores marcados</span>${ws.errors.length?`<ul class="plainlist">${ws.errors.map(e=>`<li>${esc(e.tag)} <b class="mono">×${e.n}</b>${e.nr?` · <span class="mono" style="color:${rcolor(e.total)}">${fmtR(e.total)}</span>`:""}</li>`).join("")}</ul>`:`<p class="empty">Ninguno marcado.</p>`}</div>
+   </div>
+   ${ws.best?`<div class="grid wide"><div class="field"><span>Mejor operación</span><p class="hint" style="color:var(--fg)">${fmtDM(ws.best.t.date)} · ${esc(ws.best.t.asset||"")} · ${esc(ws.best.t.setup||"")} · <b class="mono" style="color:${rcolor(ws.best.r)}">${fmtR(ws.best.r)}</b></p></div>
+    <div class="field"><span>Peor operación</span><p class="hint" style="color:var(--fg)">${fmtDM(ws.worst.t.date)} · ${esc(ws.worst.t.asset||"")} · ${esc(ws.worst.t.setup||"")} · <b class="mono" style="color:${rcolor(ws.worst.r)}">${fmtR(ws.worst.r)}</b></p></div></div>`:""}
+   ${ws.lessons.length?`<div class="field"><span>Tus lecciones de la semana</span><ul class="plainlist">${ws.lessons.map(([d,l])=>`<li><span class="mono" style="color:var(--muted)">${fmtDM(d)}</span> ${esc(l)}</li>`).join("")}</ul></div>`:""}
+  </section>
+  <section class="card"><div class="card-h"><span class="when">Tu revisión</span><h2>Preguntas de la semana</h2></div>
+   <div class="grid wide">
+    ${fld("¿Qué ha funcionado esta semana?",area("worked",w.worked,"","data-wk"))}
+    ${fld("¿Qué no ha funcionado?",area("notWorked",w.notWorked,"","data-wk"))}
+   </div>
+   ${fld("¿Qué norma o qué error te ha costado más y por qué?",area("ruleFocus",w.ruleFocus,"","data-wk"))}
+   ${fld("Un único objetivo para la próxima semana (concreto y medible)",txt("nextGoal",w.nextGoal,"Ej.: marcar las 4 condiciones del setup antes de cada entrada","data-wk"))}
+  </section>
+  <section class="card"><div class="card-h"><span class="when">Mentor</span><h2>Revisión de Claude</h2></div>
+   <p class="hint">Claude lee tu plan, tus normas, cada día de esta semana y tus respuestas, y te devuelve una revisión como la haría un mentor. Mejor si antes respondes las preguntas.</p>`;
+  if(!S.sample)h+=`<p class="empty">${aiUnavailable()}</p>`;
+  else{
+    const text=streaming?S.streaming.text:w.review;
+    if(streaming||text)h+=`<div class="review">${w.reviewedAt&&!streaming?`<span class="hint">Revisado el ${esc(fmtStamp(w.reviewedAt))}</span>`:""}<div class="md" id="stream-weeks-${m}">${text?md(text):`<span class="thinking">Claude está leyendo tu semana…</span>`}</div></div>`;
+    if(S.aiErr["weeks/"+m])h+=`<p class="hint" style="color:var(--loss)">${esc(S.aiErr["weeks/"+m])}</p>`;
+    h+=`<div class="row">${streaming?`<button class="btn" data-act="stop">Detener</button>`:`<button class="btn primary" data-act="reviewWeek" ${ws.logged.length?"":"disabled"}>${w.review?"Volver a revisar mi semana":"Que Claude revise mi semana"}</button>`}${ws.logged.length?"":`<span class="hint">Registra al menos un día de esta semana.</span>`}</div>`;
+  }
+  return h+`</section>`;
+}
+
+/* ---------- mentor ---------- */
+function composer(key,placeholder){
+  const pend=S.pending[key]||[],busyNow=!!S.streaming;
+  const canImg=!!(S.imgLimits&&S.assets);
+  return `<div class="composer">
+    ${area(key,S.drafts[key]||"",placeholder,"data-dk")}
+    ${pend.length?`<div class="media sm">${pend.map((p,i)=>`<div class="mitem"><img src="${p.url}" alt="Imagen para enviar"><button type="button" class="x" data-act="unpick" data-key="${key}" data-i="${i}">Quitar</button></div>`).join("")}</div>`:""}
+    <div class="row">
+      <div class="seg" role="group" aria-label="Tipo de respuesta">${Object.entries(MENTOR_MODES).map(([k,m])=>`<button type="button" data-act="mentorMode" data-v="${k}" aria-pressed="${S.mentorMode===k}">${m.label}</button>`).join("")}</div>
+      <label class="row hint" style="gap:6px"><input type="checkbox" data-act-check="mentorDays" ${S.mentorDays?"checked":""}> Incluir mis últimos 7 días</label>
+    </div>
+    <p class="hint">${MENTOR_MODES[S.mentorMode].hint}${S.mentorDays?" Incluir tus días añade bastante texto a la consulta.":""}</p>
+    <div class="row">
+      ${canImg?`<label class="btn sm upl">Añadir fotos (máx. ${MAX_IMGS})<input type="file" accept="image/*" multiple data-pick="${key}"></label>`:""}
+      <button class="btn primary" data-act="ask" data-key="${key}" ${busyNow?"disabled":""} style="margin-left:auto">Enviar al mentor</button>
+    </div>
+    ${S.aiErr["mentor/"+key]?`<p class="hint" style="color:var(--loss)">${esc(S.aiErr["mentor/"+key])}</p>`:""}
+  </div>`;
+}
+function viewMentor(){
+  let h=`<section class="card"><div class="card-h"><span class="when">Dudas y preguntas</span><h2>Pregúntale a tu mentor</h2></div>
+  <p class="hint">Envía capturas de gráficos, de operaciones o lo que no entiendas, con tu pregunta. El mentor conoce tu plan, tus normas, tu playbook y tus números, así que te responde sobre tu caso. Las conversaciones quedan guardadas aquí.</p>`;
+  if(!S.sample)return h+`<p class="empty">${aiUnavailable()}</p></section>`;
+  h+=composer("new","Ej.: ¿Esta entrada cumplía mi setup de ruptura y retesteo? ¿Dónde habría puesto el stop?")+`</section>`;
+  const threads=Object.values(S.mentor).filter(t=>t&&Array.isArray(t.messages)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(!threads.length)return h+`<section class="card"><p class="empty">Todavía no has hecho ninguna consulta. Tu primera pregunta aparecerá aquí con su respuesta.</p></section>`;
+  h+=threads.map(th=>{
+    const open=S.openThread===th.id,streaming=S.streaming&&S.streaming.col==="mentor"&&S.streaming.id===th.id;
+    const head=`<button type="button" class="thread-h" data-act="openThread" data-id="${th.id}" aria-expanded="${open}"><h3>${esc(th.title||"Consulta")}</h3><span class="meta">${esc(fmtStamp(th.createdAt||Date.now()))} · ${th.messages.filter(m=>m.role==="user").length} pregunta${th.messages.filter(m=>m.role==="user").length>1?"s":""}</span></button>`;
+    if(!open)return `<div class="thread">${head}</div>`;
+    return `<div class="thread">${head}<div class="thread-b">
+      ${th.messages.map((m,mi)=>m.role==="user"?`<div class="msg user"><span class="who">Tú</span>${m.text?`<div class="body">${esc(m.text)}</div>`:""}${mediaGrid(m.media||[],"","",true)}</div>`:`<div class="msg ai"><span class="who">Mentor</span><div class="md">${md(m.text||"")}</div></div>`).join("")}
+      ${streaming?`<div class="msg ai"><span class="who">Mentor</span><div class="md" id="stream-mentor-${th.id}">${S.streaming.text?md(S.streaming.text):`<span class="thinking">Mirando tu consulta…</span>`}</div><div class="row"><button class="btn sm" data-act="stop">Detener</button></div></div>`:""}
+      ${streaming?"":composer(th.id,"Sigue preguntando sobre esto…")}
+      <div class="row"><button class="btn sm ghost danger" data-act="delThread" data-id="${th.id}">${S.confirm==="thread."+th.id?"¿Borrar conversación? Sí":"Borrar conversación"}</button></div>
+    </div></div>`;
+  }).join("");
+  return h;
+}
+const MENTOR_RULES=`Eres mi mentor de trading. Responde en español, de tú: claro, directo y honesto.
+Si te mando capturas, analiza lo que se ve (estructura, zonas, velas, entrada, stop y objetivo) y dime si encaja con mi playbook y mis normas; si algo no se ve bien, dilo. Explica el porqué. No des señales para operar ahora ni prometas resultados: céntrate en proceso, riesgo, ejecución y psicología.
+Termina con 1 a 3 acciones concretas. Sin tablas ni introducciones.`;
+const MENTOR_MODES={
+  breve:{label:"Breve",tier:"quick",words:120,hint:"Respuesta corta y rápida. La que menos gasta."},
+  normal:{label:"Normal",tier:"default",words:220,hint:"Equilibrio entre detalle y gasto. Buena para analizar capturas."},
+  fondo:{label:"A fondo",tier:"complex",words:400,hint:"Análisis detallado. Gasta bastante más: úsalo solo para dudas importantes."}
+};
+function loadPref(k,def){try{const v=localStorage.getItem("bitacora-"+k);return v==null?def:JSON.parse(v)}catch(e){return def}}
+function savePref(k,v){try{localStorage.setItem("bitacora-"+k,JSON.stringify(v))}catch(e){}}
+function planTextShort(){
+  const p=S.plan;
+  const lg=p.goals.long.filter(x=>x.trim());
+  return [(lg.length?`Mis metas: ${lg.map(x=>cut(x,90)).join(" | ")}\n`:"")+`Mercado: ${p.market||"-"} · Activos: ${p.instruments||"-"} · TF: ${p.timeframe||"-"} · Horario: ${p.session||"-"} · Riesgo ${p.riskPct||"?"}% · Pérdida máx. diaria ${p.maxDailyLoss||"?"} · Máx. ${p.maxTrades||"?"} ops/día`,
+    `Normas: ${p.rules.map(r=>cut(r.text,90)).join(" | ")}`,
+    `Setups: ${p.playbook.map(s=>`${s.name} (${condList(s).map(c=>cut(c,60)).join("; ")||"sin condiciones"})`).join(" | ")}`].join("\n");
+}
+function mentorContext(mode,withDays){
+  const today=todayStr(),m=MENTOR_MODES[mode]||MENTOR_MODES.normal;
+  let s=`${MENTOR_RULES}\nLongitud máxima: ${m.words} palabras.\n\nMI PLAN\n${planTextShort()}\n\nMIS NÚMEROS\n${statsText()}`;
+  const ls=lessons().slice(0,3);
+  if(ls.length)s+=`\n\nLO ÚLTIMO QUE HE APRENDIDO\n${ls.map(l=>`- ${l.course?l.course+" ":""}${l.num?"#"+l.num+" ":""}${l.title||""}: ${cut(l.concepts,160)}`).join("\n")}`;
+  if(withDays){const last=[];for(let i=6;i>=0;i--){const d=addDays(today,-i);if(isLogged(d))last.push(dayText(d,false))}s+=`\n\nMIS ÚLTIMOS 7 DÍAS\n${last.join("\n")||"Sin días registrados."}`}
+  return s+`\n\nHoy es ${fmtLong(today)}. Mi consulta:`;
+}
+function aiErrMsg(e){
+  const c=e&&e.code;
+  return {not_granted:"No has permitido que la bitácora use Claude. Puedes activarlo desde el menú de permisos de la página.",rate_limited:"Has hecho muchas consultas seguidas o has llegado a tu límite de uso. Prueba un poco más tarde.",
+    session_expired:"Tu sesión ha caducado. Vuelve a iniciar sesión en Claude.",image_rejected:"Alguna imagen no se ha podido enviar. Prueba con una captura en JPG o PNG.",
+    images_unavailable:"En esta vista no se pueden enviar imágenes. Escribe la pregunta sin fotos.",prompt_too_large:"La consulta es demasiado larga. Acórtala.",
+    refused:"Claude no ha podido responder a esta consulta. Reformúlala.",sampling_disabled:"Claude no está disponible en esta cuenta."}[c]||"No se ha podido completar la respuesta. Inténtalo de nuevo.";
+}
+async function askMentor(key){
+  if(S.streaming||!S.sample)return;
+  const text=String(S.drafts[key]||"").trim(),files=S.pending[key]||[];
+  if(!text&&!files.length){setStatus("Escribe tu pregunta o añade una foto",true);return}
+  delete S.aiErr["mentor/"+key];
+  let th;
+  if(key==="new"){const id="t"+Date.now();th={id,createdAt:Date.now(),title:cut(text,90)||"Consulta con imagen",messages:[]};S.mentor[id]=th;S.openThread=id}
+  else th=S.mentor[key];
+  if(!Array.isArray(th.messages))th.messages=[];
+  const blobs=files.map(f=>f.blob),media=[];
+  S.streaming={col:"mentor",id:th.id,text:"",ctl:new AbortController()};render();
+  for(const f of files){try{const r=await S.assets.upload(f.blob,{type:f.type});media.push({id:r.id,type:"image",name:f.name})}catch(e){}}
+  th.messages.push({role:"user",text,media,at:Date.now()});
+  files.forEach(f=>{try{URL.revokeObjectURL(f.url)}catch(e){}});
+  S.drafts[key]="";S.pending[key]=[];
+  touch("mentor",th.id);render();
+  const mode=S.mentorMode,msgs=th.messages.slice(-5),turns=[{role:"user",content:mentorContext(mode,S.mentorDays)}];
+  if(th.messages.length>msgs.length)turns[0].content+=`\n(Esta conversación tiene ${th.messages.length-msgs.length} mensajes anteriores que no te envío para ahorrar.)`;
+  msgs.forEach((m,i)=>{
+    const last=i===msgs.length-1,n=(m.media||[]).length;
+    let c=m.role==="assistant"?cut(m.text,700):(m.text||"");
+    if(m.role==="user"&&n)c+=(c?"\n\n":"")+(last?`[Te adjunto ${n} imagen${n>1?"es":""}.]`:`[En este mensaje adjunté ${n} imagen${n>1?"es":""}; ya no las tienes, guíate por tu respuesta anterior.]`);
+    if(!c)c="(Sin texto)";
+    turns.push({role:m.role,content:c});
+  });
+  const opts={cache:false,modelTier:(MENTOR_MODES[mode]||MENTOR_MODES.normal).tier,signal:S.streaming.ctl.signal,onText:({text:t})=>{if(!S.streaming)return;S.streaming.text=t;const el=document.getElementById("stream-mentor-"+th.id);if(el)el.innerHTML=md(t)}};
+  if(blobs.length&&S.imgLimits)opts.images=blobs.slice(0,Math.min(MAX_IMGS,S.imgLimits.maxCount||MAX_IMGS));
+  try{const r=await S.sample(turns,opts);th.messages.push({role:"assistant",text:r.text+(r.truncated?"\n\n(Respuesta cortada por longitud. Pídeme que continúe.)":""),at:Date.now()})}
+  catch(e){
+    if(e&&e.text&&e.code!=="refused")th.messages.push({role:"assistant",text:e.text+"\n\n(Respuesta interrumpida.)",at:Date.now()});
+    if(!(e&&e.code==="cancelled"))S.aiErr["mentor/"+th.id]=aiErrMsg(e);
+  }
+  S.streaming=null;touch("mentor",th.id);render();
+}
+async function reviewWeek(){
+  if(S.streaming||!S.sample)return;
+  const m=S.week,w=getWeek(m),ws=weekSummary(m),prev=S.weeks[addDays(m,-7)];
+  delete S.aiErr["weeks/"+m];
+  const prompt=`${MENTOR_RULES.split("\n")[0]}
+Haz la revisión semanal de mi trading. Sé honesto y concreto: basa cada observación en mis datos (cita días, operaciones o normas concretas). Prioriza el proceso y la disciplina sobre el resultado.
+
+=== MI PLAN ===
+${planTextShort()}
+
+=== MIS NÚMEROS GLOBALES ===
+${statsText()}
+
+=== ESTA SEMANA (${fmtLong(m)} a ${fmtLong(ws.end)}) ===
+Días registrados: ${ws.logged.length}/7 · operaciones ${ws.mt.n} · resultado ${ws.mt.nr?fmtR(ws.mt.total):"—"} · acierto ${fmtPct(ws.mt.win)} · siguiendo el plan ${fmtPct(ws.mt.followRate)} · días limpios ${ws.clean}.
+${ws.dates.map(d=>dayText(d,true)).join("\n")}
+
+=== OBJETIVO DE LA SEMANA ANTERIOR ===
+${prev&&prev.nextGoal?`${prev.nextGoal} · ¿Cumplido?: ${w.goalMet||"sin responder"}`:"No tenía objetivo marcado."}
+
+=== MIS RESPUESTAS ===
+Qué ha funcionado: ${w.worked||"(sin responder)"}
+Qué no ha funcionado: ${w.notWorked||"(sin responder)"}
+Qué me ha costado más: ${w.ruleFocus||"(sin responder)"}
+Objetivo que propongo para la próxima semana: ${w.nextGoal||"(sin responder)"}
+
+Responde con estas secciones como títulos con ###: "Resumen de la semana", "Lo que estás haciendo bien", "Lo que te está costando dinero", "Disciplina y normas", "Tu objetivo para la próxima semana" (uno solo, concreto y medible; si el mío es bueno, confírmalo o afínalo) y "Plan de acción" (3 pasos). Máximo 350 palabras.`;
+  S.streaming={col:"weeks",id:m,text:"",ctl:new AbortController()};render();
+  try{const r=await S.sample(prompt,{cache:false,modelTier:"default",signal:S.streaming.ctl.signal,onText:({text})=>{if(!S.streaming)return;S.streaming.text=text;const el=document.getElementById("stream-weeks-"+m);if(el)el.innerHTML=md(text)}});
+    w.review=r.text;w.reviewedAt=Date.now();}
+  catch(e){if(e&&e.text&&e.code!=="refused"){w.review=e.text+"\n\n(Revisión interrumpida.)";w.reviewedAt=Date.now()}if(!(e&&e.code==="cancelled"))S.aiErr["weeks/"+m]=aiErrMsg(e)}
+  S.streaming=null;touch("weeks",m);render();
+}
+
+/* ---------- estadísticas ---------- */
+function equitySVG(trades){
+  const rs=trades.map(tradeR).filter(r=>r!=null);
+  if(rs.length<2)return `<p class="empty">La curva aparecerá cuando tengas al menos 2 operaciones con resultado.</p>`;
+  let c=0;const pts=[0,...rs.map(r=>(c+=r))];
+  const W=640,H=220,L=44,R=14,T=14,B=26;
+  let mn=Math.min(0,...pts),mx=Math.max(0,...pts);if(mx-mn<1){mx+=.5;mn-=.5}
+  const x=i=>L+(W-L-R)*i/(pts.length-1),y=v=>T+(H-T-B)*(mx-v)/(mx-mn);
+  const line=pts.map((v,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)).join(" ");
+  const ar=line+` L${x(pts.length-1).toFixed(1)} ${y(0).toFixed(1)} L${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
+  const last=pts[pts.length-1],ticks=[mx,(mx+mn)/2,mn].map(v=>Math.round(v*10)/10);
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Curva de resultado acumulado en R">
+    ${ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="JetBrains Mono,monospace">${v}R</text>`).join("")}
+    <line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+    <path d="${ar}" fill="var(--accent)" fill-opacity=".12"/>
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${x(pts.length-1)}" cy="${y(last)}" r="4" fill="var(--accent)"/>
+    <text x="${L}" y="${H-6}" font-size="11" fill="var(--muted)">Operación 1</text>
+    <text x="${W-R}" y="${H-6}" font-size="11" fill="var(--muted)" text-anchor="end">Operación ${pts.length-1} · ${fmtR(last)}</text>
+  </svg></div>`;
+}
+function groupTable(trades,key,label,empty){
+  const g={};trades.forEach(t=>{const k=t[key]||"Sin indicar";(g[k]=g[k]||[]).push(t)});
+  const rows=Object.entries(g).map(([k,ts])=>[k,metrics(ts)]).sort((a,b)=>b[1].total-a[1].total);
+  if(!rows.length)return `<p class="empty">${empty}</p>`;
+  return `<div class="tblwrap"><table><thead><tr><th>${label}</th><th class="n">Ops.</th><th class="n">Acierto</th><th class="n">R medio</th><th class="n">R total</th></tr></thead><tbody>
+  ${rows.map(([k,m])=>`<tr><td>${esc(k)}</td><td class="n">${m.n}</td><td class="n">${fmtPct(m.win)}</td><td class="n">${isFinite(m.exp)?m.exp.toFixed(2):"—"}</td><td class="n" style="color:${rcolor(m.total)}">${m.nr?fmtR(m.total):"—"}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function viewStats(){
+  const all=allTrades(),tr=S.statsAcc==="Todas"?all:all.filter(t=>(t.account||"Demo")===S.statsAcc);
+  const m=metrics(tr),inPlan=metrics(tr.filter(t=>t.followed==="si")),outPlan=metrics(tr.filter(t=>t.followed==="no"));
+  const loggedDays=Object.keys(S.days).filter(isLogged),clean=loggedDays.filter(isClean).length;
+  const brokenBy={};loggedDays.forEach(d=>brokenIds(S.days[d]).forEach(id=>brokenBy[id]=(brokenBy[id]||0)+1));
+  const brokenRows=Object.entries(brokenBy).sort((a,b)=>b[1]-a[1]).map(([id,n])=>[ruleText(id),n]);
+  const studyMin=studyMinutes();
+  const errs=errorCosts(tr),cleanTr=metrics(tr.filter(t=>!(t.errors||[]).length));
+  const st=(k,v,s,cls)=>`<div class="stat"><span class="k">${k}</span><span class="v ${cls||""}">${v}</span>${s?`<span class="s">${s}</span>`:""}</div>`;
+  const cls=v=>v>0?"pos":v<0?"neg":"";
+  return `<section class="card"><div class="card-h"><h2>Rendimiento</h2>
+    <div class="seg aside" role="group" aria-label="Cuenta">${["Todas",...ACCOUNTS].map(a=>`<button type="button" data-act="statsAcc" data-v="${a}" aria-pressed="${String(S.statsAcc===a)}">${a}</button>`).join("")}</div></div>
+   <div class="stats">
+    ${st("Operaciones",m.n,m.nr<m.n?(m.n-m.nr)+" sin resultado":"")}
+    ${st("Resultado total",m.nr?fmtR(m.total):"—","",cls(m.total))}
+    ${st("Expectativa",isFinite(m.exp)?m.exp.toFixed(2)+"R":"—","Lo que ganas de media por operación",cls(m.exp))}
+    ${st("% de acierto",fmtPct(m.win))}
+    ${st("Profit factor",isFinite(m.pf)?m.pf.toFixed(2):(m.pf===Infinity?"∞":"—"),"Ganancias ÷ pérdidas")}
+    ${st("Ganancia / pérdida media",(isFinite(m.avgW)?m.avgW.toFixed(2):"—")+" / "+(isFinite(m.avgL)?m.avgL.toFixed(2):"—"),"En R")}
+    ${st("Peor racha de pérdidas",m.worst)}
+    ${st("Operaciones siguiendo el plan",fmtPct(m.followRate))}
+   </div>
+   ${equitySVG(tr)}
+  </section>
+  <section class="card"><div class="card-h"><h2>El coste de tus errores</h2></div>
+   <p class="hint">Suma de R de las operaciones en las que marcaste cada error. Ataca primero el de arriba: es el que más dinero te quita.</p>
+   ${errs.length?`<div class="tblwrap"><table><thead><tr><th>Error</th><th class="n">Veces</th><th class="n">R medio</th><th class="n">R total</th></tr></thead><tbody>${errs.map(e=>`<tr><td>${esc(e.tag)}</td><td class="n">${e.n}</td><td class="n">${isFinite(e.exp)?e.exp.toFixed(2):"—"}</td><td class="n" style="color:${rcolor(e.total)}">${e.nr?fmtR(e.total):"—"}</td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">Aún no has marcado errores en ninguna operación.</p>`}
+   <div class="stats">${st("Operaciones sin errores",cleanTr.n,isFinite(cleanTr.exp)?cleanTr.exp.toFixed(2)+"R de media":"sin datos",cls(cleanTr.total))}${st("Resultado sin errores",cleanTr.nr?fmtR(cleanTr.total):"—","",cls(cleanTr.total))}</div>
+  </section>
+  <section class="card"><div class="card-h"><h2>El coste de saltarte el plan</h2></div>
+   <div class="stats">
+    ${st("Dentro del plan",inPlan.nr?fmtR(inPlan.total):"—",inPlan.n+" operaciones · "+(isFinite(inPlan.exp)?inPlan.exp.toFixed(2)+"R de media":"sin datos"),cls(inPlan.total))}
+    ${st("Fuera del plan",outPlan.nr?fmtR(outPlan.total):"—",outPlan.n+" operaciones · "+(isFinite(outPlan.exp)?outPlan.exp.toFixed(2)+"R de media":"sin datos"),cls(outPlan.total))}
+    ${st("Días limpios",clean+" / "+loggedDays.length,"Sin ninguna norma rota")}
+    ${st("Tiempo de estudio",Math.floor(studyMin/60)+" h "+(studyMin%60)+" min")}
+   </div>
+   <h3 class="sub">Normas que más rompes</h3>
+   ${brokenRows.length?`<div class="tblwrap"><table><thead><tr><th>Norma</th><th class="n">Veces</th></tr></thead><tbody>${brokenRows.map(([t,n])=>`<tr><td class="wrap">${esc(t)}</td><td class="n">${n}</td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">Ninguna norma rota de momento.</p>`}
+  </section>
+  <section class="card"><div class="card-h"><h2>Por setup</h2></div>${groupTable(tr,"setup","Setup","Aún no hay operaciones.")}</section>
+  <section class="card"><div class="card-h"><h2>Por emoción al entrar</h2></div>${groupTable(tr,"emotion","Emoción","Aún no hay operaciones.")}<p class="hint">Si una emoción concreta te da R negativa, conviértela en norma: «Si siento X, no entro».</p></section>`;
+}
+
+/* ---------- formación ---------- */
+function studyMinutes(from,to){
+  let m=0;
+  Object.keys(S.days).forEach(d=>{if(!isLogged(d)||(from&&d<from)||(to&&d>to))return;(S.days[d].study||[]).forEach(x=>{if(!x.learnId)m+=num(x.min)||0})});
+  Object.values(S.learn).forEach(l=>{if(!l||!l.id)return;const d=l.date||"";if((from&&d<from)||(to&&d>to))return;m+=num(l.min)||0});
+  return m;
+}
+const lessons=()=>Object.values(S.learn).filter(l=>l&&l.id).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(num(b.num)||0)-(num(a.num)||0)||(b.createdAt||0)-(a.createdAt||0));
+function importableStudy(){const out=[];Object.keys(S.days).sort().forEach(d=>{if(!isLogged(d))return;(S.days[d].study||[]).forEach((x,i)=>{if(!x.learnId&&(x.kind==="Vídeo"||x.kind==="Curso")&&(String(x.title||"").trim()||String(x.notes||"").trim()))out.push({d,i,x})})});return out}
+function newLesson(extra){
+  const last=lessons()[0];
+  const id="l"+Date.now().toString(36)+uid();
+  S.learn[id]=Object.assign({id,course:last?last.course||"":"",num:last&&!isNaN(num(last.num))?String(num(last.num)+1):"",title:"",url:"",date:todayStr(),min:"",level:"",tags:[],concepts:"",apply:"",exercise:"",questions:"",appIdea:"",media:[],createdAt:Date.now()},extra||{});
+  return id;
+}
+function viewLearn(){
+  const all=lessons(),tagCount={};all.forEach(l=>(l.tags||[]).forEach(t=>tagCount[t]=(tagCount[t]||0)+1));
+  const list=S.learnTag?all.filter(l=>(l.tags||[]).includes(S.learnTag)):all;
+  const mins=all.reduce((a,l)=>a+(num(l.min)||0),0),imp=importableStudy();
+  let h=`<!--part:lecciones--><section class="card"><div class="card-h"><span class="when">Formación</span><h2>Lo que voy aprendiendo</h2><span class="aside">${all.length} lecci${all.length===1?"ón":"ones"} · ${Math.floor(mins/60)} h ${mins%60} min</span></div>
+   <p class="hint">Apunta cada vídeo del bootcamp: lo que explica con tus palabras, cómo lo aplicas y qué idea te da para la app. Cuando termines el curso, lo analizamos todo juntos para mejorar la app.</p>
+   ${Object.keys(tagCount).length?`<div class="chips"><button type="button" class="chipbtn tagf" data-act="learnTag" data-v="" aria-pressed="${!S.learnTag}">Todas</button>${LEARN_TAGS.filter(t=>tagCount[t]).map(t=>`<button type="button" class="chipbtn tagf" data-act="learnTag" data-v="${esc(t)}" aria-pressed="${S.learnTag===t}">${esc(t)} · ${tagCount[t]}</button>`).join("")}</div>`:""}
+   <div class="row"><button type="button" class="btn primary" data-act="addLesson">Nueva lección</button>${imp.length?`<button type="button" class="btn" data-act="importStudy">Traer ${imp.length} vídeo${imp.length>1?"s":""} de mi registro diario</button>`:""}</div>
+  </section>`;
+  if(!all.length)h+=`<section class="card"><p class="empty">Aún no has apuntado ninguna lección. Pulsa «Nueva lección» cuando termines el próximo vídeo.</p></section>`;
+  h+=list.map(l=>{
+    const open=S.learnOpen===l.id,k=l.id+".";
+    const head=`<button type="button" class="thread-h" data-act="openLesson" data-id="${l.id}" aria-expanded="${open}">${l.num?`<span class="mono" style="color:var(--muted)">#${esc(l.num)}</span>`:""}<h3>${esc(l.title||"Lección sin título")}</h3><span class="meta">${esc([l.course,l.date?fmtDM(l.date):"",l.min?l.min+" min":"",l.level].filter(Boolean).join(" · "))}</span></button>`;
+    if(!open)return `<div class="thread">${head}${(l.tags||[]).length?`<div class="chips" style="padding:0 16px 14px">${l.tags.map(t=>`<span class="gt">${esc(t)}</span>`).join("")}</div>`:""}</div>`;
+    return `<div class="thread">${head}<div class="thread-b">
+      <div class="grid">${fld("Curso",txt(k+"course",l.course,"Ej.: Bootcamp TJR V2","data-lk"))}${fld("Nº de vídeo",txt(k+"num",l.num,"1","data-lk",'inputmode="numeric"'))}${fld("Fecha",`<input type="date" data-lk="${k}date" value="${esc(l.date)}">`)}${fld("Minutos",txt(k+"min",l.min,"25","data-lk",'inputmode="numeric"'))}</div>
+      ${fld("Título",txt(k+"title",l.title,"Ej.: Velas japonesas y dojis","data-lk"))}
+      ${fld("Enlace",`<input type="url" data-lk="${k}url" value="${esc(l.url)}" placeholder="https://…">`)}
+      <div class="field"><span>¿Para qué nivel es este contenido? (servirá para adaptar la app a cada usuario)</span><div class="seg" role="group">${LEARN_LEVELS.map(v=>`<button type="button" data-act="lessonLevel" data-id="${l.id}" data-v="${v}" aria-pressed="${l.level===v}">${v}</button>`).join("")}</div></div>
+      <div class="field"><span>Temas</span><div class="chips">${LEARN_TAGS.map(t=>`<button type="button" class="chipbtn tagf" data-act="lessonTag" data-id="${l.id}" data-v="${esc(t)}" aria-pressed="${(l.tags||[]).includes(t)}">${esc(t)}</button>`).join("")}</div></div>
+      ${fld("Conceptos clave (con tus palabras)",area(k+"concepts",l.concepts,"Qué explica el vídeo, como si se lo contaras a un amigo","data-lk"))}
+      ${fld("Cómo lo aplico en mi trading",area(k+"apply",l.apply,"Qué cambia en mi análisis, mis entradas o mis normas","data-lk"))}
+      ${fld("Ejercicio o tarea del vídeo",area(k+"exercise",l.exercise,"Ej.: encontrar 10 dojis en el gráfico","data-lk"))}
+      ${fld("Dudas",area(k+"questions",l.questions,"Lo que no he entendido del todo","data-lk"))}
+      ${String(l.questions||"").trim()&&S.sample?`<div class="row"><button type="button" class="btn sm" data-act="askLesson" data-id="${l.id}">Preguntar mis dudas al mentor</button></div>`:""}
+      ${fld("Idea para la app",area(k+"appIdea",l.appIdea,"¿Cómo podría la app enseñar esto o ayudar a aplicarlo a cada persona?","data-lk"))}
+      <div class="field"><span>Capturas</span>${mediaGrid(l.media||[],"learn",k+"media",true)}</div>
+      <div class="row">${uploader("learn",k+"media","Añadir capturas",true)}<button type="button" class="btn sm ghost danger" style="margin-left:auto" data-act="delLesson" data-id="${l.id}">${S.confirm==="lesson."+l.id?"¿Borrar lección? Sí":"Borrar lección"}</button></div>
+    </div></div>`;
+  }).join("");
+  const fromLessons=all.filter(l=>String(l.appIdea||"").trim());
+  const ideas=Object.values(S.ideas).filter(x=>x&&x.id).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  h+=`<!--part:ideas--><section class="card"><div class="card-h"><span class="when">Para la app</span><h2>Ideas para la app</h2><span class="aside">${fromLessons.length+ideas.length} ideas</span></div>
+   <p class="hint">Todo lo que se te ocurra para que la app sirva igual a quien empieza que a un profesional. Las ideas de cada lección aparecen aquí solas. Las revisamos juntos.</p>
+   <div class="row"><input type="text" id="newIdea" placeholder="Escribe una idea…" style="flex:1;min-width:200px"><select id="newIdeaArea" style="width:auto">${IDEA_AREAS.map(a=>`<option>${esc(a)}</option>`).join("")}</select><button type="button" class="btn primary" data-act="addIdea">Añadir</button></div>
+   ${ideas.length?`<div class="ideas">${ideas.map(x=>`<div class="idea"><div class="field">${txt(x.id+".text",x.text,"","data-ik")}<div class="row"><select data-ik="${x.id}.area" style="width:auto">${IDEA_AREAS.map(a=>`<option${a===x.area?" selected":""}>${esc(a)}</option>`).join("")}</select><div class="seg" role="group">${IDEA_STATUS.map(([v,lab])=>`<button type="button" data-act="ideaStatus" data-id="${x.id}" data-v="${v}" aria-pressed="${(x.status||"idea")===v}">${lab}</button>`).join("")}</div><button type="button" class="btn sm ghost danger" data-act="delIdea" data-id="${x.id}">${S.confirm==="idea."+x.id?"¿Borrar? Sí":"Quitar"}</button></div></div></div>`).join("")}</div>`:""}
+   ${fromLessons.length?`<h3 class="sub">De tus lecciones</h3><ul class="plainlist">${fromLessons.map(l=>`<li>${esc(l.appIdea)} <button type="button" class="btn sm ghost" data-act="openLesson" data-id="${l.id}">${esc(l.num?"#"+l.num:"Lección")}${l.title?" · "+esc(cut(l.title,40)):""}</button></li>`).join("")}</ul>`:""}
+   ${!ideas.length&&!fromLessons.length?`<p class="empty">Todavía no hay ideas. Apunta la primera que se te ocurra, por pequeña que sea.</p>`:""}
+  </section>`;
+  return h;
+}
+
+/* ---------- exportar para la versión web ---------- */
+function exportCard(){
+  if(!S.dl)return "";
+  return `<section class="card"><div class="card-h"><span class="when">Versión web</span><h2>Llevar mis datos a la web</h2></div>
+    <p class="hint">Descarga un archivo con todo tu diario, tu plan, tus lecciones y tus fotos. En la web, entra en «Mi plan» → Cuenta → «Importar archivo de datos».</p>
+    <div class="row"><button type="button" class="btn primary" data-act="exportWeb">Descargar mis datos</button></div></section>`;
+}
+async function exportForWeb(btn){
+  if(!S.dl){setStatus("Las descargas no están disponibles aquí",true);return}
+  btn.disabled=true;
+  const out={exportedAt:new Date().toISOString(),source:"bitacora-claude",plan:S.plan,days:{},weeks:S.weeks,ritual:S.ritual,learn:S.learn,ideas:S.ideas,mentor:S.mentor,media:{}};
+  Object.keys(S.days).forEach(d=>{if(isLogged(d))out.days[d]=S.days[d]});
+  const ids=[...new Set((JSON.stringify(out).match(/"id":"[0-9a-f]{32}"/g)||[]).map(x=>x.slice(6,-1)))];
+  for(let i=0;i<ids.length;i++){setStatus(`Preparando fotos ${i+1} de ${ids.length}…`);try{const b=await (await fetch("/_blob/"+ids[i])).blob();out.media[ids[i]]=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)})}catch(e){}}
+  try{await S.dl.save({filename:`bitacora-datos-${todayStr()}.json`,data:new Blob([JSON.stringify(out)],{type:"application/json"})});setStatus("Archivo descargado ✓")}
+  catch(e){setStatus(e&&e.code==="declined"?"Descarga cancelada":"No se ha podido descargar el archivo",true)}
+  btn.disabled=false;
+}
+
+/* ---------- velas de la cabecera ---------- */
+function drawCandles(){
+  const el=document.getElementById("heroCandles");if(!el||el.dataset.done)return;el.dataset.done="1";
+  let seed=20261022;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const n=46,W=620,H=150,pts=[];let p=60;
+  for(let i=0;i<n;i++){const o=p,c=o+(rnd()-.4)*10,hi=Math.max(o,c)+rnd()*5,lo=Math.min(o,c)-rnd()*5;pts.push({o,c,hi,lo});p=c}
+  const mn=Math.min(...pts.map(x=>x.lo)),mx=Math.max(...pts.map(x=>x.hi)),y=v=>H-12-(v-mn)/(mx-mn)*(H-24),step=W/n;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMaxYMid slice">${pts.map((k,i)=>{const x=i*step+step/2,up=k.c>=k.o,col=up?"var(--win)":"var(--loss)",top=y(Math.max(k.o,k.c)),bot=y(Math.min(k.o,k.c));return `<line x1="${x}" x2="${x}" y1="${y(k.hi)}" y2="${y(k.lo)}" stroke="${col}" stroke-width="1"/><rect x="${x-step*.3}" y="${top}" width="${step*.6}" height="${Math.max(1.5,bot-top)}" rx="1" fill="${col}"/>`}).join("")}</svg>`;
+}
+
+/* ---------- metas y sueños ---------- */
+function viewMetas(){
+  const g=S.plan.goals,V=S.plan.vision,R=roadState();
+  const hasGoals=g.long.some(x=>x.trim());
+  if(S.metasEdit==null)S.metasEdit=!hasGoals&&!V.length;
+  const start=S.plan.startDate||todayStr(),dayN=Math.max(1,diffDays(start,todayStr())+1);
+  const img=v=>`<img src="/_blob/${encodeURIComponent(v.id)}" alt="${esc(v.caption||"Mi sueño")}" data-act="zoom" loading="lazy">`;
+  const LAYOUTS={1:["solo"],2:["big","big"],3:["big","wide","wide"],4:["big","wide","",""],5:["big","","","",""],6:["big","","","","wide","wide"],7:["big","","","","wide","",""]};
+  const layout=n=>LAYOUTS[n]||[];
+  const tiles=V.slice(0,7),cls=tiles.length?layout(tiles.length):[];
+  const bento=tiles.length?`<div class="bento">${tiles.map((v,i)=>`<figure class="btile ${cls[i]||""}">${img(v)}${v.tag?`<span class="gt gt-${v.tag}">${TAG_NAMES[v.tag]}</span>`:""}${v.caption?`<figcaption>${esc(v.caption)}</figcaption>`:""}</figure>`).join("")}</div>`
+    :`<div class="bento">${[["big","Tu sueño más grande","El sitio, la casa o la vida que quieres. Ponla aquí, en grande."],["wide","Un viaje","A dónde irás cuando tengas libertad."],["wide","Un capricho","Eso que te comprarás con tu primer gran retiro."]].map(([c,t,d])=>`<div class="btile empty ${c}"><div><b>${t}</b><span>${d}</span></div></div>`).join("")}</div>`;
+  let h=`<section class="vhero">
+    <div class="vhead"><div class="vhead-t"><span class="g-lbl">Mi visión · Día ${dayN}</span><h1>La vida que estoy <em>construyendo</em></h1>
+      <div class="vmeta"><span>Racha leyendo mis metas <b>${streak(readOn)}</b></span><span>Camino <b>${Math.round(R.done/R.total*100)}%</b></span><span>Sueños en el tablero <b>${V.length}</b></span></div></div>
+      <div class="row"><button type="button" class="btn primary" data-open-goals>Leer mis metas ahora</button>${uploader("plan","vision","Añadir fotos",true)}<button type="button" class="btn" data-act="metasEdit" aria-pressed="${!!S.metasEdit}">${S.metasEdit?"Ver mi tablero":"Editar"}</button></div></div>
+    ${bento}
+    ${S.uploading?`<p class="hint">${esc(S.uploading)}</p>`:""}
+  </section>`;
+  if(S.metasEdit)return h+part(viewPlan(),"metas")+visionCard()+`<section class="card"><div class="card-h"><span class="when">Mi motivo</span><h2>Por qué hago esto</h2></div>${area("why",S.plan.why,"Tu motivo real, el que te hará seguir en los días malos.","data-pk")}</section>`;
+  h+=`<div class="trio">${["M","L","R"].map(t=>{const txtG=goalLabel(t),own=(S.plan.goals.long[GOAL_TAGS[t].i]||"").trim(),pct=R.tagTot[t]?Math.round(R.tagDone[t]/R.tagTot[t]*100):0,C=2*Math.PI*24,th=V.filter(v=>v.tag===t).slice(0,4);
+    return `<article class="gcard t-${t}"><div class="gtop"><span class="g-lbl">Meta · ${TAG_NAMES[t]}</span><svg class="ring" viewBox="0 0 60 60" role="img" aria-label="${pct}% de los pasos de esta meta"><circle cx="30" cy="30" r="24" fill="none" stroke="var(--line-strong)" stroke-width="5"/><circle cx="30" cy="30" r="24" fill="none" stroke="var(--gc)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(C*pct/100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 30 30)"/><text x="30" y="34.5" text-anchor="middle">${pct}%</text></svg></div>
+      <div class="gtext ${own?"":"ph"}">${own?esc(own):"Escribe esta meta en «Editar»"}</div>
+      <div class="gfoot">${th.length?`<span class="gthumbs">${th.map(v=>`<img src="/_blob/${encodeURIComponent(v.id)}" alt="">`).join("")}</span>`:""}<span>${R.tagDone[t]} de ${R.tagTot[t]} pasos del camino</span></div></article>`}).join("")}</div>`;
+  h+=String(S.plan.why||"").trim()?`<blockquote class="why"><p>${esc(S.plan.why)}</p><span>Por qué hago esto</span></blockquote>`
+    :`<section class="card"><p class="hint" style="margin:0">Añade tu «por qué» en <button type="button" class="btn sm" data-act="metasEdit">Editar</button>: la frase que te recuerda por qué empezaste. Aparecerá aquí en grande.</p></section>`;
+  if(V.length>7)h+=`<section class="card"><div class="card-h"><span class="when">Más sueños</span><h2>Resto del tablero</h2></div><div class="gvision">${V.slice(7).map(v=>`<figure>${img(v)}${v.caption?`<figcaption>${esc(v.caption)}</figcaption>`:""}</figure>`).join("")}</div></section>`;
+  return h;
+}
+
+/* ---------- tablero de sueños ---------- */
+const TAG_NAMES={R:"Rentable",L:"Libertad",M:"Millonario"};
+function visionCard(){
+  const V=S.plan.vision;
+  return `<section class="card"><div class="card-h"><span class="when">Lo que quiero</span><h2>Mi tablero de sueños</h2><span class="aside">${V.length} imagen${V.length===1?"":"es"}</span></div>
+   <p class="hint">Sube fotos de lo que vas a conseguir: el viaje, la casa, el coche, la vida que quieres. Ponle una frase en presente y únela a una de tus metas. Te saldrán cada día en el aviso de tus metas.</p>
+   ${V.length?`<div class="vision">${V.map((v,i)=>{const key="plan:vision."+i,confirming=S.confirm===key;return `<figure class="vtile">
+     <div class="vimg"><img src="/_blob/${encodeURIComponent(v.id)}" alt="${esc(v.caption||"Imagen de mi tablero")}" data-act="zoom" loading="lazy">${v.tag?`<span class="gt gt-${v.tag} vtag">${TAG_NAMES[v.tag]||""}</span>`:""}</div>
+     <figcaption class="vcap">${txt("vision."+i+".caption",v.caption,"Ej.: Viajo a Japón cuando quiero","data-pk")}
+      <div class="row"><select data-pk="vision.${i}.tag" aria-label="Meta a la que pertenece">${[["","Sin meta"],["R","Meta: "+cut(goalLabel("R"),28)],["L","Meta: "+cut(goalLabel("L"),28)],["M","Meta: "+cut(goalLabel("M"),28)]].map(([k,l])=>`<option value="${k}"${(v.tag||"")===k?" selected":""}>${esc(l)}</option>`).join("")}</select><button type="button" class="btn sm ghost danger" data-act="delMedia" data-scope="plan" data-path="vision" data-i="${i}">${confirming?"¿Borrar? Sí":"Quitar"}</button></div></figcaption></figure>`}).join("")}</div>`
+     :`<p class="empty">Todavía no has añadido ninguna imagen. Empieza por la que más te motive.</p>`}
+   <div class="row">${uploader("plan","vision","Añadir imágenes",true)}${S.uploading?`<span class="hint">${esc(S.uploading)}</span>`:""}</div>
+  </section>`;
+}
+
+/* ---------- mi camino ---------- */
+function viewRoad(){
+  const R=roadState(),pct=Math.round(R.done/R.total*100),nx=R.next[0];
+  const tagRow=tags=>`<span class="gtags">${[...tags].map(t=>`<span class="gt gt-${t}">${t==="R"?"Rentable":t==="L"?"Libertad":"Millonario"}</span>`).join("")}</span>`;
+  let h=`<section class="card road-top"><div class="card-h"><span class="when">De tus metas a tu día a día</span><h2>Mi camino</h2><span class="aside">${R.done} de ${R.total} pasos</span></div>
+   <div class="road-pct"><span class="num">${pct}%</span><div class="bar ${pct>=100?"done":""}" style="flex:1"><i style="width:${pct}%"></i></div></div>
+   ${nx?`<div class="goalband"><b>Tu siguiente paso:</b> ${esc(nx.text)}${nx.label?` <span class="mono" style="font-size:12px">· ${esc(nx.label)}</span>`:""}</div>`:`<div class="goalband"><b>Has completado todo el camino.</b></div>`}
+   <div class="goalcards">${["R","L","M"].map(t=>{const p=R.tagTot[t]?Math.round(R.tagDone[t]/R.tagTot[t]*100):0;return `<div class="goalcard gc-${t}"><span class="g-lbl">${t==="R"?"Meta · Rentable":t==="L"?"Meta · Libertad":"Meta · Millonario"}</span><b>${esc(goalLabel(t))}</b><div class="bar"><i style="width:${p}%"></i></div><span class="hint">${R.tagDone[t]} de ${R.tagTot[t]} pasos · ${p}%</span></div>`}).join("")}</div>
+   <p class="hint">Los pasos con barra avanzan solos con lo que registras cada día (operaciones, rachas, estudio, revisiones). Los que tienen casilla los marcas tú cuando los consigas. Las fechas son orientativas: cada fase se pasa por resultados, no por calendario.</p>
+  </section>`;
+  h+=R.P.map(p=>{
+    const open=p.done||p.cur||p.i===R.cur+1||S.roadOpen[p.i];
+    const head=`<div class="phase-h"><span class="g-lbl">Fase ${p.i+1} · ${esc(p.when)}</span><h3>${esc(p.name)}</h3><span class="chip ${p.cur?"cur":p.done?"done":""}">${p.cur?"Ahora":p.done?"Superada":"Pendiente"}</span><span class="aside mono" style="margin-left:auto;font-size:13px;color:var(--muted)">${p.dn}/${p.n}</span></div>`;
+    if(!open)return `<section class="phase road-phase">${head}<div class="row"><button type="button" class="btn sm ghost" data-act="roadToggle" data-i="${p.i}">Ver sus ${p.n} pasos</button></div></section>`;
+    return `<section class="phase road-phase ${p.cur?"cur":p.done?"done":""}">${head}<p class="hint">${esc(p.desc)}</p>
+     <div class="bar ${p.done?"done":""}"><i style="width:${Math.round(p.dn/p.n*100)}%"></i></div>
+     <div class="steps">${p.steps.map(s=>`<div class="step ${s.done?"done":""}">
+       ${s.manual?`<input type="checkbox" data-road="${s.id}" ${s.done?"checked":""} aria-label="Marcar como conseguido">`:`<span class="sticon" aria-hidden="true">${s.done?"✓":"○"}</span>`}
+       <div class="stbody"><span class="sttext">${esc(s.text)}</span>${tagRow(s.tags)}
+       ${s.manual?(s.done&&S.plan.road.done[s.id]&&S.plan.road.done[s.id]!==true?`<span class="hint">Conseguido el ${esc(fmtShort(S.plan.road.done[s.id]))}</span>`:""):`<div class="stprog"><div class="bar ${s.done?"done":""}"><i style="width:${Math.round(s.pct*100)}%"></i></div><span class="mono">${esc(s.label)}</span></div>`}</div></div>`).join("")}</div>
+     ${p.i===ROADMAP.length-1?`<div class="grid">${fld("Mi patrimonio actual (€)",txt("road.netWorth",S.plan.road.netWorth,"Ej.: 2500","data-pk",'inputmode="numeric"'))}</div><p class="hint">Actualízalo una vez al mes: ahorros, inversiones y saldo de tus cuentas de trading.</p>`:""}
+     ${!p.cur&&!p.done&&S.roadOpen[p.i]?`<div class="row"><button type="button" class="btn sm ghost" data-act="roadToggle" data-i="${p.i}">Ocultar pasos</button></div>`:""}
+    </section>`;
+  }).join("");
+  h+=`<section class="card"><p class="hint" style="color:var(--fg)">Una nota sincera: la mayoría de la gente que empieza en trading no llega a ser rentable, y ser millonario con el trading no es rápido ni seguro. Este camino está pensado para que avances con datos y sin quemar tu cuenta. Lo que más acelera es no saltarse fases, no subir el riesgo para ir más rápido y convertir los beneficios en patrimonio. No soy asesor financiero: antes de meter dinero real, infórmate bien o consulta a un profesional.</p></section>`;
+  return h;
+}
+
+/* ---------- plan ---------- */
+function viewPlan(){
+  const p=S.plan,ph=phases(),all=allTrades(),g=p.goals;
+  const longPh=["Ej.: Soy un trader rentable y consistente","Ej.: Vivo de mi trading","Ej.: Tengo libertad para trabajar desde donde quiero"];
+  const shortPh=["Ej.: Completo 50 operaciones de backtesting de mi setup","Ej.: Registro 21 días seguidos en la bitácora","Ej.: Paso 10 días seguidos sin romper normas"];
+  return `<!--part:metas--><section class="card"><div class="card-h"><span class="when">Hacia dónde voy</span><h2>Mis metas</h2><button type="button" class="btn sm aside" data-open-goals>Ver como aviso</button></div>
+   <p class="hint">Escríbelas en presente, como si ya las hubieras conseguido. Cada vez que abras la bitácora te saldrán en un aviso para leerlas en voz alta.</p>
+   <h3 class="sub">3 metas a largo plazo</h3>
+   ${g.long.map((x,i)=>fld("Meta "+(i+1),txt("goals.long."+i,x,longPh[i],"data-pk"))).join("")}
+   <p class="hint">Los pasos para llegar a ellas están en <button type="button" class="btn sm" data-act="goRoad">Mi camino</button></p>
+   <label class="row hint" style="gap:6px"><input type="checkbox" data-pk="goals.showAlways" ${g.showAlways?"checked":""}> Mostrar el aviso cada vez que abro la bitácora (si lo desactivas, solo sale hasta que las leas cada día)</label>
+  </section>
+  <!--part:sistema--><section class="card"><div class="card-h"><span class="when">Tu sistema</span><h2>Plan de trading</h2></div>
+   <div class="grid">
+    ${fld("Fecha de inicio (día 1)",`<input type="date" data-pk="startDate" value="${esc(p.startDate)}">`)}
+    ${fld("Mercado",txt("market",p.market,"Forex, índices, cripto…","data-pk"))}
+    ${fld("Activos que opero",txt("instruments",p.instruments,"EURUSD, NAS100","data-pk"))}
+    ${fld("Temporalidades",txt("timeframe",p.timeframe,"H1 contexto · M5 entrada","data-pk"))}
+    ${fld("Horario de operativa",txt("session",p.session,"09:00–11:30","data-pk"))}
+    ${fld("Capital de la cuenta",txt("capital",p.capital,"","data-pk",'inputmode="decimal"'))}
+    ${fld("Riesgo por operación (%)",txt("riskPct",p.riskPct,"0.5","data-pk",'inputmode="decimal"'))}
+    ${fld("Pérdida máxima diaria",txt("maxDailyLoss",p.maxDailyLoss,"2R","data-pk"))}
+    ${fld("Máximo de operaciones al día",txt("maxTrades",p.maxTrades,"2","data-pk",'inputmode="numeric"'))}
+   </div>
+   ${fld("Por qué hago esto",area("why",p.why,"Tu motivo real. Léelo antes de cada sesión.","data-pk"))}
+  </section>
+  <!--part:playbook--><section class="card"><div class="card-h"><span class="when">Playbook</span><h2>Mis setups</h2><span class="aside">${p.playbook.length} setup${p.playbook.length===1?"":"s"}</span></div>
+   <p class="hint">Una ficha por setup con condiciones que se puedan comprobar con un sí o un no. En cada operación marcarás cuáles se cumplían. Los dos de ejemplo son genéricos: cámbialos por tu estrategia.</p>
+   ${p.playbook.map((s,i)=>{const sm=metrics(all.filter(t=>t.setup&&t.setup===s.name));const q=`playbook.${i}`;return `<div class="trade">
+     <div class="trade-h"><h3>${esc(s.name||"Setup sin nombre")}</h3><div class="setupstat"><span>Ops. <b>${sm.n}</b></span><span>Acierto <b>${fmtPct(sm.win)}</b></span><span>Expectativa <b style="color:${rcolor(sm.exp||0)}">${isFinite(sm.exp)?sm.exp.toFixed(2)+"R":"—"}</b></span><span>Total <b style="color:${rcolor(sm.total)}">${sm.nr?fmtR(sm.total):"—"}</b></span></div>
+       <button class="btn sm ghost danger" style="margin-left:auto" data-act="delSetup" data-i="${i}">${S.confirm==="setup."+i?"¿Borrar? Sí":"Borrar"}</button></div>
+     ${fld("Nombre",txt(q+".name",s.name,"Ej.: Pullback a la media de 20","data-pk"))}
+     ${fld("Condiciones (una por línea)",area(q+".conditions",s.conditions,"Tendencia en H1\nRetroceso a zona\nVela de confirmación","data-pk"))}
+     <div class="grid wide">
+      ${fld("Entrada",area(q+".entry",s.entry,"Cuándo y cómo entro","data-pk"))}
+      ${fld("Stop loss",area(q+".stop",s.stop,"Dónde va el stop y por qué","data-pk"))}
+      ${fld("Objetivo",area(q+".target",s.target,"Dónde cojo beneficios","data-pk"))}
+      ${fld("Cuándo NO operarlo",area(q+".avoid",s.avoid,"Situaciones en las que este setup falla","data-pk"))}
+     </div>
+     ${fld("Notas",area(q+".notes",s.notes,"","data-pk"))}
+     <div class="field"><span>Ejemplos ideales</span>${mediaGrid(s.media,"plan",q+".media")||`<p class="empty">Sube capturas de ejemplos perfectos de este setup para tenerlos de referencia.</p>`}</div>
+     <div class="row">${uploader("plan",q+".media","Subir ejemplo",true)}</div>
+   </div>`}).join("")}
+   <div class="row"><button class="btn primary" data-act="addSetup">Añadir setup</button></div>
+  </section>
+  <!--part:normas--><section class="card"><div class="card-h"><span class="when">Innegociable</span><h2>Mis normas</h2><span class="aside">${p.rules.length} normas</span></div>
+   <p class="hint">Pocas, claras y comprobables con un sí o un no. Cada día las marcarás en tu registro.</p>
+   ${p.rules.map((r,i)=>`<div class="ruleedit">${sel(`rules.${i}.cat`,CATS.includes(r.cat)?CATS:[...CATS,r.cat],r.cat,"data-pk")}${area(`rules.${i}.text`,r.text,"Escribe la norma","data-pk")}<button class="btn sm ghost danger" data-act="delRule" data-i="${i}">${S.confirm==="rule."+i?"¿Borrar? Sí":"Quitar"}</button></div>`).join("")}
+   <div class="row"><button class="btn primary" data-act="addRule">Añadir norma</button></div>
+   ${fld("Consecuencia si rompo una norma",area("consequence",p.consequence,"Ej.: al día siguiente no opero y hago 20 operaciones de backtesting","data-pk"))}
+  </section>`;
+}
+
+/* ---------- eventos ---------- */
+$("#main").addEventListener("input",e=>{
+  const el=e.target;
+  if(el.id==="newLink"||el.type==="file")return;
+  if(el.dataset.road){const id=el.dataset.road;if(el.checked)S.plan.road.done[id]=todayStr();else delete S.plan.road.done[id];touchPlan();render();if(el.checked)setStatus("¡Paso conseguido! ✓");return}
+  if(el.dataset.actCheck==="mentorDays"){S.mentorDays=el.checked;savePref("mentorDays",S.mentorDays);render();return}
+  if(el.dataset.actCheck==="cond"){const t=getDay(S.date).trades[+el.dataset.i];if(!t.conds)t.conds={};if(el.checked)t.conds[el.dataset.c]=true;else delete t.conds[el.dataset.c];touchDay(S.date);render();return}
+  if(el.dataset.setup!=null){const t=getDay(S.date).trades[+el.dataset.setup];t.setup=el.value;t.conds={};touchDay(S.date);render();return}
+  if(el.dataset.k){
+    const d=getDay(S.date),v=el.type==="checkbox"?el.checked:el.value;
+    setPath(d,el.dataset.k,v);touchDay(S.date);
+    if(el.type==="checkbox"){render();return}
+    if(el.dataset.calc!=null)updateCalc(+el.dataset.calc);
+    if(el.tagName==="SELECT")refreshHeader();
+  }else if(el.dataset.pk){
+    setPath(S.plan,el.dataset.pk,el.type==="checkbox"?el.checked:el.value);touchPlan();
+    if(el.type==="checkbox"){render();return}
+    if(el.dataset.pk==="startDate")refreshHeader();
+  }else if(el.dataset.wk){
+    setPath(getWeek(S.week),el.dataset.wk,el.value);touch("weeks",S.week);
+  }else if(el.dataset.lk){
+    const id=el.dataset.lk.split(".")[0];if(!S.learn[id])return;
+    setPath(S.learn,el.dataset.lk,el.value);touch("learn",id);
+  }else if(el.dataset.ik){
+    const id=el.dataset.ik.split(".")[0];if(!S.ideas[id])return;
+    setPath(S.ideas,el.dataset.ik,el.value);touch("ideas",id);
+  }else if(el.dataset.dk){
+    S.drafts[el.dataset.dk]=el.value;
+  }
+});
+$("#main").addEventListener("change",async e=>{
+  const el=e.target;
+  if(el.id==="pickDate"&&el.value){S.date=el.value;S.confirm=null;render();return}
+  if(el.dataset.pk==="road.netWorth"||/^vision\.\d+\.tag$/.test(el.dataset.pk||"")){render();return}
+  if(el.dataset.upload){const [scope,path]=el.dataset.upload.split("|");await uploadFiles(el.files,scope,path);el.value="";return}
+  if(el.dataset.pick){await pickImages(el.files,el.dataset.pick);el.value=""}
+});
+function updateCalc(i){
+  const t=getDay(S.date).trades[i];if(!t)return;
+  const r=tradeR(t),pill=$("#rp-"+i),card=$("#trade-"+i),calc=$("#calc-"+i);
+  if(pill){pill.textContent=r!=null?fmtR(r):"sin resultado";pill.className="rpill "+(r>0?"w":r<0?"l":"")}
+  if(card)card.className="trade "+(r>0?"w":r<0?"l":"");
+  if(calc)calc.textContent=calcMsg(t);
+}
+document.querySelector(".nav").addEventListener("click",e=>{const b=e.target.closest(".navbtn");if(!b)return;const sx=SECTIONS.find(x=>x.id===b.dataset.sec);S.view=lastSub[sx.id]||sx.views[0][0];S.confirm=null;render();window.scrollTo({top:0})});
+$("#main").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-act]");if(!b)return;
+  const a=b.dataset.act,i=+b.dataset.i,d=()=>getDay(S.date);
+  const confirmStep=key=>{if(S.confirm===key){S.confirm=null;return true}S.confirm=key;render();return false};
+  switch(a){
+    case "prevDay":S.date=addDays(S.date,-1);S.confirm=null;render();break;
+    case "nextDay":S.date=addDays(S.date,1);S.confirm=null;render();break;
+    case "goToday":S.date=todayStr();render();break;
+    case "openDay":S.date=b.dataset.date;S.view="hoy";render();window.scrollTo({top:0});break;
+    case "mood":{const x=d();x.mood=x.mood==b.dataset.v?"":+b.dataset.v;touchDay(S.date);render();break}
+    case "exec":{const x=d();x.execScore=x.execScore==b.dataset.v?"":+b.dataset.v;touchDay(S.date);render();break}
+    case "rule":{const x=d(),id=b.dataset.id;x.rules[id]=x.rules[id]===b.dataset.v?"":b.dataset.v;if(!x.rules[id])delete x.rules[id];touchDay(S.date);render();break}
+    case "addTrade":{const x=d();x.noTrade=false;S.tradeOpen[x.trades.length]=true;x.trades.push({id:uid(),account:"Demo",asset:"",dir:"",time:"",setup:"",conds:{},entry:"",sl:"",tp:"",exit:"",r:"",pnl:"",why:"",emotion:"",followed:"",errors:[],mistakes:"",media:[]});touchDay(S.date);render();const el=$("#trade-"+(x.trades.length-1));if(el)el.scrollIntoView({block:"start",behavior:"smooth"});break}
+    case "delTrade":if(confirmStep("trade."+i)){const x=d(),t=x.trades[i];x.trades.splice(i,1);S.tradeOpen={};touchDay(S.date);render();(t.media||[]).forEach(m=>removeAsset(m.id))}break;
+    case "dir":d().trades[i].dir=b.dataset.v;touchDay(S.date);render();break;
+    case "acc":d().trades[i].account=b.dataset.v;touchDay(S.date);render();break;
+    case "follow":{const t=d().trades[i];t.followed=t.followed===b.dataset.v?"":b.dataset.v;touchDay(S.date);render();break}
+    case "errTag":{const t=d().trades[i];if(!Array.isArray(t.errors))t.errors=[];const v=b.dataset.v,k=t.errors.indexOf(v);if(k>=0)t.errors.splice(k,1);else t.errors.push(v);touchDay(S.date);render();break}
+    case "addStudy":d().study.push({kind:"Vídeo",title:"",url:"",min:"",notes:""});touchDay(S.date);render();break;
+    case "delStudy":d().study.splice(i,1);touchDay(S.date);render();break;
+    case "addLink":{const inp=$("#newLink"),v=(inp.value||"").trim();if(!/^https?:\/\//i.test(v)){inp.focus();setStatus("El enlace debe empezar por https://",true);break}d().links.push(v);touchDay(S.date);render();break}
+    case "delLink":d().links.splice(i,1);touchDay(S.date);render();break;
+    case "delMedia":{const scope=b.dataset.scope,path=b.dataset.path;if(confirmStep(scope+":"+path+"."+i)){const root=scope==="plan"?S.plan:scope==="learn"?S.learn:d();const [m]=getPath(root,path).splice(i,1);if(scope==="plan")touchPlan();else if(scope==="learn")touch("learn",path.split(".")[0]);else touchDay(S.date);render();if(m)removeAsset(m.id)}break}
+    case "zoom":$("#lbImg").src=b.getAttribute("src");$("#lightbox").hidden=false;break;
+    case "prevMonth":case "nextMonth":{const[Y,M]=S.month.split("-").map(Number);S.month=ymd(new Date(Y,M-1+(a==="prevMonth"?-1:1),1)).slice(0,7);render();break}
+    case "thisMonth":S.month=todayStr().slice(0,7);render();break;
+    case "prevWeek":S.week=addDays(S.week,-7);render();break;
+    case "nextWeek":S.week=addDays(S.week,7);render();break;
+    case "thisWeek":S.week=mondayOf(todayStr());render();break;
+    case "goalMet":{const w=getWeek(S.week);w.goalMet=w.goalMet===b.dataset.v?"":b.dataset.v;touch("weeks",S.week);render();break}
+    case "reviewWeek":reviewWeek();break;
+    case "stop":if(S.streaming)S.streaming.ctl.abort();break;
+    case "statsAcc":S.statsAcc=b.dataset.v;render();break;
+    case "addRule":S.plan.rules.push({id:"r"+uid(),cat:"Entradas",text:""});touchPlan();render();break;
+    case "delRule":if(confirmStep("rule."+i)){S.plan.rules.splice(i,1);touchPlan();render()}break;
+    case "addSetup":S.plan.playbook.push({id:"s"+uid(),name:"",conditions:"",entry:"",stop:"",target:"",avoid:"",notes:"",media:[]});touchPlan();render();break;
+    case "delSetup":if(confirmStep("setup."+i)){const [s]=S.plan.playbook.splice(i,1);touchPlan();render();(s.media||[]).forEach(m=>removeAsset(m.id))}break;
+    case "openThread":S.openThread=S.openThread===b.dataset.id?null:b.dataset.id;S.confirm=null;render();break;
+    case "ask":askMentor(b.dataset.key);break;
+    case "addLesson":{const id=newLesson();S.learnOpen=id;S.learnTag="";touch("learn",id);render();break}
+    case "openLesson":S.view="formacion";S.learnOpen=S.learnOpen===b.dataset.id?null:b.dataset.id;S.confirm=null;render();break;
+    case "learnTag":S.learnTag=b.dataset.v;render();break;
+    case "lessonLevel":{const l=S.learn[b.dataset.id];l.level=l.level===b.dataset.v?"":b.dataset.v;touch("learn",l.id);render();break}
+    case "lessonTag":{const l=S.learn[b.dataset.id];if(!Array.isArray(l.tags))l.tags=[];const v=b.dataset.v,k=l.tags.indexOf(v);if(k>=0)l.tags.splice(k,1);else l.tags.push(v);touch("learn",l.id);render();break}
+    case "delLesson":{const id=b.dataset.id;if(confirmStep("lesson."+id)){const l=S.learn[id];delete S.learn[id];S.learnOpen=null;render();if(S.mode==="db"){try{await S.db.collection("learn").doc(id).delete()}catch(err){setStatus(errText(err),true)}}else lsSave();(l&&l.media||[]).forEach(m=>removeAsset(m.id))}break}
+    case "askLesson":{const l=S.learn[b.dataset.id];S.drafts.new=`Estoy viendo «${l.title||"una lección"}»${l.course?` del ${l.course}`:""}. Lo que he entendido: ${cut(l.concepts,400)||"(sin apuntar)"}\n\nMis dudas: ${l.questions}`;S.view="mentor";S.openThread=null;render();window.scrollTo({top:0});break}
+    case "importStudy":{const imp=importableStudy();const days=new Set();imp.forEach(({d,i,x})=>{const id=newLesson({course:"",num:"",title:x.title||"",url:x.url||"",date:d,min:x.min||"",concepts:x.notes||""});S.days[d].study[i].learnId=id;days.add(d);touch("learn",id)});days.forEach(d=>touchDay(d));setStatus(`${imp.length} vídeo${imp.length>1?"s":""} traído${imp.length>1?"s":""} a Formación`);render();break}
+    case "addIdea":{const inp=$("#newIdea"),v=(inp.value||"").trim();if(!v){inp.focus();break}const id="i"+Date.now().toString(36)+uid();S.ideas[id]={id,text:v,area:$("#newIdeaArea").value,status:"idea",createdAt:Date.now()};touch("ideas",id);render();break}
+    case "ideaStatus":{const x=S.ideas[b.dataset.id];x.status=b.dataset.v;touch("ideas",x.id);render();break}
+    case "delIdea":{const id=b.dataset.id;if(confirmStep("idea."+id)){delete S.ideas[id];render();if(S.mode==="db"){try{await S.db.collection("ideas").doc(id).delete()}catch(err){setStatus(errText(err),true)}}else lsSave()}break}
+    case "exportWeb":exportForWeb(b);break;
+    case "metasEdit":S.metasEdit=!S.metasEdit;render();window.scrollTo({top:0});break;
+    case "sub":S.view=b.dataset.v;S.confirm=null;render();window.scrollTo({top:0});break;
+    case "dayOpen":{const k=b.dataset.k;S.dayOpen=S.dayOpen===k?"none":k;render();if(S.dayOpen===k){const el=document.getElementById("acc-"+k);if(el&&el.scrollIntoView)el.scrollIntoView({block:"start",behavior:"smooth"})}break}
+    case "tradeToggle":{const t=d().trades[i];S.tradeOpen[i]=!tradeIsOpen(t,i);render();break}
+    case "goLearn":S.view="formacion";render();window.scrollTo({top:0});break;
+    case "goRoad":S.view="camino";render();window.scrollTo({top:0});break;
+    case "roadToggle":S.roadOpen[i]=!S.roadOpen[i];render();break;
+    case "mentorMode":S.mentorMode=b.dataset.v;savePref("mentorMode",S.mentorMode);render();break;
+    case "unpick":{const list=S.pending[b.dataset.key]||[];const [p]=list.splice(i,1);if(p)try{URL.revokeObjectURL(p.url)}catch(err){}render();break}
+    case "delThread":{const id=b.dataset.id;if(confirmStep("thread."+id)){const th=S.mentor[id];delete S.mentor[id];S.openThread=null;render();if(S.mode==="db"){try{await S.db.collection("mentor").doc(id).delete()}catch(err){setStatus(errText(err),true)}}else lsSave();(th&&th.messages||[]).forEach(m=>(m.media||[]).forEach(x=>removeAsset(x.id)))}break}
+  }
+});
+document.addEventListener("click",e=>{if(e.target.closest("[data-open-goals]"))openGoals()});
+$("#goals").addEventListener("click",e=>{
+  const b=e.target.closest("[data-g]");if(!b)return;
+  const a=b.dataset.g;
+  if(a==="read"){const t=todayStr(),prev=S.ritual[t];S.ritual[t]={date:t,read:true,at:Date.now(),count:((prev&&prev.count)||0)+1};touch("ritual",t);closeGoals();render()}
+  else if(a==="write"){closeGoals();S.view="metas";render();window.scrollTo({top:0})}
+  else closeGoals();
+});
+$("#lbClose").addEventListener("click",()=>{$("#lightbox").hidden=true});
+$("#lightbox").addEventListener("click",e=>{if(e.target.id==="lightbox")$("#lightbox").hidden=true});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("#lightbox").hidden=true;closeGoals()}});
+
+/* ---------- archivos ---------- */
+const OK_TYPES=["image/png","image/jpeg","image/gif","image/webp","video/mp4","video/webm"];
+function toJpeg(file,maxSide){maxSide=maxSide||2400;return new Promise((res,rej)=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{const c=document.createElement("canvas");const k=Math.min(1,maxSide/Math.max(img.width,img.height));c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);c.toBlob(b=>b?res(b):rej(new Error("conv")),"image/jpeg",.88)};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("conv"))};img.src=url})}
+function uploadErr(name,e){const c=e&&e.code;return name+": "+(c==="too_large"?"pasa de 20 MB. Recórtalo o súbelo a YouTube/Drive y pega el enlace":c==="unsupported_type"?"formato no admitido (usa JPG, PNG, MP4 o WEBM)":c==="quota_or_state"?"no queda espacio de almacenamiento":c==="rate_limited"?"demasiadas subidas seguidas, espera un momento":e&&e.message==="conv"?"no se pudo convertir la imagen":"no se pudo subir")}
+async function uploadFiles(files,scope,path){
+  if(!S.assets||!files||!files.length)return;
+  const date=S.date,list=[...files];let ok=0;const errs=[];
+  for(let k=0;k<list.length;k++){
+    const f=list[k];S.uploading=`Subiendo ${k+1} de ${list.length}…`;setStatus(S.uploading);
+    try{
+      let blob=f,type=f.type;const isVideo=/^video\//.test(f.type)||/\.(mov|mp4|webm|m4v)$/i.test(f.name);
+      if(isVideo){if(!OK_TYPES.includes(type))type="video/mp4"}else if(!OK_TYPES.includes(type)){blob=await toJpeg(f);type="image/jpeg"}
+      const r=await S.assets.upload(blob,{type});
+      const root=scope==="plan"?S.plan:scope==="learn"?S.learn:getDay(date);
+      if(scope==="learn"&&!S.learn[path.split(".")[0]])continue;
+      getPath(root,path).push({id:r.id,type:isVideo?"video":"image",name:f.name});
+      ok++;if(scope==="plan")touchPlan();else if(scope==="learn")touch("learn",path.split(".")[0]);else touchDay(date);
+    }catch(e){errs.push(uploadErr(f.name,e))}
+  }
+  S.uploading=errs.length?errs.join(" · "):"";
+  if(errs.length)setStatus(ok?`${ok} subidos, ${errs.length} con error`:"Error al subir",true);
+  render();
+}
+async function pickImages(files,key){
+  if(!files||!files.length)return;
+  const max=Math.min(MAX_IMGS,(S.imgLimits&&S.imgLimits.maxCount)||MAX_IMGS);
+  const list=S.pending[key]=S.pending[key]||[];
+  for(const f of [...files]){
+    if(list.length>=max){S.aiErr["mentor/"+key]=`Máximo ${max} imágenes por consulta: recorta la captura a la zona que importa.`;break}
+    try{const blob=await toJpeg(f,1280);list.push({blob,type:"image/jpeg",name:f.name,url:URL.createObjectURL(blob)})}
+    catch(e){S.aiErr["mentor/"+key]=f.name+": no se pudo leer la imagen."}
+  }
+  render();
+}
+async function removeAsset(id){if(!S.assets||!id)return;try{await S.assets.delete(id)}catch(e){}}
+
+init();
+})();
+</script>
