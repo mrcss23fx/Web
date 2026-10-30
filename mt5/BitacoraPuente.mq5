@@ -109,11 +109,10 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
       else
          if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY || entry == DEAL_ENTRY_INOUT)
            {
-            if(!PositionSelectByTicket(pos))        // cerrada del todo
-              {
-               FindOrAddPos(pos);
-               AddJob(pos, 1, TimeLocal() + 2, Capture(sym));
-              }
+            // MT5 avisa del cierre un instante antes de quitar la posición:
+            // apuntamos el envío y comprobamos unos segundos después si se cerró del todo
+            FindOrAddPos(pos);
+            AddJob(pos, 1, TimeLocal() + 3, Capture(sym));
            }
      }
    else
@@ -167,6 +166,14 @@ void OnTimer()
      {
       if(g_jobs[i].due > now)
          continue;
+      // un cierre cuya posición aún aparece abierta: esperamos un poco (hasta 3 veces);
+      // si sigue abierta es un cierre parcial y se envía como actualización
+      if(g_jobs[i].kind == 1 && g_jobs[i].tries < 3 && PositionSelectByTicket(g_jobs[i].id))
+        {
+         g_jobs[i].tries++;
+         g_jobs[i].due = now + 3;
+         continue;
+        }
       string err = "";
       if(SendJob(g_jobs[i], err))
         {
@@ -350,7 +357,7 @@ bool SendJob(Job &job, string &err)
      }
    // Sin foto del momento (operación desde el móvil, Mac dormido o sin gráfico abierto):
    // la rehacemos con el historial de precios, con la entrada, la salida, el stop y el objetivo marcados.
-   if(job.capture == "" && RehacerFoto && job.tries == 0)
+   if(job.capture == "" && RehacerFoto && job.tries <= 3)
      {
       bool wantIt = (job.kind == 1 && !isOpen) || (job.kind == 0 && !g_pos[k].openSent);
       if(wantIt)
