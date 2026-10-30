@@ -125,6 +125,9 @@ begin
   return gid;
 end $$;
 
+revoke execute on function public.create_group(text, text) from public, anon;
+revoke execute on function public.join_group(text, text) from public, anon;
+revoke execute on function public.is_member(uuid) from public, anon;
 grant execute on function public.create_group(text, text) to authenticated;
 grant execute on function public.join_group(text, text) to authenticated;
 grant execute on function public.is_member(uuid) to authenticated;

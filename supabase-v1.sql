@@ -167,6 +167,7 @@ end $$;
 revoke all on function public.bridge_ingest(text, jsonb) from public;
 grant execute on function public.bridge_ingest(text, jsonb) to anon, authenticated;
 revoke all on function public.create_bridge_key() from public;
+revoke execute on function public.create_bridge_key() from anon;
 grant execute on function public.create_bridge_key() to authenticated;
 
 -- 6. Aceptaciones legales (mayor de 18, aviso de riesgo, privacidad, datos de salud)
@@ -197,4 +198,5 @@ begin
   delete from auth.users where id = auth.uid();   -- borra en cascada todo lo tuyo
 end $$;
 revoke all on function public.delete_my_account() from public;
+revoke execute on function public.delete_my_account() from anon;
 grant execute on function public.delete_my_account() to authenticated;

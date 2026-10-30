@@ -590,6 +590,13 @@ function bindView(r){
     };
     document.getElementById("delBtn").onclick=async()=>{
       if(document.getElementById("delConfirm").value.trim()!=="BORRAR"){toast("Escribe BORRAR para confirmar");return}
+      // primero tus fotos (la base de datos no puede borrar archivos)
+      try{
+        const paths=[];
+        const walk=async(prefix,depth)=>{const {data}=await sb.storage.from("media").list(prefix,{limit:1000});for(const f of data||[]){const p=prefix+"/"+f.name;if(f.id)paths.push(p);else if(depth<3)await walk(p,depth+1)}};
+        await walk(S.user.id,0);
+        for(let i=0;i<paths.length;i+=100)await sb.storage.from("media").remove(paths.slice(i,i+100));
+      }catch(e){console.warn(e)}
       const {error}=await sb.rpc("delete_my_account");if(error){toast("No se pudo borrar: "+error.message);return}
       await sb.auth.signOut();toast("Cuenta borrada");
     };
