@@ -10,7 +10,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2314213a'/%3E%3Crect x='15' y='6' width='2' height='20' fill='%23fff'/%3E%3Crect x='12' y='11' width='8' height='10' rx='2' fill='%23fbe27a'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800&family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300..800&family=Red+Hat+Mono:wght@400..700&display=swap">
 <style>
 :root{
   --papel:#f2f4f7;--card:#ffffff;--sub:#f7f8fb;--tinta:#14213a;--tinta2:#2a3651;--suave:#556079;--gris:#8a93a8;
@@ -18,7 +18,7 @@
   --cobalto:#2443c7;--cobalto2:#16298a;--cobaltoC:#eef1fb;--cobaltoA:rgba(36,67,199,.14);--onAccent:#ffffff;
   --rot:#fbe27a;--rotC:#fdf6d8;
   --verde:#2f8f67;--verdeB:#e2f2ea;--verdeT:#1a5a40;--ambar:#b7791f;--ambarB:#fbf0da;--ambarT:#7a4f0f;--rojo:#c2412f;--rojoB:#fbe6e2;
-  --mono:'Martian Mono',ui-monospace,monospace;--sans:'Geologica','Segoe UI',system-ui,sans-serif;
+  --mono:'Red Hat Mono',ui-monospace,monospace;--sans:'Sora','Segoe UI',system-ui,sans-serif;
   --r:16px;--shadow:none;
   color-scheme:light;
 }
@@ -50,6 +50,38 @@ h1{margin:0;font-weight:800;font-size:28px;line-height:1.08;letter-spacing:-.02e
 h2{margin:0;font-weight:700;font-size:16px}
 .muted{color:var(--suave)}
 .small{font-size:12px}
+/* Ticket de Hoy */
+.tk{display:flex;flex-direction:column;min-width:0}
+.tk .paper{background:var(--card);border-radius:16px 16px 0 0;padding:20px 20px 12px;display:flex;flex-direction:column;gap:12px}
+.tk .zig{height:14px;background:linear-gradient(135deg,var(--card) 50%,transparent 50%) 0 0/14px 14px repeat-x,linear-gradient(225deg,var(--card) 50%,transparent 50%) 0 0/14px 14px repeat-x;transform:rotate(180deg)}
+.tk .cut{border-top:1.5px dashed var(--borde)}
+.tkhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.tkbrand{font-weight:800;font-size:15px;letter-spacing:.18em}
+.ldr{display:flex;align-items:baseline;gap:6px;font-family:var(--mono);font-size:13px}
+.ldr .dots{flex:1;min-width:12px;border-bottom:1.5px dotted var(--borde);transform:translateY(-3px)}
+.ldr b{white-space:nowrap}
+.tkline{display:flex;flex-direction:column;gap:3px;color:inherit;text-decoration:none}
+.tkline:hover .nm{text-decoration:underline}
+.tksub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--suave)}
+.tkfree{font-family:var(--mono);font-size:12px;color:var(--suave);text-align:center}
+.tktot{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.tktot .k{font-family:var(--mono);font-size:13px;font-weight:700}
+.tktot .v{font-family:var(--mono);font-size:38px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.tkstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;font-family:var(--mono)}
+.tkstats div{display:flex;flex-direction:column;gap:2px}.tkstats span{font-size:10px;color:var(--suave)}.tkstats b{font-size:14px}
+.stub{background:var(--card);border-radius:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-self:start;min-width:0}
+.stub .a{padding:16px 20px;display:flex;flex-direction:column;gap:6px;border-right:2px dashed var(--borde);min-width:0}
+.stub .b{padding:16px 18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:88px}
+.stub .c{grid-column:1/span 2;border-top:2px dashed var(--borde);padding:12px 20px 14px;display:flex;flex-direction:column;gap:8px}
+.stub .big{font-family:var(--mono);font-weight:700;font-size:26px;letter-spacing:-.02em}
+.stub .left{font-family:var(--mono);font-weight:700;font-size:28px;color:var(--cobalto)}
+.bc{position:relative;height:62px}
+.bc svg{display:block;width:100%;height:46px}
+.bc .p{fill:var(--tinta)}.bc .f{fill:var(--borde)}.bc .t{fill:var(--cobalto)}.bc .n{fill:var(--tinta)}
+.bc .tl{position:absolute;top:48px;transform:translateX(-50%);font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cobalto);white-space:nowrap}
+.tkends{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:10px;color:var(--suave)}
+.tkchip{padding:4px 10px;border-radius:999px;background:var(--sub);font-size:12px}
+@media (min-width:1024px){.tk .paper{padding:22px 24px 14px}.tktot .v{font-size:44px}.stub .big{font-size:32px}.stub .left{font-size:36px}.stub .a,.stub .b{padding:20px 24px}.stub .c{padding:16px 24px 18px}}
 .card{background:var(--card);border:1px solid var(--linea);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
 .stack{display:flex;flex-direction:column;gap:12px}
 .row{display:flex;align-items:center;gap:12px}
@@ -336,6 +368,56 @@ function franja(trades,plan){
   [8,12,16,20,23].forEach(hh=>{h+=`<span class="mono" style="position:absolute;left:calc(${X(hh*60)}% - ${hh===23?16:0}px);font-size:9px;color:var(--suave)">${String(hh).padStart(2,"0")}</span>`});
   return h+`</div>`;
 }
+const dur=x=>Math.floor(x/60)+":"+String(x%60).padStart(2,"0");
+function ticketDia(today,dayR,p){
+  let ok=0,tot=0;
+  const lines=today.map(t=>{
+    const ev=evaluate(t), closed=t.status==="closed";
+    if(closed){ok+=ev.okCount;tot+=ev.total}
+    const times=hhmm(t.open_time)+(t.close_time?" → "+hhmm(t.close_time):" · abierta");
+    let sub=times, icon="";
+    if(closed){
+      if(ev.fail.length){sub+=" · "+ev.fail.length+" norma"+(ev.fail.length>1?"s":"")+" sin cumplir";icon=ico("x",14,2.4,"var(--ambarT)")}
+      else{sub+=" · "+(t.r!=null&&t.r<0?"pérdida buena":"dentro del pacto");
+        if(!t.tp){sub+=" · a mejorar: pon objetivo";icon=`<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 3 V8 M7 10.6 V11" fill="none" stroke="var(--ambarT)" stroke-width="2.2" stroke-linecap="round"/></svg>`}
+        else icon=ico("check",14,2.6,"var(--cobalto)")}
+    }
+    return `<a class="tkline" href="#op/${encodeURIComponent(t.id)}"><div class="ldr"><span class="nm">${hhmm(t.open_time)} ${esc((t.symbol||"").toUpperCase())} ${t.side==="buy"?"COMPRA":"VENTA"}</span><span class="dots"></span><b>${closed?fmtR(t.r):"abierta"}</b></div><div class="tksub">${icon}<span>${esc(sub)}</span></div></a>`;
+  }).join("");
+  const n=p.maxTrades-today.length;
+  const free=n>0?`— queda${n>1?"n":""} ${n} operaci${n>1?"ones libres":"ón libre"} —`:n===0?"— has llegado a tu máximo —":`— ${-n} por encima de tu máximo —`;
+  const margin=Math.max(0,p.dayLimitR+dayR);
+  return `<div class="tk"><div class="paper">
+    <div class="tkhead"><span class="tkbrand">TICKORA</span><span class="lbl">Tu día en R · ${today.length} de ${p.maxTrades}</span></div>
+    <div class="cut"></div>
+    ${lines||`<div class="tkfree">— aún sin operaciones —</div>`}
+    <div class="tkfree">${free}</div>
+    <div class="cut"></div>
+    <div class="tktot"><span class="k">TOTAL</span><span class="v"><span class="rot">${today.some(t=>t.status==="closed")?fmtR(dayR):"0,0 R"}</span></span></div>
+    <div class="tkstats"><div><span>LÍMITE</span><b>−${num(p.dayLimitR,1)} R</b></div><div><span>MARGEN</span><b>${num(margin,1)} R</b></div><div><span>NORMAS</span><b>${tot?ok+" de "+tot:"—"}</b></div></div>
+  </div><div class="zig"></div></div>`;
+}
+function ticketSesion(today,p,now){
+  const s=minOf(p.start)??930, e0=minOf(p.end)??1050, e=e0>s?e0:s+120, N=e-s, nm=minOfDate(now);
+  const st=nm<s?"antes":nm<e?"dentro":"fin";
+  const leftLbl={antes:"Empieza en",dentro:"Quedan",fin:"Terminado"}[st];
+  const leftVal=st==="antes"?dur(s-nm):st==="dentro"?dur(e-nm):dur(0);
+  const tm=new Set(today.map(t=>minOfDate(t.open_time)).filter(m=>m>=s&&m<e));
+  let bars="";
+  for(let i=0;i<N;i++){const m=s+i;bars+=tm.has(m)?`<rect class="t" x="${i*3+0.4}" y="0" width="2.2" height="46"/>`:`<rect class="${m<nm?"p":"f"}" x="${i*3+0.6}" y="8" width="1.5" height="32"/>`}
+  if(st==="dentro")bars+=`<rect class="n" x="${(nm-s)*3-0.5}" y="0" width="3" height="46"/>`;
+  const labels=[...tm].map(m=>`<span class="tl" style="left:${((m-s+0.5)/N*100).toFixed(2)}%">${dur(m)}</span>`).join("");
+  const mk=(a,b,name,openTxt)=>nm<a?`${name} abre ${dur(a)}`:nm<b?openTxt:`${name} cerrada`;
+  return `<div class="stub">
+    <div class="a"><span class="lbl">Tu horario</span><span class="big">${esc(p.start)} → ${esc(p.end)}</span></div>
+    <div class="b"><span class="lbl">${leftLbl}</span><span class="left">${leftVal}</span></div>
+    <div class="c">
+      <div class="bc"><svg viewBox="0 0 ${N*3} 46" preserveAspectRatio="none" role="img" aria-label="Una raya por minuto de tu horario de ${esc(p.start)} a ${esc(p.end)}: oscuras las que ya pasaron, en azul tus entradas">${bars}</svg>${labels}</div>
+      <div class="tkends"><span>${esc(p.start)}</span><span class="hide-m">una raya = un minuto · azul = tu entrada</span><span class="show-m">1 raya = 1 min</span><span>${esc(p.end)}</span></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="tkchip">${mk(930,1320,"Nueva York","Nueva York abierta")}</span><span class="tkchip">${mk(540,1050,"Londres","Londres cierra 17:30")}</span></div>
+    </div>
+  </div>`;
+}
 function thumb(t,w,h,kind){
   const path=t[kind||"capture_entry"]||t.capture_exit;
   if(path)return `<span class="thumb" style="width:${w}px;height:${h}px"><img src="${esc(MEDIA+path.split("/").map(encodeURIComponent).join("/"))}" alt="Captura de ${esc(t.symbol)}" loading="lazy"></span>`;
@@ -379,16 +461,9 @@ function viewHoy(){
       <div class="stack" style="gap:8px;align-items:flex-end">${bridgeChip()}<a class="btn2" href="#analizar" style="height:38px">${ico("analizar",18)}Analizar</a></div>
     </div>
     ${S.dbMissing?`<div class="card" style="background:var(--ambarB);color:var(--ambarT)"><b>Falta preparar la base de datos.</b> Hay que pegar el archivo supabase-v1.sql en Supabase → SQL Editor → Run.</div>`:""}
-    <div class="grid2 even">
-      <div class="card stack" style="gap:6px">
-        <div class="between"><h2>Tu día en R</h2><div class="mono" style="font-weight:700;font-size:20px"><span class="rot">${fmtR(dayR)}</span></div></div>
-        <div class="small muted">Margen hasta tu límite del día: ${num(Math.max(0,margin),1)} R · ${today.length} de ${p.maxTrades} operaciones</div>
-        ${regla(today,dayR,p.dayLimitR)}
-      </div>
-      <div class="card stack" style="gap:10px">
-        <div class="between"><h2>Sesión</h2><div class="mono small muted">ahora ${hhmm(now)}${left!=null&&left>0&&minOfDate(now)>=minOf(p.start)?" · te quedan "+Math.floor(left/60)+" h "+(left%60)+" min":""}</div></div>
-        ${franja(today,p)}
-      </div>
+    <div class="grid2 even" style="align-items:start">
+      ${ticketDia(today,dayR,p)}
+      ${ticketSesion(today,p,now)}
     </div>
     <div class="grid2">
       <div class="card" style="padding:12px 16px">
