@@ -35,3 +35,22 @@
 ## Privacidad
 - Cada usuario solo puede leer y escribir sus propios datos (reglas de la base de datos).
 - Las fotos se guardan con nombres aleatorios imposibles de adivinar. El grupo solo recibe el enlace de las fotos que tú decidas compartir.
+
+## Versión 1 (nueva, en `app/`)
+
+La app nueva con el diseño «Bitácora clara» vive en `app/` (dirección: `/Web/app/`). Usa las mismas cuentas que la versión anterior.
+
+### Poner en marcha (una sola vez)
+1. Supabase → **SQL Editor** → **New query** → pega todo `supabase-v1.sql` → **Run**.
+2. Supabase → **Authentication** → **URL Configuration** → **Redirect URLs** → añade `https://mrcss23fx.github.io/Web/app/` (para confirmar el correo y recuperar la contraseña).
+
+### Conectar MetaTrader 5
+- En la app: **Mi plan → Conectar MetaTrader 5 → Crear mi clave**.
+- El programa puente está en `mt5/BitacoraPuente.mq5`. Los pasos aparecen en la propia app.
+- El programa solo lee tus operaciones y hace la captura del gráfico al entrar y al salir. No abre ni cierra operaciones.
+
+### Qué hay ya
+- Entrar y crear cuenta, mayor de 18, aviso de riesgo, condiciones y privacidad (`app/legal.html`, borrador), permiso para datos de salud.
+- Operaciones que llegan solas desde MT5, con R, riesgo y capturas.
+- Hoy: tu día en R, sesión, operaciones y tu plan. Cada operación: buena, pérdida buena o evitable según tus normas, lo que hiciste bien y una cosa a mejorar.
+- Progreso del mes y Mi plan (los cambios valen desde mañana), descargar tus datos y borrar tu cuenta.
