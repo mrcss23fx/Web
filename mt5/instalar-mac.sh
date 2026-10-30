@@ -1,5 +1,5 @@
 #!/bin/bash
-# Instala el programa puente de la Bitácora en MetaTrader 5 para Mac.
+# Instala el programa puente de Tickora en MetaTrader 5 para Mac.
 # Uso: pega esta línea en la Terminal:
 #   curl -fsSL https://mrcss23fx.github.io/Web/mt5/instalar-mac.sh | bash
 BASE="$HOME/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files"
@@ -10,11 +10,12 @@ if [ -z "$DIRS" ]; then
   exit 1
 fi
 echo "$DIRS" | while IFS= read -r DEST; do
-  curl -fsSL "$URL/BitacoraPuente.mq5" -o "$DEST/BitacoraPuente.mq5" || { echo "✗ No se pudo descargar. ¿Tienes internet?"; exit 1; }
-  if curl -fsSL "$URL/BitacoraPuente.ex5" -o "$DEST/BitacoraPuente.ex5.tmp" 2>/dev/null; then
-    mv "$DEST/BitacoraPuente.ex5.tmp" "$DEST/BitacoraPuente.ex5"
+  rm -f "$DEST/BitacoraPuente.mq5" "$DEST/BitacoraPuente.ex5"   # versión antigua con el nombre anterior
+  curl -fsSL "$URL/Tickora.mq5" -o "$DEST/Tickora.mq5" || { echo "✗ No se pudo descargar. ¿Tienes internet?"; exit 1; }
+  if curl -fsSL "$URL/Tickora.ex5" -o "$DEST/Tickora.ex5.tmp" 2>/dev/null; then
+    mv "$DEST/Tickora.ex5.tmp" "$DEST/Tickora.ex5"
   else
-    rm -f "$DEST/BitacoraPuente.ex5.tmp"
+    rm -f "$DEST/Tickora.ex5.tmp"
   fi
   echo "✓ Programa puente instalado en: $DEST"
 done

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Bitácora</title>
-<meta name="description" content="Tu bitácora de trading: tus operaciones se apuntan solas desde MT5 y la app te ayuda a cumplir tu plan.">
+<title>Tickora</title>
+<meta name="description" content="Tickora: tu diario de trading. Tus operaciones se apuntan solas desde MT5 y la app te ayuda a cumplir tu plan.">
 <meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0e1526" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2314213a'/%3E%3Crect x='15' y='6' width='2' height='20' fill='%23fff'/%3E%3Crect x='12' y='11' width='8' height='10' rx='2' fill='%23fbe27a'/%3E%3C/svg%3E">
@@ -354,7 +354,7 @@ function shell(view,content){
   const side=NAV_SIDE.map(([k,l])=>`<a class="navlink" href="#${k}" ${view===k?'aria-current="page"':""}>${ico(k,20)}${l}</a>`).join("");
   return `<div class="shell">
   <aside class="side" aria-label="Secciones">
-    <div class="brand" style="padding:0 6px"><div class="logo" aria-hidden="true"></div><div style="font-weight:800;font-size:19px;letter-spacing:-.02em">Bitácora</div><span class="badge" style="margin-left:auto;background:var(--seg);color:var(--suave)">Beta</span></div>
+    <div class="brand" style="padding:0 6px"><div class="logo" aria-hidden="true"></div><div style="font-weight:800;font-size:19px;letter-spacing:-.02em">Tickora</div><span class="badge" style="margin-left:auto;background:var(--seg);color:var(--suave)">Beta</span></div>
     <nav style="display:flex;flex-direction:column;gap:2px">${side}</nav>
     <div style="flex:1"></div>
     <div style="background:var(--sub);border:1px solid var(--linea);border-radius:10px;padding:10px 12px">${bridgeChip()}</div>
@@ -660,12 +660,12 @@ function viewPlan(){
             <div class="row" style="gap:8px;margin-top:8px"><code class="keybox" style="flex:1;border-style:solid;border-color:var(--linea)" id="instLine">${(S.os||OSDEF)==="mac"?"curl -fsSL https://mrcss23fx.github.io/Web/mt5/instalar-mac.sh | bash":"irm https://mrcss23fx.github.io/Web/mt5/instalar-windows.ps1 | iex"}</code><button type="button" class="btn2" data-copy="instLine">Copiar</button></div></li>
           <li><b>Permite la conexión.</b> En MetaTrader 5: <b>Herramientas → Opciones → Asesores expertos</b>, marca «Permitir WebRequest para las URL de la lista» y añade esta dirección:
             <div class="row" style="gap:8px;margin-top:8px"><code class="keybox" style="flex:1;border-style:solid;border-color:var(--linea)" id="urlLine">${esc((window.SUPA_URL||"").replace(/\/$/,""))}</code><button type="button" class="btn2" data-copy="urlLine">Copiar</button></div></li>
-          <li><b>Ponlo en un gráfico.</b> En el Navegador de MetaTrader 5, abre <b>Asesores expertos</b>, arrastra <b>BitacoraPuente</b> a cualquier gráfico y activa <b>Trading algorítmico</b> arriba. <span class="muted">Si no aparece, haz clic derecho en «Asesores expertos» → Actualizar.</span></li>
+          <li><b>Ponlo en un gráfico.</b> En el Navegador de MetaTrader 5, abre <b>Asesores expertos</b>, arrastra <b>Tickora</b> a cualquier gráfico y activa <b>Trading algorítmico</b> arriba. <span class="muted">Si no aparece, haz clic derecho en «Asesores expertos» → Actualizar.</span></li>
           <li><b>Escribe el código</b> que sale en el gráfico:
             <form class="row" id="pairForm" style="gap:8px;margin-top:8px" onsubmit="return false"><input class="input mono" id="pairCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123 456" style="max-width:160px;font-size:20px;letter-spacing:.12em;text-align:center"><button type="submit" class="btn">Vincular</button></form></li>
         </ol>
         <div class="small muted">El programa solo lee tus operaciones y hace la foto del gráfico. No abre ni cierra nada. Puedes vincular varias cuentas: repite el paso 3 en cada MetaTrader.</div>
-        <details><summary class="small muted" style="cursor:pointer">Opciones avanzadas</summary><div class="stack" style="gap:8px;margin-top:10px"><div class="small muted">Si prefieres pegar una clave en el programa en vez de usar el código:</div><button type="button" class="btn2" id="newKey" style="align-self:flex-start">Crear una clave</button><a class="small" href="../mt5/BitacoraPuente.mq5" download>Descargar el programa (.mq5) para instalarlo a mano</a></div></details>
+        <details><summary class="small muted" style="cursor:pointer">Opciones avanzadas</summary><div class="stack" style="gap:8px;margin-top:10px"><div class="small muted">Si prefieres pegar una clave en el programa en vez de usar el código:</div><button type="button" class="btn2" id="newKey" style="align-self:flex-start">Crear una clave</button><a class="small" href="../mt5/Tickora.mq5" download>Descargar el programa (.mq5) para instalarlo a mano</a></div></details>
       </div>
       <div class="card stack" style="gap:10px">
         <h2>Permisos</h2>
@@ -688,9 +688,9 @@ function viewPlan(){
 
 function viewConsent(){
   return `<div class="auth"><form class="card stack authcard" id="consentForm" style="max-width:520px;padding:24px">
-    <div class="brand"><div class="logo" aria-hidden="true"></div><div style="font-weight:800;font-size:19px">Bitácora</div></div>
+    <div class="brand"><div class="logo" aria-hidden="true"></div><div style="font-weight:800;font-size:19px">Tickora</div></div>
     <h1 style="font-size:24px">Antes de empezar</h1>
-    <p class="muted" style="margin:0;font-size:14px">La Bitácora te ayuda a cumplir tu plan. No da señales ni consejos de inversión: las decisiones son tuyas.</p>
+    <p class="muted" style="margin:0;font-size:14px">Tickora te ayuda a cumplir tu plan. No da señales ni consejos de inversión: las decisiones son tuyas.</p>
     <label class="check" style="font-size:14px"><input type="checkbox" name="adult" required style="width:18px;height:18px;margin:1px 0 0"> Tengo 18 años o más.</label>
     <label class="check" style="font-size:14px"><input type="checkbox" name="risk" required style="width:18px;height:18px;margin:1px 0 0"> <span>He leído el <a href="legal.html#riesgo" target="_blank">aviso de riesgo</a>: operar con CFD y apalancamiento puede hacerme perder dinero rápidamente.</span></label>
     <label class="check" style="font-size:14px"><input type="checkbox" name="privacy" required style="width:18px;height:18px;margin:1px 0 0"> <span>Acepto las <a href="legal.html#condiciones" target="_blank">condiciones</a> y la <a href="legal.html#privacidad" target="_blank">política de privacidad</a>.</span></label>
@@ -703,9 +703,9 @@ function viewConsent(){
 
 function viewAuth(){
   const m=S.authMode;
-  const title={login:"Entra en tu bitácora",signup:"Crea tu cuenta",reset:"Recupera tu contraseña",newpass:"Elige una contraseña nueva"}[m];
+  const title={login:"Entra en Tickora",signup:"Crea tu cuenta",reset:"Recupera tu contraseña",newpass:"Elige una contraseña nueva"}[m];
   return `<div class="auth"><form class="card stack authcard" id="authForm" style="padding:24px" novalidate>
-    <div class="brand"><div class="logo" aria-hidden="true"></div><div style="font-weight:800;font-size:19px">Bitácora</div></div>
+    <div class="brand"><div class="logo" aria-hidden="true"></div><div style="font-weight:800;font-size:19px">Tickora</div></div>
     <h1 style="font-size:24px">${title}</h1>
     ${m==="signup"?`<label class="field"><span>Tu nombre</span><input class="input" id="aName" autocomplete="name" required maxlength="40"></label>`:""}
     ${m!=="newpass"?`<label class="field"><span>Correo</span><input class="input" id="aEmail" type="email" autocomplete="email" required></label>`:""}
@@ -724,7 +724,7 @@ function route(){const h=location.hash.replace(/^#/,"");if(h.startsWith("op/"))r
 function render(){
   if(!SB_OK){$app.innerHTML=`<div class="auth"><div class="card authcard">Falta configurar la conexión (config.js).</div></div>`;return}
   if(!S.user){$app.innerHTML=viewAuth();bindAuth();return}
-  if(!S.loaded){$app.innerHTML=`<div class="auth"><div class="muted">Cargando tu bitácora…</div></div>`;return}
+  if(!S.loaded){$app.innerHTML=`<div class="auth"><div class="muted">Cargando Tickora…</div></div>`;return}
   if(!(S.consents.adult&&S.consents.risk&&S.consents.privacy)){$app.innerHTML=viewConsent();bindConsent();return}
   const r=route(), key=r.view+(r.id||""), ae=document.activeElement;
   if(S.lastView===key&&ae&&ae.closest&&ae.closest("#main")&&ae.matches("input,textarea,select"))return; // no borrar lo que estás escribiendo
@@ -839,7 +839,7 @@ function bindView(r){
     document.getElementById("logoutBtn").onclick=()=>sb.auth.signOut();
     document.getElementById("exportBtn").onclick=()=>{
       const blob=new Blob([JSON.stringify({exportado:new Date().toISOString(),plan:S.planDoc,operaciones:S.trades,permisos:S.consents},null,2)],{type:"application/json"});
-      const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mi-bitacora.json";document.body.appendChild(a);a.click();a.remove();
+      const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mis-datos-tickora.json";document.body.appendChild(a);a.click();a.remove();
     };
     document.getElementById("delBtn").onclick=async()=>{
       if(document.getElementById("delConfirm").value.trim()!=="BORRAR"){toast("Escribe BORRAR para confirmar");return}

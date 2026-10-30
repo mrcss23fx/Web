@@ -15,7 +15,7 @@
 4. Ábrelas en `config.js` y sustituye `TU_PROYECTO` y `TU_CLAVE_ANON_PUBLIC` por las tuyas.
 
 ### 2. Ajustes de acceso
-- **Authentication** → **URL Configuration** → **Site URL**: pon la dirección de tu web cuando la tengas (por ejemplo `https://tunombre.github.io/bitacora/`).
+- **Authentication** → **URL Configuration** → **Site URL**: pon la dirección de tu web cuando la tengas (por ejemplo `https://tunombre.github.io/tickora/`).
 - Para probar rápido con tu amigo, puedes desactivar la confirmación por correo en **Authentication** → **Providers** → **Email** → **Confirm email**. Así se entra nada más crear la cuenta.
 
 ### 3. Publicar la web
@@ -46,7 +46,7 @@ La app nueva con el diseño «Bitácora clara» vive en `app/` (dirección: `/We
 
 ### Conectar MetaTrader 5
 - En la app: **Mi plan → Conectar MetaTrader 5 → Crear mi clave**.
-- El programa puente está en `mt5/BitacoraPuente.mq5`. Los pasos aparecen en la propia app.
+- El programa puente está en `mt5/Tickora.mq5`. Los pasos aparecen en la propia app.
 - El programa solo lee tus operaciones y hace la captura del gráfico al entrar y al salir. No abre ni cierra operaciones.
 
 ### Qué hay ya

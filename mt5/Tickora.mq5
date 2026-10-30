@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
-//| BitacoraPuente.mq5                                               |
-//| Envía tus operaciones de MetaTrader 5 a tu Bitácora:             |
+//| Tickora.mq5                                                      |
+//| Envía tus operaciones de MetaTrader 5 a tu Tickora:             |
 //| se apuntan solas, con la captura del gráfico al entrar y salir.  |
 //|                                                                  |
 //| Cómo se usa:                                                     |
@@ -14,11 +14,11 @@
 //| Mantén abierto un gráfico de cada mercado que operes: de ahí     |
 //| sale la captura. El programa NO abre ni cierra operaciones.      |
 //+------------------------------------------------------------------+
-#property copyright   "Bitácora"
+#property copyright   "Tickora"
 #property version     "1.20"
-#property description "Apunta solas tus operaciones en tu Bitácora, con la captura del gráfico al entrar y al salir. No abre ni cierra operaciones."
+#property description "Apunta solas tus operaciones en Tickora, con la captura del gráfico al entrar y al salir. No abre ni cierra operaciones."
 
-input string ClaveBitacora   = "";    // Clave (opcional: si la dejas vacía, te enseña un código para vincular)
+input string Clave           = "";    // Clave (opcional: si la dejas vacía, te enseña un código para vincular)
 input bool   GuardarCapturas = true;  // Guardar la captura del gráfico
 input int    AnchoCaptura    = 1000;  // Ancho de la captura (píxeles)
 input int    AltoCaptura     = 560;   // Alto de la captura (píxeles)
@@ -68,7 +68,7 @@ bool     g_urlAlert = false;
 int OnInit()
   {
    LoadState();
-   g_key = StringLen(ClaveBitacora) >= 10 ? ClaveBitacora : LoadKey();
+   g_key = StringLen(Clave) >= 10 ? Clave : LoadKey();
    EventSetTimer(5);
    if(g_key == "")
       StartPairing();                              // sin clave: enseñamos un código para vincular con la app
@@ -204,7 +204,7 @@ void OnTimer()
          g_status = "Sin conexión, reintentando: " + err;
          if(g_jobs[i].tries > 20)
            {
-            Print("Bitácora: no se pudo enviar la posición ", g_jobs[i].id, " (", err, ")");
+            Print("Tickora: no se pudo enviar la posición ", g_jobs[i].id, " (", err, ")");
             RemoveJob(i);
             i--;
            }
@@ -448,7 +448,7 @@ void SendPing()
   }
 
 //+------------------------------------------------------------------+
-//| Envío a la Bitácora                                              |
+//| Envío a Tickora                                              |
 //+------------------------------------------------------------------+
 bool Post(const string body, string &err)
   {
@@ -475,7 +475,7 @@ bool PostTo(const string rpc, const string body, string &err, string &resp)
          if(!g_urlAlert)
            {
             g_urlAlert = true;
-            Alert("Bitácora: en Herramientas → Opciones → Asesores expertos, marca «Permitir WebRequest» y añade ", BT_URL);
+            Alert("Tickora: en Herramientas → Opciones → Asesores expertos, marca «Permitir WebRequest» y añade ", BT_URL);
            }
         }
       else
@@ -488,7 +488,7 @@ bool PostTo(const string rpc, const string body, string &err, string &resp)
       if(StringFind(txt, "Clave no v") >= 0)
         {
          err = "clave no válida";
-         if(StringLen(ClaveBitacora) < 10)
+         if(StringLen(Clave) < 10)
            {
             FileDelete(BT_KEYFILE);                // la desvinculaste en la app: pedimos un código nuevo
             g_key = "";
@@ -497,7 +497,7 @@ bool PostTo(const string rpc, const string body, string &err, string &resp)
         }
       else
          err = "error " + IntegerToString(code);
-      Print("Bitácora: respuesta ", code, " ", StringSubstr(txt, 0, 300));
+      Print("Tickora: respuesta ", code, " ", StringSubstr(txt, 0, 300));
       return(false);
      }
    resp = CharArrayToString(res, 0, WHOLE_ARRAY, CP_UTF8);
@@ -582,7 +582,7 @@ void PollPairing()
       g_code = "";
       ObjectDelete(0, "bt_code1");
       ObjectDelete(0, "bt_code2");
-      g_status = "Vinculado con tu Bitácora";
+      g_status = "Vinculado con tu Tickora";
       CatchUp();
       SendPing();
      }
@@ -639,7 +639,7 @@ string Capture(const string sym)
      }
    if(cid == 0 && _Symbol != sym)
      {
-      Print("Bitácora: abre un gráfico de ", sym, " para que se guarde la captura.");
+      Print("Tickora: abre un gráfico de ", sym, " para que se guarde la captura.");
       return("");
      }
    ChartRedraw(cid);
@@ -866,12 +866,12 @@ void ShowStatus()
      {
       if(g_code != "")
          ShowCodeLabels();
-      Comment("Bitácora · ", g_status);
+      Comment("Tickora · ", g_status);
       return;
      }
    string last = g_lastOk > 0 ? TimeToString(g_lastOk, TIME_MINUTES) : "—";
    int pend = ArraySize(g_jobs);
-   Comment("Bitácora · ", g_status, "\nÚltimo envío correcto: ", last,
+   Comment("Tickora · ", g_status, "\nÚltimo envío correcto: ", last,
            (pend > 0 ? "\nPendientes de enviar: " + IntegerToString(pend) : ""));
   }
 //+------------------------------------------------------------------+
