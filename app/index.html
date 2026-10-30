@@ -211,6 +211,7 @@ const ICON={
 };
 const ico=(n,s=20,w=1.8,c="currentColor")=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
 const NAV=[["hoy","Hoy"],["progreso","Progreso"],["grupo","Grupo"],["aprender","Aprender"],["plan","Mi plan"]];
+const OSDEF=(/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent)?"mac":"win");
 const NAV_SIDE=[["hoy","Hoy"],["analizar","Analizar"],["progreso","Progreso"],["grupo","Grupo"],["aprender","Aprender"],["plan","Mi plan"]];
 
 /* ---------- plan (los cambios valen desde mañana) ---------- */
@@ -260,12 +261,12 @@ async function loadAll(){
     sb.from("docs").select("data").eq("col","v1").eq("id","plan").maybeSingle(),
     sb.from("consents").select("kind,version,granted,created_at"),
     sb.from("trades").select("*").order("open_time",{ascending:false}).limit(500),
-    sb.from("bridge_keys").select("created_at,last_seen,last_info").maybeSingle()
+    sb.from("bridge_keys").select("key_hash,created_at,last_seen,last_info").order("last_seen",{ascending:false,nullsFirst:false})
   ]);
   if(trades.error&&/relation|does not exist|schema cache/i.test(trades.error.message)){S.dbMissing=true}
   S.planDoc=plan.data?plan.data.data:null;S.plan=effectivePlan();
   S.consents={};(cons.data||[]).forEach(c=>{if(c.version===LEGAL_VERSION)S.consents[c.kind]=c.granted});
-  S.trades=trades.data||[];S.bridge=keys.data||null;S.loaded=true;
+  S.trades=trades.data||[];S.bridges=keys.data||[];S.bridge=S.bridges[0]||null;S.loaded=true;
   drainInbox();
 }
 async function drainInbox(){
@@ -649,19 +650,22 @@ function viewPlan(){
       <div class="small muted">${S.planDoc&&S.planDoc.current?"Los cambios valen desde mañana. Así nunca lo decides con una operación abierta.":"Este primer plan vale desde hoy."}</div>
     </form>
     <div class="stack">
-      <div class="card stack" style="gap:10px" id="mt5">
-        <div class="between"><h2>Conectar MetaTrader 5</h2>${b?`<span class="small" style="color:${live?"var(--verdeT)":"var(--suave)"};font-weight:600">${live?"Conectado":b.last_seen?"Sin señal "+ago(b.last_seen):"Esperando"}</span>`:""}</div>
-        ${b&&b.last_seen?`<div class="small muted">Cuenta ${esc(info.account||"—")} · ${esc(info.broker||"")} · última señal ${ago(b.last_seen)}</div>`:""}
+      <div class="card stack" style="gap:12px" id="mt5">
+        <div class="between"><h2>Conectar MetaTrader 5</h2>${S.bridges&&S.bridges.length?`<span class="small muted">${S.bridges.length} cuenta${S.bridges.length>1?"s":""}</span>`:""}</div>
+        ${(S.bridges||[]).map(k=>{const li=k.last_seen&&(Date.now()-new Date(k.last_seen))<15*60*1000,inf=k.last_info||{};return `<div class="row" style="justify-content:space-between;padding:10px 12px;border:1px solid var(--linea);border-radius:12px"><div class="row" style="gap:10px;min-width:0"><span class="dot" style="background:${li?"var(--verde)":k.last_seen?"var(--ambar)":"var(--borde)"}"></span><div style="min-width:0"><div style="font-weight:600;font-size:14px">${inf.account?"Cuenta "+esc(inf.account):"Esperando la primera señal"}</div><div class="small muted">${esc(inf.broker||"")}${k.last_seen?" · "+(li?"conectada":"sin señal "+ago(k.last_seen)):""}${inf.version?" · programa "+esc(inf.version):""}</div></div></div><button type="button" class="link" data-unlink="${esc(k.key_hash)}">Desconectar</button></div>`}).join("")}
         ${S.newKey?`<div class="stack" style="gap:6px"><div class="small" style="font-weight:600">Tu clave (solo se enseña ahora):</div><div class="keybox" id="keyText">${esc(S.newKey)}</div><button type="button" class="btn2" id="copyKey">Copiar la clave</button></div>`:""}
-        <ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.6" class="stack">
-          <li><a href="../mt5/BitacoraPuente.mq5" download>Descarga el programa puente</a> y déjalo en la carpeta <b>MQL5 → Experts</b> de MT5.<br><span class="muted">Windows: en MT5, <b>Archivo → Abrir carpeta de datos</b>. Mac: en el Finder pulsa <b>Cmd + Mayús + G</b> y pega <span class="mono" style="font-size:11px;word-break:break-all">~/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5/MQL5/Experts</span></span></li>
-          <li>Pulsa <b>F4</b> para abrir MetaEditor, abre <i>BitacoraPuente</i> y pulsa <b>Compilar</b>.</li>
-          <li>En MT5: <b>Herramientas → Opciones → Asesores expertos</b>, marca <b>Permitir WebRequest</b> y añade:<br><span class="mono" style="font-size:11px;word-break:break-all">${esc((window.SUPA_URL||"").replace(/\/$/,""))}</span></li>
-          <li>Arrastra <i>BitacoraPuente</i> a un gráfico, pega tu clave y activa <b>Trading algorítmico</b>. Ten abierto un gráfico de cada mercado que operes: de ahí sale la captura.</li>
+        <div class="seg" role="group" aria-label="Tu ordenador" style="justify-self:start;width:max-content">${["mac","win"].map(o=>`<button type="button" data-os="${o}" aria-pressed="${(S.os||OSDEF)===o}">${o==="mac"?"Mac":"Windows"}</button>`).join("")}</div>
+        <ol class="stack" style="margin:0;padding-left:20px;gap:12px;font-size:14px">
+          <li><b>Instala el programa.</b> ${(S.os||OSDEF)==="mac"?`Abre la <b>Terminal</b> (pulsa Cmd + Espacio y escribe «Terminal») y pega esta línea:`:`Abre <b>PowerShell</b> (pulsa la tecla Windows y escribe «PowerShell») y pega esta línea:`}
+            <div class="row" style="gap:8px;margin-top:8px"><code class="keybox" style="flex:1;border-style:solid;border-color:var(--linea)" id="instLine">${(S.os||OSDEF)==="mac"?"curl -fsSL https://mrcss23fx.github.io/Web/mt5/instalar-mac.sh | bash":"irm https://mrcss23fx.github.io/Web/mt5/instalar-windows.ps1 | iex"}</code><button type="button" class="btn2" data-copy="instLine">Copiar</button></div></li>
+          <li><b>Permite la conexión.</b> En MetaTrader 5: <b>Herramientas → Opciones → Asesores expertos</b>, marca «Permitir WebRequest para las URL de la lista» y añade esta dirección:
+            <div class="row" style="gap:8px;margin-top:8px"><code class="keybox" style="flex:1;border-style:solid;border-color:var(--linea)" id="urlLine">${esc((window.SUPA_URL||"").replace(/\/$/,""))}</code><button type="button" class="btn2" data-copy="urlLine">Copiar</button></div></li>
+          <li><b>Ponlo en un gráfico.</b> En el Navegador de MetaTrader 5, abre <b>Asesores expertos</b>, arrastra <b>BitacoraPuente</b> a cualquier gráfico y activa <b>Trading algorítmico</b> arriba. <span class="muted">Si no aparece, haz clic derecho en «Asesores expertos» → Actualizar.</span></li>
+          <li><b>Escribe el código</b> que sale en el gráfico:
+            <form class="row" id="pairForm" style="gap:8px;margin-top:8px" onsubmit="return false"><input class="input mono" id="pairCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123 456" style="max-width:160px;font-size:20px;letter-spacing:.12em;text-align:center"><button type="submit" class="btn">Vincular</button></form></li>
         </ol>
-        <button type="button" class="${b?"btn2":"btn"}" id="newKey">${b?"Crear una clave nueva":"Crear mi clave"}</button>
-        ${b?`<div class="small muted">Si creas una nueva, la anterior deja de funcionar.</div>`:""}
-        <div class="small muted">El programa solo lee tus operaciones. No abre ni cierra nada.</div>
+        <div class="small muted">El programa solo lee tus operaciones y hace la foto del gráfico. No abre ni cierra nada. Puedes vincular varias cuentas: repite el paso 3 en cada MetaTrader.</div>
+        <details><summary class="small muted" style="cursor:pointer">Opciones avanzadas</summary><div class="stack" style="gap:8px;margin-top:10px"><div class="small muted">Si prefieres pegar una clave en el programa en vez de usar el código:</div><button type="button" class="btn2" id="newKey" style="align-self:flex-start">Crear una clave</button><a class="small" href="../mt5/BitacoraPuente.mq5" download>Descargar el programa (.mq5) para instalarlo a mano</a></div></details>
       </div>
       <div class="card stack" style="gap:10px">
         <h2>Permisos</h2>
@@ -802,12 +806,28 @@ function bindView(r){
       if(ok){if(first){S.planDoc.saved=true;await sb.from("docs").upsert({user_id:S.user.id,col:"v1",id:"plan",data:S.planDoc})}toast(first?"Plan guardado. Vale desde hoy.":"Guardado. Vale desde mañana.");render()}
     };
     document.getElementById("newKey").onclick=async()=>{
-      if(S.bridge&&!confirmInline("newKey","¿Seguro? La clave anterior dejará de funcionar. Pulsa otra vez para confirmar."))return;
       const {data,error}=await sb.rpc("create_bridge_key");
       if(error){toast("No se pudo crear: "+error.message);return}
-      S.newKey=data;S.bridge={created_at:new Date().toISOString(),last_seen:null,last_info:{}};render();
+      S.newKey=data;await refreshBridges();S.lastView=null;render();
       document.getElementById("mt5").scrollIntoView({behavior:"smooth",block:"start"});
     };
+    document.querySelectorAll("[data-os]").forEach(b=>b.onclick=()=>{S.os=b.dataset.os;S.lastView=null;render();document.getElementById("mt5").scrollIntoView({block:"start"})});
+    document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{const t=document.getElementById(b.dataset.copy).textContent.trim();try{await navigator.clipboard.writeText(t);toast("Copiado")}catch(e){toast(t)}});
+    document.getElementById("pairForm").onsubmit=async()=>{
+      const inp=document.getElementById("pairCode"),code=inp.value.replace(/\D/g,"");
+      if(code.length!==6){toast("El código tiene 6 cifras");return}
+      const {data,error}=await sb.rpc("bridge_pair_claim",{p_code:code});
+      if(error){toast(error.message);return}
+      if(!data){toast("Código no válido o caducado. Mira el que sale ahora en el gráfico.");return}
+      inp.value="";toast("¡Vinculado! En unos segundos verás tu cuenta aquí.");
+      setTimeout(async()=>{await refreshBridges();S.lastView=null;render()},8000);
+    };
+    document.querySelectorAll("[data-unlink]").forEach(b=>b.onclick=async()=>{
+      if(!confirmInline2(b,"¿Seguro? Pulsa otra vez"))return;
+      const {error}=await sb.from("bridge_keys").delete().eq("key_hash",b.dataset.unlink);
+      if(error){toast("No se pudo desconectar");return}
+      await refreshBridges();S.lastView=null;render();toast("Cuenta desconectada");
+    });
     const ck=document.getElementById("copyKey");if(ck)ck.onclick=async()=>{try{await navigator.clipboard.writeText(S.newKey);toast("Clave copiada")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("keyText"));getSelection().removeAllRanges();getSelection().addRange(r);toast("Selecciónala y cópiala")}};
     document.getElementById("healthToggle").onclick=async()=>{
       const v=!(S.consents.health===true);
@@ -835,11 +855,13 @@ function bindView(r){
     };
   }
 }
+function confirmInline2(b,msg){if(b.dataset.armed==="1"){b.dataset.armed="";return true}b.dataset.armed="1";const old=b.textContent;b.textContent=msg;setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent=old}},5000);return false}
 function confirmInline(id,msg){const b=document.getElementById(id);if(b.dataset.armed==="1"){b.dataset.armed="";return true}b.dataset.armed="1";const old=b.textContent;b.textContent=msg;setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent=old}},5000);return false}
 
 window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
 setInterval(()=>{if(S.user&&S.loaded&&!document.activeElement.matches("input,textarea"))render()},60000);
-setInterval(async()=>{if(!S.user||!S.loaded)return;const {data}=await sb.from("bridge_keys").select("created_at,last_seen,last_info").maybeSingle();if(data){S.bridge=data}},300000);
+async function refreshBridges(){const {data}=await sb.from("bridge_keys").select("key_hash,created_at,last_seen,last_info").order("last_seen",{ascending:false,nullsFirst:false});if(data){S.bridges=data;S.bridge=data[0]||null}}
+setInterval(()=>{if(S.user&&S.loaded)refreshBridges()},300000);
 
 async function onSession(session,event){
   if(event==="PASSWORD_RECOVERY"){S.user=null;S.authMode="newpass";render();return}

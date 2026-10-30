@@ -3,21 +3,22 @@
 //| Envía tus operaciones de MetaTrader 5 a tu Bitácora:             |
 //| se apuntan solas, con la captura del gráfico al entrar y salir.  |
 //|                                                                  |
-//| Cómo se usa (2 minutos):                                         |
-//| 1. En la Bitácora: Mi plan → Conectar MT5 → copia tu clave.      |
-//| 2. MT5: Herramientas → Opciones → Asesores expertos → marca       |
+//| Cómo se usa:                                                     |
+//| 1. MT5: Herramientas → Opciones → Asesores expertos → marca       |
 //|    «Permitir WebRequest para las URL de la lista» y añade:        |
 //|    https://xsvezicjksfrklwjskfv.supabase.co                      |
-//| 3. Arrastra este programa a cualquier gráfico, pega tu clave     |
-//|    y activa «Trading algorítmico» (botón de arriba).             |
+//| 2. Arrastra este programa a cualquier gráfico y activa           |
+//|    «Trading algorítmico» (botón de arriba).                      |
+//| 3. En el gráfico sale un código de 6 cifras: escríbelo en la app |
+//|    (Mi plan → Conectar MT5). Queda vinculado para siempre.       |
 //| Mantén abierto un gráfico de cada mercado que operes: de ahí     |
 //| sale la captura. El programa NO abre ni cierra operaciones.      |
 //+------------------------------------------------------------------+
 #property copyright   "Bitácora"
-#property version     "1.10"
+#property version     "1.20"
 #property description "Apunta solas tus operaciones en tu Bitácora, con la captura del gráfico al entrar y al salir. No abre ni cierra operaciones."
 
-input string ClaveBitacora   = "";    // Tu clave de conexión (Mi plan → Conectar MT5)
+input string ClaveBitacora   = "";    // Clave (opcional: si la dejas vacía, te enseña un código para vincular)
 input bool   GuardarCapturas = true;  // Guardar la captura del gráfico
 input int    AnchoCaptura    = 1000;  // Ancho de la captura (píxeles)
 input int    AltoCaptura     = 560;   // Alto de la captura (píxeles)
@@ -26,7 +27,8 @@ input bool   RehacerFoto     = true;  // Si no hubo foto en el momento, rehacerl
 #define BT_URL      "https://xsvezicjksfrklwjskfv.supabase.co"
 #define BT_RPC      "/rest/v1/rpc/bridge_ingest"
 #define BT_APIKEY   "sb_publishable_qLIhdI4CuQuisOstwl0fWg_dhW61xcm"
-#define BT_VERSION  "1.1"
+#define BT_VERSION  "1.2"
+#define BT_KEYFILE  "bitacora_clave.txt"
 #define BT_STATE    "bitacora_estado.csv"
 #define BT_CAPFILE  "bitacora_captura.png"
 
@@ -55,21 +57,26 @@ Job g_jobs[];
 datetime g_lastOk   = 0;
 datetime g_lastPing = 0;
 datetime g_lastScan = 0;
+string   g_key      = "";                       // clave en uso (de los parámetros o vinculada con código)
+string   g_secret   = "";                       // secreto mientras se vincula
+string   g_code     = "";                       // código de 6 cifras que se enseña en el gráfico
+datetime g_codeAt   = 0;
 string   g_status   = "Conectando…";
 bool     g_urlAlert = false;
 
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   if(StringLen(ClaveBitacora) < 10)
-     {
-      Alert("Bitácora: pega tu clave de conexión (Mi plan → Conectar MT5).");
-      return(INIT_PARAMETERS_INCORRECT);
-     }
    LoadState();
+   g_key = StringLen(ClaveBitacora) >= 10 ? ClaveBitacora : LoadKey();
    EventSetTimer(5);
-   CatchUp();
-   SendPing();
+   if(g_key == "")
+      StartPairing();                              // sin clave: enseñamos un código para vincular con la app
+   else
+     {
+      CatchUp();
+      SendPing();
+     }
    ShowStatus();
    return(INIT_SUCCEEDED);
   }
@@ -78,6 +85,8 @@ void OnDeinit(const int reason)
   {
    EventKillTimer();
    SaveState();
+   ObjectDelete(0, "bt_code1");
+   ObjectDelete(0, "bt_code2");
    Comment("");
   }
 
@@ -88,6 +97,8 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
                         const MqlTradeRequest &request,
                         const MqlTradeResult &result)
   {
+   if(g_key == "")
+      return;                                      // aún sin vincular: se recogerá al vincular (últimos 7 días)
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD)
      {
       if(!HistoryDealSelect(trans.deal))
@@ -162,6 +173,12 @@ void WatchStop(const ulong pos)
 void OnTimer()
   {
    datetime now = TimeLocal();
+   if(g_key == "")
+     {
+      PollPairing();
+      ShowStatus();
+      return;
+     }
    for(int i = 0; i < ArraySize(g_jobs); i++)
      {
       if(g_jobs[i].due > now)
@@ -371,7 +388,7 @@ bool SendJob(Job &job, string &err)
       js += (job.kind == 0 ? ",\"capture_entry\":\"" : ",\"capture_exit\":\"") + job.capture + "\"";
    js += "}";
 
-   if(!Post("{\"p_key\":\"" + JsonEsc(ClaveBitacora) + "\",\"p_trade\":" + js + "}", err))
+   if(!Post("{\"p_key\":\"" + JsonEsc(g_key) + "\",\"p_trade\":" + js + "}", err))
       return(false);
 
    if(job.kind == 0 || isOpen)
@@ -414,7 +431,7 @@ void SendPing()
               ",\"d\":" + IntegerToString(SymbolInfoInteger(s, SYMBOL_DIGITS)) +
               ",\"p\":" + DoubleToString(SymbolInfoDouble(s, SYMBOL_BID), (int)SymbolInfoInteger(s, SYMBOL_DIGITS)) + "}";
      }
-   string js = "{\"p_key\":\"" + JsonEsc(ClaveBitacora) + "\",\"p_trade\":{\"ping\":\"1\",\"version\":\"" + BT_VERSION +
+   string js = "{\"p_key\":\"" + JsonEsc(g_key) + "\",\"p_trade\":{\"ping\":\"1\",\"version\":\"" + BT_VERSION +
                "\",\"account\":\"" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN)) +
                "\",\"broker\":\"" + JsonEsc(AccountInfoString(ACCOUNT_COMPANY)) +
                "\",\"balance_now\":" + DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE), 2) +
@@ -435,6 +452,12 @@ void SendPing()
 //+------------------------------------------------------------------+
 bool Post(const string body, string &err)
   {
+   string resp;
+   return(PostTo(BT_RPC, body, err, resp));
+  }
+
+bool PostTo(const string rpc, const string body, string &err, string &resp)
+  {
    char data[], res[];
    string resHeaders;
    int len = StringToCharArray(body, data, 0, WHOLE_ARRAY, CP_UTF8);
@@ -442,7 +465,7 @@ bool Post(const string body, string &err)
       ArrayResize(data, len - 1);                  // sin el 0 final
    string headers = "Content-Type: application/json\r\napikey: " + BT_APIKEY + "\r\n";
    ResetLastError();
-   int code = WebRequest("POST", BT_URL + BT_RPC, headers, 15000, data, res, resHeaders);
+   int code = WebRequest("POST", BT_URL + rpc, headers, 15000, data, res, resHeaders);
    if(code == -1)
      {
       int e = GetLastError();
@@ -463,13 +486,132 @@ bool Post(const string body, string &err)
      {
       string txt = CharArrayToString(res, 0, WHOLE_ARRAY, CP_UTF8);
       if(StringFind(txt, "Clave no v") >= 0)
-         err = "clave no válida: cópiala otra vez desde Mi plan";
+        {
+         err = "clave no válida";
+         if(StringLen(ClaveBitacora) < 10)
+           {
+            FileDelete(BT_KEYFILE);                // la desvinculaste en la app: pedimos un código nuevo
+            g_key = "";
+            StartPairing();
+           }
+        }
       else
          err = "error " + IntegerToString(code);
       Print("Bitácora: respuesta ", code, " ", StringSubstr(txt, 0, 300));
       return(false);
      }
+   resp = CharArrayToString(res, 0, WHOLE_ARRAY, CP_UTF8);
    return(true);
+  }
+
+//+------------------------------------------------------------------+
+//| Vincular con un código de 6 cifras                               |
+//+------------------------------------------------------------------+
+string LoadKey()
+  {
+   if(!FileIsExist(BT_KEYFILE))
+      return("");
+   int h = FileOpen(BT_KEYFILE, FILE_READ | FILE_TXT | FILE_ANSI);
+   if(h == INVALID_HANDLE)
+      return("");
+   string k = FileReadString(h);
+   FileClose(h);
+   StringTrimLeft(k);
+   StringTrimRight(k);
+   return(StringLen(k) >= 10 ? k : "");
+  }
+
+void SaveKey(const string k)
+  {
+   int h = FileOpen(BT_KEYFILE, FILE_WRITE | FILE_TXT | FILE_ANSI);
+   if(h == INVALID_HANDLE)
+      return;
+   FileWriteString(h, k);
+   FileClose(h);
+  }
+
+string Unquote(string s)
+  {
+   StringTrimLeft(s);
+   StringTrimRight(s);
+   StringReplace(s, "\"", "");
+   return(s);
+  }
+
+void StartPairing()
+  {
+   MathSrand((int)(GetTickCount() ^ (uint)TimeLocal()));
+   string hex = "0123456789abcdef";
+   g_secret = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN)) + "-";
+   for(int i = 0; i < 40; i++)
+      g_secret += StringSubstr(hex, MathRand() % 16, 1);
+   string err = "", resp = "";
+   if(PostTo("/rest/v1/rpc/bridge_pair_start", "{\"p_secret\":\"" + g_secret + "\"}", err, resp))
+     {
+      g_code = Unquote(resp);
+      g_codeAt = TimeLocal();
+      g_status = "Escribe el código en la app";
+     }
+   else
+     {
+      g_code = "";
+      g_status = "Sin conexión: " + err;
+     }
+  }
+
+void PollPairing()
+  {
+   if(g_code == "" || TimeLocal() - g_codeAt > 14 * 60)
+     {
+      StartPairing();                              // el código caduca a los 15 minutos
+      return;
+     }
+   string err = "", resp = "";
+   if(!PostTo("/rest/v1/rpc/bridge_pair_check", "{\"p_secret\":\"" + g_secret + "\"}", err, resp))
+      return;
+   string k = Unquote(resp);
+   if(k == "caducado")
+     {
+      StartPairing();
+      return;
+     }
+   if(StringLen(k) >= 10)
+     {
+      g_key = k;
+      SaveKey(k);
+      g_code = "";
+      ObjectDelete(0, "bt_code1");
+      ObjectDelete(0, "bt_code2");
+      g_status = "Vinculado con tu Bitácora";
+      CatchUp();
+      SendPing();
+     }
+  }
+
+void ShowCodeLabels()
+  {
+   string c = g_code;
+   if(StringLen(c) == 6)
+      c = StringSubstr(c, 0, 3) + " " + StringSubstr(c, 3, 3);
+   if(ObjectFind(0, "bt_code1") < 0)
+     {
+      ObjectCreate(0, "bt_code1", OBJ_LABEL, 0, 0, 0);
+      ObjectCreate(0, "bt_code2", OBJ_LABEL, 0, 0, 0);
+     }
+   ObjectSetInteger(0, "bt_code1", OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, "bt_code1", OBJPROP_XDISTANCE, 20);
+   ObjectSetInteger(0, "bt_code1", OBJPROP_YDISTANCE, 60);
+   ObjectSetInteger(0, "bt_code1", OBJPROP_FONTSIZE, 30);
+   ObjectSetString(0, "bt_code1", OBJPROP_FONT, "Arial Bold");
+   ObjectSetInteger(0, "bt_code1", OBJPROP_COLOR, clrRoyalBlue);
+   ObjectSetString(0, "bt_code1", OBJPROP_TEXT, "Código: " + c);
+   ObjectSetInteger(0, "bt_code2", OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, "bt_code2", OBJPROP_XDISTANCE, 22);
+   ObjectSetInteger(0, "bt_code2", OBJPROP_YDISTANCE, 112);
+   ObjectSetInteger(0, "bt_code2", OBJPROP_FONTSIZE, 11);
+   ObjectSetInteger(0, "bt_code2", OBJPROP_COLOR, clrDimGray);
+   ObjectSetString(0, "bt_code2", OBJPROP_TEXT, "Escríbelo en la app: Mi plan → Conectar MetaTrader 5");
+   ChartRedraw();
   }
 
 //+------------------------------------------------------------------+
@@ -720,6 +862,13 @@ void LoadState()
 
 void ShowStatus()
   {
+   if(g_key == "")
+     {
+      if(g_code != "")
+         ShowCodeLabels();
+      Comment("Bitácora · ", g_status);
+      return;
+     }
    string last = g_lastOk > 0 ? TimeToString(g_lastOk, TIME_MINUTES) : "—";
    int pend = ArraySize(g_jobs);
    Comment("Bitácora · ", g_status, "\nÚltimo envío correcto: ", last,

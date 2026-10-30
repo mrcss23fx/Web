@@ -83,7 +83,6 @@ declare k text;
 begin
   if auth.uid() is null then raise exception 'Necesitas iniciar sesión'; end if;
   k := 'bt_' || encode(extensions.gen_random_bytes(20), 'hex');
-  delete from public.bridge_keys where user_id = auth.uid();
   insert into public.bridge_keys(key_hash, user_id)
     values (encode(extensions.digest(k, 'sha256'), 'hex'), auth.uid());
   return k;
@@ -204,3 +203,80 @@ end $$;
 revoke all on function public.delete_my_account() from public;
 revoke execute on function public.delete_my_account() from anon;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- 9. Vincular MT5 con un código de 6 cifras (sin copiar claves)
+--    El programa pide un código, lo enseña en el gráfico, tú lo escribes en la app
+--    y el programa recibe su clave. Permite varias cuentas por persona.
+create table if not exists public.bridge_pairings (
+  code       text primary key,
+  pair_hash  text not null unique,
+  user_id    uuid references auth.users(id) on delete cascade,
+  bridge_key text,
+  created_at timestamptz not null default now()
+);
+alter table public.bridge_pairings enable row level security;   -- sin reglas: solo por las funciones
+
+create table if not exists public.bridge_pair_attempts (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  at      timestamptz not null default now()
+);
+create index if not exists bridge_pair_attempts_idx on public.bridge_pair_attempts(user_id, at);
+alter table public.bridge_pair_attempts enable row level security;
+
+create or replace function public.bridge_pair_start(p_secret text)
+returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare c text; n int := 0;
+begin
+  if p_secret is null or char_length(p_secret) < 20 or char_length(p_secret) > 100 then raise exception 'Secreto no válido'; end if;
+  delete from public.bridge_pairings where created_at < now() - interval '15 minutes';
+  if (select count(*) from public.bridge_pairings) > 2000 then raise exception 'Demasiadas peticiones, prueba en unos minutos'; end if;
+  delete from public.bridge_pairings where pair_hash = encode(extensions.digest(p_secret, 'sha256'), 'hex');
+  loop
+    c := lpad((floor(random() * 1000000))::int::text, 6, '0');
+    exit when not exists (select 1 from public.bridge_pairings where code = c);
+    n := n + 1; if n > 20 then raise exception 'Prueba otra vez'; end if;
+  end loop;
+  insert into public.bridge_pairings(code, pair_hash) values (c, encode(extensions.digest(p_secret, 'sha256'), 'hex'));
+  return c;
+end $$;
+
+create or replace function public.bridge_pair_claim(p_code text)
+returns boolean
+language plpgsql security definer set search_path = public, extensions as $$
+declare r public.bridge_pairings; k text;
+begin
+  if auth.uid() is null then raise exception 'Necesitas iniciar sesión'; end if;
+  if (select count(*) from public.bridge_pair_attempts where user_id = auth.uid() and at > now() - interval '10 minutes') >= 10 then
+    raise exception 'Demasiados intentos. Espera 10 minutos';
+  end if;
+  insert into public.bridge_pair_attempts(user_id) values (auth.uid());
+  select * into r from public.bridge_pairings
+    where code = regexp_replace(coalesce(p_code, ''), '\D', '', 'g') and user_id is null and created_at > now() - interval '15 minutes';
+  if r.code is null then return false; end if;   -- sin excepción, para que el intento quede contado
+  k := 'bt_' || encode(extensions.gen_random_bytes(20), 'hex');
+  insert into public.bridge_keys(key_hash, user_id) values (encode(extensions.digest(k, 'sha256'), 'hex'), auth.uid());
+  update public.bridge_pairings set user_id = auth.uid(), bridge_key = k where code = r.code;
+  delete from public.bridge_pair_attempts where user_id = auth.uid() and at < now() - interval '1 day';
+  return true;
+end $$;
+
+create or replace function public.bridge_pair_check(p_secret text)
+returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare r public.bridge_pairings;
+begin
+  if p_secret is null or char_length(p_secret) > 100 then return ''; end if;
+  select * into r from public.bridge_pairings where pair_hash = encode(extensions.digest(p_secret, 'sha256'), 'hex');
+  if r.code is null then return 'caducado'; end if;
+  if r.bridge_key is null then return ''; end if;
+  delete from public.bridge_pairings where code = r.code;   -- la clave se entrega una sola vez
+  return r.bridge_key;
+end $$;
+
+revoke all on function public.bridge_pair_start(text) from public;
+revoke all on function public.bridge_pair_check(text) from public;
+revoke all on function public.bridge_pair_claim(text) from public, anon;
+grant execute on function public.bridge_pair_start(text) to anon, authenticated;
+grant execute on function public.bridge_pair_check(text) to anon, authenticated;
+grant execute on function public.bridge_pair_claim(text) to authenticated;
