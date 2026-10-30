@@ -172,8 +172,8 @@ const DEFAULT_PLAN={riskPct:0.5,maxTrades:3,dayLimitR:2,start:"15:30",end:"17:30
 const S={user:null,name:"",plan:null,planDoc:null,consents:{},trades:[],bridge:null,newKey:null,loaded:false,authMode:"login",authMsg:"",authErr:"",chan:null};
 
 /* ---------- tema ---------- */
-function getThemePref(){try{return localStorage.getItem("bt-theme")||"light"}catch(e){return "light"}}
-function applyTheme(t){const r=document.documentElement;if(t==="light"||t==="dark")r.dataset.theme=t;else delete r.dataset.theme;try{localStorage.setItem("bt-theme",t)}catch(e){}}
+function getThemePref(){try{return localStorage.getItem("bt-tema")||"light"}catch(e){return "light"}}
+function applyTheme(t){const r=document.documentElement;if(t==="light"||t==="dark")r.dataset.theme=t;else delete r.dataset.theme;try{localStorage.setItem("bt-tema",t)}catch(e){}}
 function isDark(){const t=document.documentElement.dataset.theme;return t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches}
 const tvTheme=()=>isDark()?"dark":"light";
 applyTheme(getThemePref());
