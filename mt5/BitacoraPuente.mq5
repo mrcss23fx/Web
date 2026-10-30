@@ -14,18 +14,19 @@
 //| sale la captura. El programa NO abre ni cierra operaciones.      |
 //+------------------------------------------------------------------+
 #property copyright   "Bitácora"
-#property version     "1.00"
+#property version     "1.10"
 #property description "Apunta solas tus operaciones en tu Bitácora, con la captura del gráfico al entrar y al salir. No abre ni cierra operaciones."
 
 input string ClaveBitacora   = "";    // Tu clave de conexión (Mi plan → Conectar MT5)
 input bool   GuardarCapturas = true;  // Guardar la captura del gráfico
 input int    AnchoCaptura    = 1000;  // Ancho de la captura (píxeles)
 input int    AltoCaptura     = 560;   // Alto de la captura (píxeles)
+input bool   RehacerFoto     = true;  // Si no hubo foto en el momento, rehacerla con el historial
 
 #define BT_URL      "https://xsvezicjksfrklwjskfv.supabase.co"
 #define BT_RPC      "/rest/v1/rpc/bridge_ingest"
 #define BT_APIKEY   "sb_publishable_qLIhdI4CuQuisOstwl0fWg_dhW61xcm"
-#define BT_VERSION  "1.0"
+#define BT_VERSION  "1.1"
 #define BT_STATE    "bitacora_estado.csv"
 #define BT_CAPFILE  "bitacora_captura.png"
 
@@ -53,6 +54,7 @@ Job g_jobs[];
 
 datetime g_lastOk   = 0;
 datetime g_lastPing = 0;
+datetime g_lastScan = 0;
 string   g_status   = "Conectando…";
 bool     g_urlAlert = false;
 
@@ -186,6 +188,8 @@ void OnTimer()
      }
    if(now - g_lastPing > 300)
       SendPing();
+   if(now - g_lastScan > 600)                     // cada 10 min: ¿algo hecho desde el móvil o con el Mac dormido?
+      CatchUp();
    ShowStatus();
   }
 
@@ -194,6 +198,7 @@ void OnTimer()
 //+------------------------------------------------------------------+
 void CatchUp()
   {
+   g_lastScan = TimeLocal();
    for(int i = 0; i < PositionsTotal(); i++)
      {
       ulong ticket = PositionGetTicket(i);
@@ -343,6 +348,18 @@ bool SendJob(Job &job, string &err)
       if(riskMoney > 0)
          js += ",\"r\":" + DoubleToString(net / riskMoney, 2);
      }
+   // Sin foto del momento (operación desde el móvil, Mac dormido o sin gráfico abierto):
+   // la rehacemos con el historial de precios, con la entrada, la salida, el stop y el objetivo marcados.
+   if(job.capture == "" && RehacerFoto && job.tries == 0)
+     {
+      bool wantIt = (job.kind == 1 && !isOpen) || (job.kind == 0 && !g_pos[k].openSent);
+      if(wantIt)
+        {
+         job.capture = CaptureHistory(sym, side, openTime, isOpen ? 0 : closeTime, openPrice, closePrice, sl0, tp, !isOpen);
+         if(job.capture != "" && !isOpen)
+            job.kind = 1;                          // una operación ya cerrada: la foto enseña la operación entera
+        }
+     }
    if(job.capture != "")
       js += (job.kind == 0 ? ",\"capture_entry\":\"" : ",\"capture_exit\":\"") + job.capture + "\"";
    js += "}";
@@ -367,9 +384,35 @@ void SendPing()
   {
    g_lastPing = TimeLocal();
    string err = "";
+   // datos de los mercados de tu Observación de mercado: la calculadora de la app los usa para el tamaño exacto
+   string syms = "";
+   int total = SymbolsTotal(true);
+   if(total > 40)
+      total = 40;
+   for(int i = 0; i < total; i++)
+     {
+      string s = SymbolName(i, true);
+      double tv = SymbolInfoDouble(s, SYMBOL_TRADE_TICK_VALUE_LOSS);
+      if(tv <= 0)
+         tv = SymbolInfoDouble(s, SYMBOL_TRADE_TICK_VALUE);
+      double ts = SymbolInfoDouble(s, SYMBOL_TRADE_TICK_SIZE);
+      if(tv <= 0 || ts <= 0)
+         continue;
+      if(syms != "")
+         syms += ",";
+      syms += "{\"s\":\"" + JsonEsc(s) + "\",\"tv\":" + DoubleToString(tv, 8) + ",\"ts\":" + DoubleToString(ts, 10) +
+              ",\"vmin\":" + DoubleToString(SymbolInfoDouble(s, SYMBOL_VOLUME_MIN), 2) +
+              ",\"vstep\":" + DoubleToString(SymbolInfoDouble(s, SYMBOL_VOLUME_STEP), 2) +
+              ",\"vmax\":" + DoubleToString(SymbolInfoDouble(s, SYMBOL_VOLUME_MAX), 2) +
+              ",\"d\":" + IntegerToString(SymbolInfoInteger(s, SYMBOL_DIGITS)) +
+              ",\"p\":" + DoubleToString(SymbolInfoDouble(s, SYMBOL_BID), (int)SymbolInfoInteger(s, SYMBOL_DIGITS)) + "}";
+     }
    string js = "{\"p_key\":\"" + JsonEsc(ClaveBitacora) + "\",\"p_trade\":{\"ping\":\"1\",\"version\":\"" + BT_VERSION +
                "\",\"account\":\"" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN)) +
-               "\",\"broker\":\"" + JsonEsc(AccountInfoString(ACCOUNT_COMPANY)) + "\"}}";
+               "\",\"broker\":\"" + JsonEsc(AccountInfoString(ACCOUNT_COMPANY)) +
+               "\",\"balance_now\":" + DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE), 2) +
+               ",\"currency_now\":\"" + JsonEsc(AccountInfoString(ACCOUNT_CURRENCY)) +
+               "\",\"symbols\":[" + syms + "]}}";
    if(Post(js, err))
      {
       g_lastOk = TimeLocal();
@@ -453,6 +496,96 @@ string Capture(const string sym)
    ChartRedraw(cid);
    if(!ChartScreenShot(cid, BT_CAPFILE, AnchoCaptura, AltoCaptura, ALIGN_RIGHT))
       return("");
+   return(ReadCapture());
+  }
+
+//+------------------------------------------------------------------+
+//| Foto rehecha con el historial: abre un gráfico, se coloca en la   |
+//| hora de la operación, la marca, hace la foto y lo cierra          |
+//+------------------------------------------------------------------+
+ENUM_TIMEFRAMES TfFor(const long secs)
+  {
+   if(secs <= 2 * 3600)
+      return(PERIOD_M5);
+   if(secs <= 8 * 3600)
+      return(PERIOD_M15);
+   if(secs <= 3 * 86400)
+      return(PERIOD_H1);
+   return(PERIOD_H4);
+  }
+
+string CaptureHistory(const string sym, const long side, const datetime tOpen, const datetime tClose,
+                      const double pOpen, const double pClose, const double sl, const double tp, const bool closed)
+  {
+   if(!GuardarCapturas || sym == "" || tOpen == 0)
+      return("");
+   SymbolSelect(sym, true);
+   datetime tEnd = closed ? tClose : TimeCurrent();
+   if(tEnd < tOpen)
+      tEnd = tOpen;
+   ENUM_TIMEFRAMES tf = TfFor((long)(tEnd - tOpen));
+   int ps = PeriodSeconds(tf);
+   MqlRates rates[];
+   if(CopyRates(sym, tf, tOpen - ps * 80, tEnd + ps * 20, rates) <= 0)
+      return("");                                  // aún no hay historial descargado: se intentará en la próxima vuelta
+   long cid = ChartOpen(sym, tf);
+   if(cid <= 0)
+      return("");
+   ChartSetInteger(cid, CHART_AUTOSCROLL, false);
+   ChartSetInteger(cid, CHART_SHIFT, false);
+   ChartSetInteger(cid, CHART_SCALE, 3);
+
+   string pre = "bt_";
+   ObjectCreate(cid, pre + "in", (side == DEAL_TYPE_BUY ? OBJ_ARROW_BUY : OBJ_ARROW_SELL), 0, tOpen, pOpen);
+   ObjectSetInteger(cid, pre + "in", OBJPROP_COLOR, clrRoyalBlue);
+   ObjectSetInteger(cid, pre + "in", OBJPROP_WIDTH, 3);
+   if(sl > 0)
+     {
+      ObjectCreate(cid, pre + "sl", OBJ_TREND, 0, tOpen, sl, tEnd, sl);
+      ObjectSetInteger(cid, pre + "sl", OBJPROP_COLOR, clrDimGray);
+      ObjectSetInteger(cid, pre + "sl", OBJPROP_STYLE, STYLE_DOT);
+      ObjectSetInteger(cid, pre + "sl", OBJPROP_RAY_RIGHT, false);
+     }
+   if(tp > 0)
+     {
+      ObjectCreate(cid, pre + "tp", OBJ_TREND, 0, tOpen, tp, tEnd, tp);
+      ObjectSetInteger(cid, pre + "tp", OBJPROP_COLOR, clrRoyalBlue);
+      ObjectSetInteger(cid, pre + "tp", OBJPROP_STYLE, STYLE_DASH);
+      ObjectSetInteger(cid, pre + "tp", OBJPROP_RAY_RIGHT, false);
+     }
+   ObjectCreate(cid, pre + "en", OBJ_TREND, 0, tOpen, pOpen, tEnd, pOpen);
+   ObjectSetInteger(cid, pre + "en", OBJPROP_COLOR, clrRoyalBlue);
+   ObjectSetInteger(cid, pre + "en", OBJPROP_RAY_RIGHT, false);
+   if(closed)
+     {
+      ObjectCreate(cid, pre + "out", OBJ_ARROW_STOP, 0, tClose, pClose);
+      ObjectSetInteger(cid, pre + "out", OBJPROP_COLOR, clrBlack);
+      ObjectSetInteger(cid, pre + "out", OBJPROP_WIDTH, 2);
+      ObjectCreate(cid, pre + "path", OBJ_TREND, 0, tOpen, pOpen, tClose, pClose);
+      ObjectSetInteger(cid, pre + "path", OBJPROP_COLOR, clrBlack);
+      ObjectSetInteger(cid, pre + "path", OBJPROP_STYLE, STYLE_DOT);
+      ObjectSetInteger(cid, pre + "path", OBJPROP_RAY_RIGHT, false);
+     }
+   ChartRedraw(cid);
+   // que la salida quede cerca del borde derecho, con 15 velas de margen
+   int shiftEnd = iBarShift(sym, tf, tEnd, false);
+   if(shiftEnd < 0)
+      shiftEnd = 0;
+   int back = shiftEnd - 15;
+   if(back < 0)
+      back = 0;
+   ChartNavigate(cid, CHART_END, -back);
+   ChartRedraw(cid);
+   Sleep(400);
+   bool ok = ChartScreenShot(cid, BT_CAPFILE, AnchoCaptura, AltoCaptura, ALIGN_RIGHT);
+   ChartClose(cid);
+   if(!ok)
+      return("");
+   return(ReadCapture());
+  }
+
+string ReadCapture()
+  {
    int h = FileOpen(BT_CAPFILE, FILE_READ | FILE_BIN);
    if(h == INVALID_HANDLE)
       return("");

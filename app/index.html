@@ -141,6 +141,7 @@ const ICON={
  grupo:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
  aprender:'<path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/>',
  plan:'<path d="M6 3h12v18l-6-4-6 4z"/>',
+ analizar:'<path d="M7 3v4M7 15v6M17 3v6M17 15v6"/><rect x="5" y="7" width="4" height="8" rx="1"/><rect x="15" y="9" width="4" height="6" rx="1"/>',
  back:'<path d="M15 5l-7 7 7 7"/>',
  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
  down:'<path d="M5 19h14M12 5v10M8 11l4 4 4-4"/>',
@@ -148,6 +149,7 @@ const ICON={
 };
 const ico=(n,s=22,w=2,c="currentColor")=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
 const NAV=[["hoy","Hoy"],["progreso","Progreso"],["grupo","Grupo"],["aprender","Aprender"],["plan","Mi plan"]];
+const NAV_SIDE=[["hoy","Hoy"],["analizar","Analizar"],["progreso","Progreso"],["grupo","Grupo"],["aprender","Aprender"],["plan","Mi plan"]];
 
 /* ---------- plan (los cambios valen desde mañana) ---------- */
 function effectivePlan(){
@@ -286,7 +288,7 @@ function bridgeChip(){
 /* ---------- pantallas ---------- */
 function shell(view,content){
   const nav=NAV.map(([k,l])=>`<a href="#${k}" ${view===k?'aria-current="page"':""}>${ico(k)}${l}</a>`).join("");
-  const side=NAV.map(([k,l])=>`<a class="navlink" href="#${k}" ${view===k?'aria-current="page"':""}>${ico(k,20)}${l}</a>`).join("");
+  const side=NAV_SIDE.map(([k,l])=>`<a class="navlink" href="#${k}" ${view===k?'aria-current="page"':""}>${ico(k,20)}${l}</a>`).join("");
   return `<div class="shell">
   <aside class="side" aria-label="Secciones">
     <div class="brand" style="padding:0 8px"><div class="logo" aria-hidden="true"></div><div style="font-weight:800;font-size:19px;letter-spacing:-.02em">Bitácora</div></div>
@@ -310,7 +312,7 @@ function viewHoy(){
   return `<div class="stack">
     <div class="between" style="align-items:flex-end">
       <div class="stack" style="gap:4px"><div class="lbl" style="font-size:11px">${fechaCorta(now)}</div><h1>Hola, ${esc(S.name)}</h1></div>
-      <div style="text-align:right">${bridgeChip()}</div>
+      <div class="stack" style="gap:8px;align-items:flex-end">${bridgeChip()}<a class="btn2" href="#analizar" style="height:38px">${ico("analizar",18)}Analizar</a></div>
     </div>
     ${S.dbMissing?`<div class="card" style="background:var(--ambarB);color:var(--ambarT)"><b>Falta preparar la base de datos.</b> Hay que pegar el archivo supabase-v1.sql en Supabase → SQL Editor → Run.</div>`:""}
     <div class="grid2 even">
@@ -348,7 +350,7 @@ function viewOp(id){
   const t=S.trades.find(x=>x.id===id);
   if(!t)return `<div class="stack"><a href="#hoy" class="row link">${ico("back",18)}Hoy</a><div class="card">No encuentro esta operación.</div></div>`;
   const ev=evaluate(t), rv=t.review||{};
-  const img=(k,lab)=>{const path=t[k];return `<figure style="margin:0" class="stack" ${""}><div class="thumb" style="aspect-ratio:16/9;width:100%">${path?`<a href="${esc(MEDIA+path.split("/").map(encodeURIComponent).join("/"))}" target="_blank" rel="noopener"><img src="${esc(MEDIA+path.split("/").map(encodeURIComponent).join("/"))}" alt="Captura de ${esc(t.symbol)} ${lab.toLowerCase()}"></a>`:`<div class="small muted" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px">${t.status!=="closed"&&k==="capture_exit"?"Aún abierta":"Sin captura. Ten abierto un gráfico de "+esc(t.symbol)+" en MT5."}</div>`}</div><figcaption class="lbl" style="margin-top:-6px">${lab}</figcaption></figure>`};
+  const img=(k,lab)=>{const path=t[k];return `<figure style="margin:0" class="stack" ${""}><div class="thumb" style="aspect-ratio:16/9;width:100%">${path?`<a href="${esc(MEDIA+path.split("/").map(encodeURIComponent).join("/"))}" target="_blank" rel="noopener"><img src="${esc(MEDIA+path.split("/").map(encodeURIComponent).join("/"))}" alt="Captura de ${esc(t.symbol)} ${lab.toLowerCase()}"></a>`:`<div class="small muted" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px">${t.status!=="closed"&&k==="capture_exit"?"Aún abierta":k==="capture_entry"&&t.capture_exit?"Hecha con MetaTrader cerrado o desde el móvil: la foto de al lado enseña la operación entera, rehecha con el historial.":"Sin captura todavía. Llegará en unos minutos."}</div>`}</div><figcaption class="lbl" style="margin-top:-6px">${lab}</figcaption></figure>`};
   const health=S.consents.health===true;
   const feels=["Tranquilo","Con prisa","Con miedo","Eufórico","Cansado"];
   const bien=ev.checks.filter(c=>c.ok).slice(0,3);
@@ -404,6 +406,104 @@ function viewProgreso(){
     </div>
     <div class="card" style="padding:12px 16px"><div class="between"><h2>Repaso de tus operaciones</h2></div>${list||`<div class="muted small" style="padding:10px 0">Aquí verás cada operación con su captura y su repaso.</div>`}</div>
   </div>`;
+}
+
+/* ---------- Analizar: gráfico de TradingView + planear la entrada ---------- */
+function tvSymbol(s){
+  const b=String(s||"EURUSD").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  const map={XAUUSD:"OANDA:XAUUSD",XAGUSD:"OANDA:XAGUSD",NAS100:"OANDA:NAS100USD",USTEC:"OANDA:NAS100USD",NDX100:"OANDA:NAS100USD",US100:"OANDA:NAS100USD",US30:"OANDA:US30USD",DJ30:"OANDA:US30USD",US500:"OANDA:SPX500USD",SPX500:"OANDA:SPX500USD",GER40:"OANDA:DE30EUR",DE40:"OANDA:DE30EUR",GER30:"OANDA:DE30EUR",UK100:"OANDA:UK100GBP",BTCUSD:"BITSTAMP:BTCUSD",ETHUSD:"BITSTAMP:ETHUSD",USOIL:"TVC:USOIL",WTI:"TVC:USOIL"};
+  const key=Object.keys(map).find(k=>b.startsWith(k));
+  if(key)return map[key];
+  if(/^[A-Z]{6}$/.test(b.slice(0,6)))return "FX:"+b.slice(0,6);
+  return b;
+}
+function symbolsInfo(){return ((S.bridge&&S.bridge.last_info&&S.bridge.last_info.symbols)||[]).filter(x=>x&&x.s)}
+function viewAnalizar(){
+  const syms=symbolsInfo(), last=S.trades[0], p=S.plan;
+  let sel=S.an&&S.an.sym||(last&&last.symbol)||(syms[0]&&syms[0].s)||"EURUSD";
+  if(syms.length&&!syms.some(x=>x.s===sel))sel=syms[0].s;
+  S.an=Object.assign({sym:sel,side:"buy",entry:"",stop:"",tp:"",strategy:false},S.an||{},{sym:sel});
+  const opts=(syms.length?syms.map(x=>x.s):[sel]).map(s=>`<option ${s===sel?"selected":""}>${esc(s)}</option>`).join("");
+  return `<div class="stack">
+    <div class="between" style="align-items:flex-end"><div class="stack" style="gap:4px"><div class="lbl" style="font-size:11px">${fechaCorta(Date.now())} · ${hhmm(Date.now())}</div><h1>Analizar</h1></div>${bridgeChip()}</div>
+    <div class="grid2">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="tvbox" class="tradingview-widget-container" style="height:min(70vh,640px);min-height:420px"><div class="tradingview-widget-container__widget" style="height:calc(100% - 26px);width:100%"></div><div class="tradingview-widget-copyright small" style="padding:4px 10px"><a href="https://es.tradingview.com/" rel="noopener nofollow" target="_blank">Gráfico de TradingView</a></div></div>
+      </div>
+      <div class="stack">
+        <form class="card stack" id="anForm" style="gap:10px" onsubmit="return false">
+          <div class="between" style="align-items:center"><h2>Planea tu entrada</h2>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:3px;border-radius:10px;background:#e4e8ef" role="group" aria-label="Dirección">
+              <button type="button" class="chip" data-side="buy" aria-pressed="${S.an.side==="buy"}" style="border:0;padding:5px 12px">Compra</button>
+              <button type="button" class="chip" data-side="sell" aria-pressed="${S.an.side==="sell"}" style="border:0;padding:5px 12px">Venta</button>
+            </div>
+          </div>
+          <label class="field"><span>Mercado</span><select class="input" id="anSym">${opts}</select></label>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+            <label class="field"><span>Entrada</span><input class="input mono" id="anEntry" inputmode="decimal" value="${esc(S.an.entry)}" placeholder="precio"></label>
+            <label class="field"><span>Stop</span><input class="input mono" id="anStop" inputmode="decimal" value="${esc(S.an.stop)}" placeholder="precio"></label>
+            <label class="field"><span>Objetivo</span><input class="input mono" id="anTp" inputmode="decimal" value="${esc(S.an.tp)}" placeholder="precio"></label>
+          </div>
+          <div id="anResult"></div>
+        </form>
+        <div class="card stack" style="gap:8px" id="anPacto"></div>
+        ${p.strategy?`<div class="card small" style="color:var(--tinta2)"><b>Tu estrategia:</b> ${esc(p.strategy)}</div>`:""}
+      </div>
+    </div>
+    <div class="small muted">La operación la abres tú en MetaTrader con estos datos. Abrirla desde aquí llegará más adelante, siempre pasando por tu pacto.</div>
+  </div>`;
+}
+function calcEntry(){
+  const a=S.an, info=symbolsInfo().find(x=>x.s===a.sym), p=S.plan;
+  const n=v=>{const x=parseFloat(String(v).replace(",","."));return isFinite(x)?x:null};
+  const e=n(a.entry),s=n(a.stop),t=n(a.tp), bal=S.bridge&&S.bridge.last_info&&+S.bridge.last_info.balance||null;
+  const cur=(S.bridge&&S.bridge.last_info&&S.bridge.last_info.currency)||"€";
+  const out={ok:false,msg:"",lots:null,riskPct:null,rr:null};
+  if(e==null||s==null){out.msg="Escribe la entrada y el stop.";return out}
+  const dirOk=a.side==="buy"?s<e&&(t==null||t>e):s>e&&(t==null||t<e);
+  if(!dirOk){out.msg=a.side==="buy"?"En una compra el stop va por debajo de la entrada y el objetivo por encima.":"En una venta el stop va por encima de la entrada y el objetivo por debajo.";return out}
+  out.rr=t!=null?Math.abs(t-e)/Math.abs(e-s):null;
+  if(!info||!bal){out.msg=!info?"Para calcular el tamaño, ten este mercado en la Observación de mercado de MT5 (el programa puente envía sus datos cada 5 minutos).":"Falta el saldo de tu cuenta: llegará con la próxima señal del programa puente.";return out}
+  const riskMoney=bal*p.riskPct/100, lossPerLot=Math.abs(e-s)/info.ts*info.tv;
+  let lots=Math.floor((riskMoney/lossPerLot)/info.vstep+1e-9)*info.vstep;
+  if(info.vmax)lots=Math.min(lots,info.vmax);
+  if(lots<info.vmin){out.msg=`El stop está demasiado lejos para tu riesgo: ni el mínimo de ${num(info.vmin,2)} lotes cabe en tu ${fmtPct(p.riskPct)}.`;out.tooFar=true;return out}
+  out.ok=true;out.lots=lots;out.riskPct=lots*lossPerLot/bal*100;out.riskMoney=lots*lossPerLot;out.cur=cur;return out;
+}
+function paintAnalizar(){
+  const r=calcEntry(), p=S.plan, a=S.an;
+  const box=document.getElementById("anResult"); if(!box)return;
+  box.innerHTML=r.ok?`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding-top:4px">
+      <div><div class="lbl">Tamaño</div><div class="mono" style="font-weight:700;font-size:20px"><span class="rot">${num(r.lots,2)}</span></div><div class="small muted">lotes</div></div>
+      <div><div class="lbl">Riesgo</div><div class="mono" style="font-weight:700;font-size:20px">${fmtPct(r.riskPct)}</div><div class="small muted">−1 R</div></div>
+      <div><div class="lbl">Objetivo</div><div class="mono" style="font-weight:700;font-size:20px">${r.rr!=null?"+"+num(r.rr,1)+" R":"—"}</div><div class="small muted">${r.rr!=null?"por cada 1 R":"sin objetivo"}</div></div>
+    </div><button type="button" class="btn2" id="anCopy" style="margin-top:6px">Copiar los datos para MT5</button>`:`<div class="small" style="color:var(--tinta2)">${esc(r.msg)}</div>`;
+  const tk=todayKey(), today=S.trades.filter(t=>t.open_time&&dayKey(t.open_time)===tk), dayR=today.reduce((x,t)=>x+(t.r||0),0);
+  const m=minOfDate(Date.now()), inHours=m>=minOf(p.start)&&m<=minOf(p.end);
+  const checks=[
+    {ok:!!a.strategy,t:`<label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="anStrat" ${a.strategy?"checked":""} style="width:16px;height:16px;margin:0"> Esta entrada está en mi estrategia</label>`,raw:true},
+    {ok:!!r.ok||(!r.msg.startsWith("Escribe")&&!r.msg.startsWith("En una")),t:"Stop puesto"},
+    {ok:r.rr!=null,t:r.rr!=null?"Objetivo puesto: +"+num(r.rr,1)+" R":"Pon un objetivo"},
+    {ok:!!r.ok,t:r.ok?"Tamaño según tu riesgo: "+fmtPct(p.riskPct):"Tamaño según tu riesgo"},
+    {ok:inHours,t:inHours?"Dentro de tu horario: hasta las "+esc(p.end):"Fuera de tu horario ("+esc(p.start)+"–"+esc(p.end)+")"},
+    {ok:today.length<p.maxTrades,t:today.length<p.maxTrades?`Te quedan ${p.maxTrades-today.length} de ${p.maxTrades} operaciones hoy`:"Ya hiciste tus "+p.maxTrades+" operaciones de hoy"},
+    {ok:dayR>-p.dayLimitR,t:dayR>-p.dayLimitR?"Margen del día: "+num(p.dayLimitR+dayR,1)+" R":"Llegaste a tu límite del día"}
+  ];
+  const okN=checks.filter(c=>c.ok).length;
+  document.getElementById("anPacto").innerHTML=`<div class="between" style="align-items:center"><h2>Tu pacto revisa la entrada</h2><span class="mono" style="font-stretch:87.5%;font-size:10px;font-weight:700;letter-spacing:.06em;border-radius:999px;padding:3px 8px;${okN===checks.length?"color:var(--verdeT);background:var(--verdeB)":"color:var(--ambarT);background:var(--ambarB)"}">${okN} DE ${checks.length}</span></div>
+    <div class="stack" style="gap:7px">${checks.map(c=>`<div class="check">${c.ok?ico("check",16,2.6,"#2443c7"):ico("x",16,2.4,"#b7791f")}${c.raw?c.t:esc(c.t)}</div>`).join("")}</div>
+    ${okN===checks.length?`<div class="small" style="color:var(--verdeT)">Todo en orden. Si entras, que sea con estos datos.</div>`:`<div class="small" style="color:var(--ambarT)">Hay cosas sin cumplir: mejor esperar a la próxima.</div>`}`;
+  const st=document.getElementById("anStrat");if(st)st.onchange=()=>{a.strategy=st.checked;paintAnalizar()};
+  const cp=document.getElementById("anCopy");if(cp)cp.onclick=async()=>{const txt=`${a.sym} ${a.side==="buy"?"Compra":"Venta"} ${num(r.lots,2)} lotes · Entrada ${a.entry} · Stop ${a.stop}${a.tp?" · Objetivo "+a.tp:""}`;try{await navigator.clipboard.writeText(txt);toast("Copiado")}catch(e){toast(txt)}};
+}
+function mountTV(){
+  const box=document.getElementById("tvbox");if(!box||box.dataset.sym===S.an.sym)return;
+  box.dataset.sym=S.an.sym;
+  box.querySelector(".tradingview-widget-container__widget").innerHTML="";
+  box.querySelectorAll("script").forEach(s=>s.remove());
+  const sc=document.createElement("script");sc.src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";sc.async=true;
+  sc.text=JSON.stringify({autosize:true,symbol:tvSymbol(S.an.sym),interval:"5",timezone:"Europe/Madrid",theme:"light",style:"1",locale:"es",allow_symbol_change:true,hide_side_toolbar:false,calendar:false,save_image:true,support_host:"https://www.tradingview.com"});
+  box.appendChild(sc);
 }
 
 function viewSoon(title,text){
@@ -500,7 +600,7 @@ function viewAuth(){
 }
 
 /* ---------- render y eventos ---------- */
-function route(){const h=location.hash.replace(/^#/,"");if(h.startsWith("op/"))return {view:"op",id:decodeURIComponent(h.slice(3))};const v=h||"hoy";return {view:NAV.some(n=>n[0]===v)?v:"hoy"}}
+function route(){const h=location.hash.replace(/^#/,"");if(h.startsWith("op/"))return {view:"op",id:decodeURIComponent(h.slice(3))};const v=h||"hoy";return {view:NAV_SIDE.some(n=>n[0]===v)?v:"hoy"}}
 function render(){
   if(!SB_OK){$app.innerHTML=`<div class="auth"><div class="card authcard">Falta configurar la conexión (config.js).</div></div>`;return}
   if(!S.user){$app.innerHTML=viewAuth();bindAuth();return}
@@ -508,8 +608,9 @@ function render(){
   if(!(S.consents.adult&&S.consents.risk&&S.consents.privacy)){$app.innerHTML=viewConsent();bindConsent();return}
   const r=route(), key=r.view+(r.id||""), ae=document.activeElement;
   if(S.lastView===key&&ae&&ae.closest&&ae.closest("#main")&&ae.matches("input,textarea,select"))return; // no borrar lo que estás escribiendo
+  if(key==="analizar"&&S.lastView==="analizar"&&document.getElementById("tvbox")){paintAnalizar();return} // no recargar el gráfico
   S.lastView=key;
-  const content=r.view==="op"?viewOp(r.id):r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():
+  const content=r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():
     r.view==="grupo"?viewSoon("Grupo","Los grupos nuevos, donde solo se comparte disciplina y nunca dinero, llegan en el último paso de esta versión. Mientras tanto, tus grupos siguen en la versión anterior."):
     r.view==="aprender"?viewSoon("Aprender","Las lecciones llegarán cuando termines el bootcamp. Tus apuntes siguen en la versión anterior."):viewHoy();
   $app.innerHTML=shell(r.view==="op"?"hoy":r.view,content);
@@ -550,6 +651,15 @@ function bindConsent(){
   };
 }
 function bindView(r){
+  if(r.view==="analizar"){
+    const a=S.an;
+    const prefill=()=>{const info=symbolsInfo().find(x=>x.s===a.sym);if(info&&info.p&&!a.entry){a.entry=String(info.p);const el=document.getElementById("anEntry");if(el)el.value=a.entry}};
+    prefill();
+    document.getElementById("anSym").onchange=e=>{a.sym=e.target.value;a.entry="";a.stop="";a.tp="";["anEntry","anStop","anTp"].forEach(id=>document.getElementById(id).value="");prefill();mountTV();paintAnalizar()};
+    [["anEntry","entry"],["anStop","stop"],["anTp","tp"]].forEach(([id,k])=>document.getElementById(id).oninput=e=>{a[k]=e.target.value;paintAnalizar()});
+    document.querySelectorAll("[data-side]").forEach(b=>b.onclick=()=>{a.side=b.dataset.side;document.querySelectorAll("[data-side]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.side===a.side)));paintAnalizar()});
+    mountTV();paintAnalizar();
+  }
   if(r.view==="op"){
     const t=S.trades.find(x=>x.id===r.id);if(!t)return;
     const saveReview=async patch=>{t.review=Object.assign({},t.review||{},patch);const {error}=await sb.from("trades").update({review:t.review}).eq("id",t.id);if(error)toast("No se pudo guardar")};
@@ -606,6 +716,7 @@ function confirmInline(id,msg){const b=document.getElementById(id);if(b.dataset.
 
 window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
 setInterval(()=>{if(S.user&&S.loaded&&!document.activeElement.matches("input,textarea"))render()},60000);
+setInterval(async()=>{if(!S.user||!S.loaded)return;const {data}=await sb.from("bridge_keys").select("created_at,last_seen,last_info").maybeSingle();if(data){S.bridge=data}},300000);
 
 async function onSession(session,event){
   if(event==="PASSWORD_RECOVERY"){S.user=null;S.authMode="newpass";render();return}

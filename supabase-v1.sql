@@ -104,8 +104,12 @@ begin
     where key_hash = encode(extensions.digest(p_key, 'sha256'), 'hex');
   if uid is null then raise exception 'Clave no válida'; end if;
 
+  -- lo último que sabemos del MT5: cuenta, bróker, saldo y datos de cada mercado (para la calculadora)
   update public.bridge_keys set last_seen = now(),
-    last_info = jsonb_build_object('account', p_trade->>'account', 'broker', p_trade->>'broker', 'version', p_trade->>'version')
+    last_info = coalesce(last_info, '{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object(
+      'account', p_trade->>'account', 'broker', p_trade->>'broker', 'version', p_trade->>'version',
+      'balance', p_trade->'balance_now', 'currency', p_trade->>'currency_now',
+      'symbols', case when jsonb_typeof(p_trade->'symbols') = 'array' and pg_column_size(p_trade->'symbols') < 20000 then p_trade->'symbols' end))
     where key_hash = encode(extensions.digest(p_key, 'sha256'), 'hex');
 
   -- Solo un latido para saber que el programa está conectado
