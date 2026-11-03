@@ -280,3 +280,28 @@ revoke all on function public.bridge_pair_claim(text) from public, anon;
 grant execute on function public.bridge_pair_start(text) to anon, authenticated;
 grant execute on function public.bridge_pair_check(text) to anon, authenticated;
 grant execute on function public.bridge_pair_claim(text) to authenticated;
+
+-- 10. Operaciones simuladas del modo «volver atrás» (4 nov). Nunca se mezclan con trades.
+create table if not exists public.sim_trades (
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  id         text not null check (char_length(id) <= 80),
+  symbol     text not null check (char_length(symbol) <= 32),
+  tf         text not null check (tf in ('1m','5m','15m','1h','4h','1d')),
+  side       text not null check (side in ('buy','sell')),
+  entry_time timestamptz not null,
+  entry      numeric not null,
+  stop       numeric not null,
+  tp         numeric,
+  exit_time  timestamptz,
+  exit       numeric,
+  r          numeric,
+  created_at timestamptz not null default now(),
+  primary key (user_id, id)
+);
+create index if not exists sim_trades_user_created on public.sim_trades(user_id, created_at desc);
+alter table public.sim_trades enable row level security;
+drop policy if exists "sim_trades: solo el dueño" on public.sim_trades;
+create policy "sim_trades: solo el dueño" on public.sim_trades for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+-- Los dibujos del gráfico se guardan en docs (col = 'draw', id = mercado).
+-- Las velas públicas las sirve la función de Supabase «velas» (supabase/functions/velas).

@@ -164,6 +164,56 @@ textarea.input{height:auto;padding:9px 11px;resize:vertical;line-height:1.5}
 .tvwrap{height:100%!important}
 .tvwrap iframe{height:calc(100% - 32px)!important;min-height:400px}
 .tvcard.full{position:fixed;inset:0;z-index:40;border-radius:0;height:100vh;min-height:0;border:0}
+/* ---------- gráfico propio ---------- */
+.tkwrap{height:100%}
+.gx{display:flex;flex-direction:column;height:100%;background:var(--card)}
+.gx-top{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--linea);flex-wrap:wrap}
+.gx-seg{display:flex;background:var(--seg);border-radius:10px;padding:3px;gap:2px}
+.gx-seg button{border:0;background:transparent;border-radius:8px;padding:5px 9px;font-family:var(--mono);font-size:12px;color:var(--tinta2);cursor:pointer}
+.gx-seg button[aria-pressed="true"]{background:var(--card);color:var(--tinta);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.gx-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:9px;border:1px solid var(--borde);background:var(--card);color:var(--tinta);font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.gx-btn:hover{border-color:var(--cobalto)}
+.gx-rp[aria-pressed="true"]{background:var(--cobalto);border-color:var(--cobalto);color:#fff}
+.gx-src{font-family:var(--mono);font-size:11px;color:var(--suave);white-space:nowrap}
+.gx-sp{flex:1}
+.gx-dd{position:relative}
+.gx-menu{position:absolute;top:38px;left:0;z-index:20;background:var(--card);border:1px solid var(--linea);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:8px;min-width:250px;display:flex;flex-direction:column}
+.gx-mt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);padding:8px 8px 4px}
+.gx-chk{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;font-size:13px;cursor:pointer}
+.gx-chk:hover{background:var(--sub)}
+.gx-chk input{width:16px;height:16px;margin:0;accent-color:var(--cobalto)}
+.gx-body{flex:1;display:flex;min-height:0}
+.gx-tools{display:flex;flex-direction:column;gap:2px;padding:6px;border-right:1px solid var(--linea);overflow-y:auto;scrollbar-width:none}
+.gx-tools::-webkit-scrollbar{display:none}
+.gx-tool{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;border:0;border-radius:9px;background:transparent;color:var(--tinta2);cursor:pointer}
+.gx-tool:hover{background:var(--sub);color:var(--tinta)}
+.gx-tool[aria-pressed="true"]{background:var(--cobaltoC);color:var(--cobalto)}
+.gx-tsep{height:1px;background:var(--linea);margin:4px 6px;flex:none}
+.gx-canvas{position:relative;flex:1;min-width:0;min-height:0}
+.gx-chart{position:absolute;inset:0}
+.gx-msg,.gx-hint{position:absolute;left:50%;transform:translateX(-50%);z-index:5;background:var(--tinta);color:var(--card);font-size:13px;padding:8px 14px;border-radius:10px;max-width:calc(100% - 32px);text-align:center;pointer-events:none}
+.gx-msg{top:40%}.gx-hint{top:12px;background:var(--cobalto);color:#fff}
+.gx-replay{border-top:1px solid var(--linea);padding:8px 10px;display:flex;flex-direction:column;gap:8px;background:var(--sub)}
+.gx-rrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gx-rlbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave)}
+.gx-rhelp,.gx-muted{font-size:12px;color:var(--suave)}
+.gx-in{height:32px;border:1px solid var(--borde);border-radius:9px;background:var(--card);color:var(--tinta);font-family:var(--mono);font-size:12px;padding:0 8px}
+.gx-pb{width:38px;height:34px;border-radius:9px;border:1px solid var(--borde);background:var(--card);color:var(--tinta);font-size:13px;cursor:pointer}
+.gx-pb.gx-main{background:var(--tinta);color:var(--card);border-color:var(--tinta)}
+.gx-when{font-family:var(--mono);font-size:12px;color:var(--tinta2)}
+.gx-sb{height:34px;padding:0 16px;border-radius:9px;border:0;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.gx-sb:disabled{opacity:.4;cursor:default}
+.gx-sell{background:var(--tinta);color:var(--card)}.gx-buy{background:var(--cobalto);color:#fff}
+.gx-stats{gap:14px;font-size:13px}
+.gx-hl{background:linear-gradient(transparent 55%,var(--rot) 55%);padding:0 2px;font-family:var(--mono)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:1023px){
+  .gx-body{flex-direction:column}
+  .gx-tools{flex-direction:row;border-right:0;border-bottom:1px solid var(--linea);overflow-x:auto;overflow-y:hidden}
+  .gx-tsep{width:1px;height:auto;margin:6px 4px}
+  .gx-src{order:9;width:100%}
+  .gx-rhelp{width:100%}
+}
 .show-m{display:inline}.hide-m{display:none}
 @media (min-width:1024px){.show-m{display:none}.hide-m{display:inline}}
 .mkts{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
@@ -188,6 +238,8 @@ textarea.input{height:auto;padding:9px 11px;resize:vertical;line-height:1.5}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="../config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/klinecharts@10.1.0/dist/umd/klinecharts.min.js"></script>
+<script src="grafico.js?v=1"></script>
 </head>
 <body>
 <div id="app" aria-live="polite"></div>
@@ -210,7 +262,7 @@ function isDark(){const t=document.documentElement.dataset.theme;return t?t==="d
 const tvTheme=()=>isDark()?"dark":"light";
 applyTheme(getThemePref());
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(getThemePref()==="system")refreshWidgets()});
-function refreshWidgets(){const b=document.getElementById("tvbox");if(b)b.dataset.sym="";const t=document.getElementById("ticker");if(t)t.dataset.theme="";if(location.hash.startsWith("#analizar")){mountTV();mountTicker()}}
+function refreshWidgets(){const t=document.getElementById("ticker");if(t)t.dataset.theme="";if(location.hash.startsWith("#analizar")){mountTicker();if(window.TkChart&&TkChart.current)TkChart.current.setTheme(isDark())}}
 
 /* ---------- utilidades ---------- */
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -605,11 +657,10 @@ function viewAnalizar(){
   const info=syms.find(x=>x.s===sel);
   return `<div class="stack">
     <div id="ticker" class="ticker tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>
-    <div class="between" style="align-items:center"><div class="row" style="gap:12px"><h1>Analizar</h1><span class="mono muted hide-m" style="font-size:13px">${fechaCorta(Date.now())} · ${hhmm(Date.now())}</span></div><div class="row" style="gap:10px"><span class="hide-m">${bridgeChip()}</span><button type="button" class="btn2" id="tvFull"><span class="hide-m">Pantalla completa</span><span class="show-m">Ampliar</span></button></div></div>
+    <div class="between" style="align-items:center"><div class="row" style="gap:12px"><h1>Analizar</h1><span class="mono muted hide-m" style="font-size:13px">${fechaCorta(Date.now())} · ${hhmm(Date.now())}</span></div><div class="row" style="gap:10px">${bridgeChip()}</div></div>
     <div class="mkts" role="group" aria-label="Mercados">${groups.map(([g,l])=>`<span class="grp">${esc(g)}</span>${l.map(chip).join("")}`).join("")}</div>
     <div class="card tvcard" id="tvcard" style="padding:0;overflow:hidden;position:relative">
-      <button type="button" class="btn" id="tvExit" hidden style="position:absolute;left:12px;bottom:44px;z-index:3;height:34px;padding:0 14px;font-size:13px">Salir de pantalla completa</button>
-      <div id="tvbox" class="tradingview-widget-container tvwrap"><div class="tradingview-widget-container__widget" style="height:calc(100% - 26px);width:100%"></div></div>
+      ${window.TkChart?`<div id="tkchart" class="tkwrap"></div>`:`<div class="stack" style="padding:20px;gap:8px"><b>No se pudo cargar el gráfico.</b><span class="small muted">Revisa tu conexión y recarga la página.</span></div>`}
     </div>
     <div class="grid2 even">
       <form class="card stack ticket" id="anForm" style="gap:12px" onsubmit="return false">
@@ -685,14 +736,27 @@ function mountTicker(){
   sc.text=JSON.stringify({symbols:[{proName:"FX:EURUSD",title:"EUR/USD"},{proName:"FX:GBPUSD",title:"GBP/USD"},{proName:"FX:USDJPY",title:"USD/JPY"},{proName:"OANDA:XAUUSD",title:"Oro"},{proName:"OANDA:NAS100USD",title:"Nasdaq 100"},{proName:"OANDA:SPX500USD",title:"S&P 500"},{proName:"OANDA:DE30EUR",title:"DAX"},{proName:"TVC:USOIL",title:"Petróleo"},{proName:"BITSTAMP:BTCUSD",title:"Bitcoin"},{proName:"BITSTAMP:ETHUSD",title:"Ethereum"}],showSymbolLogo:true,isTransparent:true,displayMode:"adaptive",colorTheme:tvTheme(),locale:"es"});
   box.appendChild(sc);
 }
-function mountTV(){
-  const box=document.getElementById("tvbox");if(!box||box.dataset.sym===S.an.sym+tvTheme())return;
-  box.dataset.sym=S.an.sym+tvTheme();
-  box.querySelector(".tradingview-widget-container__widget").innerHTML="";
-  box.querySelectorAll("script").forEach(s=>s.remove());
-  const sc=document.createElement("script");sc.src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";sc.async=true;
-  sc.text=JSON.stringify({autosize:true,symbol:tvSymbol(S.an.sym),interval:"5",timezone:"Europe/Madrid",theme:tvTheme(),style:"1",locale:"es",allow_symbol_change:true,hide_side_toolbar:false,hide_volume:true,withdateranges:false,calendar:false,save_image:true,support_host:"https://www.tradingview.com"});
-  box.appendChild(sc);
+function livePrice(sym,price){
+  const info=symbolsInfo().find(x=>x.s===sym);const d=info&&info.d!=null?info.d:null;
+  const txt=d!=null?Number(price).toFixed(d):String(price);
+  S.an.live=txt;document.querySelectorAll(".ticket .sb .p").forEach(x=>x.textContent=txt);
+  if(!S.an.entry){S.an.entry=txt;const el=document.getElementById("anEntry");if(el&&document.activeElement!==el)el.value=txt;paintAnalizar()}
+}
+function mountChart(){
+  const el=document.getElementById("tkchart");if(!el||!window.TkChart)return;
+  if(TkChart.current&&TkChart.current.el===el)return;
+  TkChart.mount(el,{
+    sym:S.an.sym,dark:isDark(),
+    digits:sym=>{const i=symbolsInfo().find(x=>x.s===sym);return i&&i.d!=null?i.d:null},
+    invoke:(name,body)=>sb.functions.invoke(name,{body}),
+    onPrice:(p,sym)=>{if(sym===S.an.sym)livePrice(sym,p)},
+    onPosition:pos=>{const a=S.an,f=v=>Number(v).toFixed(pos.digits);a.side=pos.side;a.entry=f(pos.entry);a.stop=f(pos.stop);a.tp=f(pos.tp);
+      [["anEntry","entry"],["anStop","stop"],["anTp","tp"]].forEach(([id,k])=>{const x=document.getElementById(id);if(x)x.value=a[k]});
+      document.querySelectorAll("[data-side]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.side===a.side)));paintAnalizar();toast("Boleto rellenado con tu dibujo")},
+    loadDrawings:async sym=>{const {data,error}=await sb.from("docs").select("data").eq("col","draw").eq("id",sym).maybeSingle();if(error)throw error;return data&&data.data&&data.data.list||null},
+    saveDrawings:async(sym,list)=>{await sb.from("docs").upsert({user_id:S.user.id,col:"draw",id:sym,data:{list}})},
+    saveSim:async rec=>{const {error}=await sb.from("sim_trades").insert(Object.assign({user_id:S.user.id},rec));if(error)toast("No se pudo guardar la simulada")}
+  });
 }
 
 function viewSoon(title,text){
@@ -803,8 +867,9 @@ function render(){
   if(!(S.consents.adult&&S.consents.risk&&S.consents.privacy)){$app.innerHTML=viewConsent();bindConsent();return}
   const r=route(), key=r.view+(r.id||""), ae=document.activeElement;
   if(S.lastView===key&&ae&&ae.closest&&ae.closest("#main")&&ae.matches("input,textarea,select"))return; // no borrar lo que estás escribiendo
-  if(key==="analizar"&&S.lastView==="analizar"&&document.getElementById("tvbox")){paintAnalizar();return} // no recargar el gráfico
+  if(key==="analizar"&&S.lastView==="analizar"&&document.getElementById("tkchart")){paintAnalizar();return} // no recargar el gráfico
   S.lastView=key;
+  if(r.view!=="analizar"&&window.TkChart&&TkChart.current){TkChart.destroy();document.body.style.overflow=""}
   const content=r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():
     r.view==="grupo"?viewSoon("Grupo","Los grupos nuevos, donde solo se comparte disciplina y nunca dinero, llegan en el último paso de esta versión. Mientras tanto, tus grupos siguen en la versión anterior."):
     r.view==="aprender"?viewSoon("Aprender","Las lecciones llegarán cuando termines el bootcamp. Tus apuntes siguen en la versión anterior."):viewHoy();
@@ -851,16 +916,13 @@ function bindView(r){
     const a=S.an;
     const prefill=()=>{const info=symbolsInfo().find(x=>x.s===a.sym);if(info&&info.p&&!a.entry){a.entry=String(info.p);const el=document.getElementById("anEntry");if(el)el.value=a.entry}};
     prefill();
-    document.getElementById("anSym").onchange=e=>{a.sym=e.target.value;a.entry="";a.stop="";a.tp="";["anEntry","anStop","anTp"].forEach(id=>document.getElementById(id).value="");prefill();mountTV();paintAnalizar()};
+    document.getElementById("anSym").onchange=e=>{a.sym=e.target.value;a.entry="";a.stop="";a.tp="";["anEntry","anStop","anTp"].forEach(id=>document.getElementById(id).value="");prefill();if(window.TkChart&&TkChart.current)TkChart.current.setSymbol(a.sym);document.querySelectorAll("[data-mkt]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.mkt===a.sym)));paintAnalizar()};
     [["anEntry","entry"],["anStop","stop"],["anTp","tp"]].forEach(([id,k])=>document.getElementById(id).oninput=e=>{a[k]=e.target.value;paintAnalizar()});
     document.querySelectorAll("[data-side]").forEach(b=>b.onclick=()=>{a.side=b.dataset.side;document.querySelectorAll("[data-side]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.side===a.side)));paintAnalizar()});
     document.querySelectorAll("[data-mkt]").forEach(b=>b.onclick=()=>{a.sym=b.dataset.mkt;a.entry="";a.stop="";a.tp="";S.lastView=null;render()});
-    const fb=document.getElementById("tvFull"),card=document.getElementById("tvcard");
-    const ex=document.getElementById("tvExit");
-    const setFull=on=>{card.classList.toggle("full",on);ex.hidden=!on;document.body.style.overflow=on?"hidden":""};
-    fb.onclick=()=>setFull(true);ex.onclick=()=>setFull(false);
-    document.onkeydown=e=>{if(e.key==="Escape"&&card.classList.contains("full"))setFull(false)};
-    mountTicker();mountTV();paintAnalizar();
+    const card=document.getElementById("tvcard");
+    document.onkeydown=e=>{if(e.key==="Escape"&&card.classList.contains("full")){const fb=card.querySelector('[data-act="full"]');if(fb)fb.click()}};
+    mountTicker();mountChart();paintAnalizar();
   }
   if(r.view==="op"){
     const t=S.trades.find(x=>x.id===r.id);if(!t)return;
