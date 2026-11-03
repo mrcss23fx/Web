@@ -305,3 +305,7 @@ create policy "sim_trades: solo el dueño" on public.sim_trades for all to authe
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 -- Los dibujos del gráfico se guardan en docs (col = 'draw', id = mercado).
 -- Las velas públicas las sirve la función de Supabase «velas» (supabase/functions/velas).
+
+-- 11. Precios en vivo de tu MT5 para el gráfico (programa puente 1.3, 4 nov):
+--     tablas bridge_watch, bridge_live (en tiempo real), bridge_hist y funciones bridge_watch_set / bridge_sync.
+--     Aplicado en Supabase con la migración «bridge_live_feed».

@@ -224,14 +224,14 @@
     /* datos en vivo */
     const live = {
       getBars: async ({ type, timestamp, callback }) => {
-        if (type === "forward") { callback([], { forward: false }); return; }
+        if (type === "backward") { callback([], { backward: false }); return; } // en KLineChart 10 «backward» son velas más nuevas
         const prov = st.prov;
         try {
           if (type === "init") msg("Cargando precios…");
-          const r = await prov.bars(st.sym, st.tf, type === "backward" ? timestamp : null);
+          const r = await prov.bars(st.sym, st.tf, type === "forward" ? timestamp : null); // «forward» = más antiguas
           if (prov !== st.prov) return;
           msg(type === "init" && !r.bars.length ? "No hay velas para este mercado en este marco." : "");
-          callback(r.bars, { backward: r.more && r.bars.length > 0, forward: false });
+          callback(r.bars, { forward: r.more && r.bars.length > 0, backward: false });
           if (type === "init" && r.bars.length) { st.price = r.bars[r.bars.length - 1].close; opts.onPrice && opts.onPrice(st.price, st.sym); }
           setSrc();
         } catch (e) {
@@ -447,5 +447,5 @@
     try { inst.stop(); inst.ro.disconnect(); document.removeEventListener("click", inst.onDoc); KC.dispose(inst.el.querySelector(".gx-chart")); } catch (e) { /* ya no existe */ }
     inst = null;
   }
-  window.TkChart = { mount, destroy, get current() { return inst; } };
+  window.TkChart = { mount, destroy, sources: { binance, publico }, get current() { return inst; } };
 })();

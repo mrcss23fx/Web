@@ -239,7 +239,7 @@ textarea.input{height:auto;padding:9px 11px;resize:vertical;line-height:1.5}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/klinecharts@10.1.0/dist/umd/klinecharts.min.js"></script>
-<script src="grafico.js?v=1"></script>
+<script src="grafico.js?v=2"></script>
 </head>
 <body>
 <div id="app" aria-live="polite"></div>
@@ -742,13 +742,52 @@ function livePrice(sym,price){
   S.an.live=txt;document.querySelectorAll(".ticket .sb .p").forEach(x=>x.textContent=txt);
   if(!S.an.entry){S.an.entry=txt;const el=document.getElementById("anEntry");if(el&&document.activeElement!==el)el.value=txt;paintAnalizar()}
 }
-function mountChart(){
-  const el=document.getElementById("tkchart");if(!el||!window.TkChart)return;
+/* Precios en vivo de tu MT5 (programa puente 1.3 o más nuevo) */
+function mt5Live(sym){
+  const b=S.bridge, info=b&&b.last_info||{}, v=parseFloat(info.version||"0");
+  const recent=b&&b.last_seen&&(Date.now()-new Date(b.last_seen))<10*60*1000;
+  return !!(recent&&v>=1.3&&symbolsInfo().some(x=>x.s===sym));
+}
+function mt5Provider(sym){
+  const info=symbolsInfo().find(x=>x.s===sym), d=info&&info.d!=null?info.d:5;
+  const pub=TkChart.sources.publico((n,body)=>sb.functions.invoke(n,{body}),d);
+  const toBar=a=>({timestamp:a[0],open:+a[1],high:+a[2],low:+a[3],close:+a[4],volume:+a[5]||0});
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  let off=false;
+  return {
+    id:"mt5", get label(){return off?"MT5 no responde · precio público":"Tu MT5 · en vivo"},
+    async bars(s,tf,to){
+      if(off)return pub.bars(s,tf,to);
+      const req=Math.random().toString(36).slice(2,10);
+      const {error}=await sb.rpc("bridge_watch_set",{p_sym:s,p_tf:tf,p_req:req,p_to:to||null,p_n:1000});
+      if(!error){
+        const t0=Date.now();
+        while(Date.now()-t0<9000){
+          await wait(600);
+          const {data}=await sb.from("bridge_hist").select("req,bars").maybeSingle();
+          if(data&&data.req===req){const bars=(data.bars||[]).map(toBar).filter(x=>!to||x.timestamp<to);return {bars,more:(data.bars||[]).length>=900}}
+        }
+      }
+      off=true;return pub.bars(s,tf,to);   // MT5 cerrado o sin responder: seguimos con el precio público
+    },
+    subscribe(s,tf,cb){
+      if(off)return pub.subscribe(s,tf,cb);
+      const hb=setInterval(()=>sb.rpc("bridge_watch_set",{p_sym:s,p_tf:tf}),20000);
+      const ch=sb.channel("live-"+S.user.id+"-"+Date.now()).on("postgres_changes",{event:"*",schema:"public",table:"bridge_live",filter:"user_id=eq."+S.user.id},p=>{const r=p.new;if(!r||r.sym!==s||r.tf!==tf)return;(r.bars||[]).forEach(a=>cb(toBar(a)))}).subscribe();
+      return ()=>{clearInterval(hb);sb.removeChannel(ch)};
+    }
+  };
+}
+async function mountChart(){
+  let el=document.getElementById("tkchart");if(!el||!window.TkChart)return;
   if(TkChart.current&&TkChart.current.el===el)return;
+  try{const {data}=await sb.from("bridge_keys").select("key_hash,created_at,last_seen,last_info").order("last_seen",{ascending:false}).limit(1);if(data&&data[0])S.bridge=data[0]}catch(e){/* seguimos con lo que había */}
+  el=document.getElementById("tkchart");if(!el||(TkChart.current&&TkChart.current.el===el))return;
   TkChart.mount(el,{
     sym:S.an.sym,dark:isDark(),
     digits:sym=>{const i=symbolsInfo().find(x=>x.s===sym);return i&&i.d!=null?i.d:null},
     invoke:(name,body)=>sb.functions.invoke(name,{body}),
+    mt5:{has:mt5Live,provider:mt5Provider},
     onPrice:(p,sym)=>{if(sym===S.an.sym)livePrice(sym,p)},
     onPosition:pos=>{const a=S.an,f=v=>Number(v).toFixed(pos.digits);a.side=pos.side;a.entry=f(pos.entry);a.stop=f(pos.stop);a.tp=f(pos.tp);
       [["anEntry","entry"],["anStop","stop"],["anTp","tp"]].forEach(([id,k])=>{const x=document.getElementById(id);if(x)x.value=a[k]});

@@ -15,7 +15,7 @@
 //| sale la captura. El programa NO abre ni cierra operaciones.      |
 //+------------------------------------------------------------------+
 #property copyright   "Tickora"
-#property version     "1.20"
+#property version     "1.30"
 #property description "Apunta solas tus operaciones en Tickora, con la captura del gráfico al entrar y al salir. No abre ni cierra operaciones."
 
 input string Clave           = "";    // Clave (opcional: si la dejas vacía, te enseña un código para vincular)
@@ -27,7 +27,7 @@ input bool   RehacerFoto     = true;  // Si no hubo foto en el momento, rehacerl
 #define BT_URL      "https://xsvezicjksfrklwjskfv.supabase.co"
 #define BT_RPC      "/rest/v1/rpc/bridge_ingest"
 #define BT_APIKEY   "sb_publishable_qLIhdI4CuQuisOstwl0fWg_dhW61xcm"
-#define BT_VERSION  "1.2"
+#define BT_VERSION  "1.3"
 #define BT_KEYFILE  "bitacora_clave.txt"
 #define BT_STATE    "bitacora_estado.csv"
 #define BT_CAPFILE  "bitacora_captura.png"
@@ -63,13 +63,20 @@ string   g_code     = "";                       // código de 6 cifras que se en
 datetime g_codeAt   = 0;
 string   g_status   = "Conectando…";
 bool     g_urlAlert = false;
+//--- precios en vivo para el gráfico de la app
+string   g_wSym     = "";                       // mercado que estás mirando en la app
+string   g_wTf      = "";
+datetime g_wUntil   = 0;                        // hasta cuándo seguimos enviando (se renueva mientras miras)
+string   g_lastReq  = "";                       // último historial servido
+ulong    g_lastSync = 0;
+datetime g_lastPair = 0;
 
 //+------------------------------------------------------------------+
 int OnInit()
   {
    LoadState();
    g_key = StringLen(Clave) >= 10 ? Clave : LoadKey();
-   EventSetTimer(5);
+   EventSetMillisecondTimer(1000);
    if(g_key == "")
       StartPairing();                              // sin clave: enseñamos un código para vincular con la app
    else
@@ -175,9 +182,20 @@ void OnTimer()
    datetime now = TimeLocal();
    if(g_key == "")
      {
-      PollPairing();
-      ShowStatus();
+      if(now - g_lastPair >= 3)
+        {
+         g_lastPair = now;
+         PollPairing();
+         ShowStatus();
+        }
       return;
+     }
+   // precios en vivo: cada segundo si estás mirando el gráfico en la app; si no, una pregunta cada 5 s
+   ulong ms = GetTickCount64();
+   if(ms - g_lastSync >= (g_wUntil > now ? 1000 : 5000))
+     {
+      g_lastSync = ms;
+      Sync();
      }
    for(int i = 0; i < ArraySize(g_jobs); i++)
      {
@@ -214,7 +232,118 @@ void OnTimer()
       SendPing();
    if(now - g_lastScan > 600)                     // cada 10 min: ¿algo hecho desde el móvil o con el Mac dormido?
       CatchUp();
-   ShowStatus();
+   if(now % 5 == 0)
+      ShowStatus();
+  }
+
+//+------------------------------------------------------------------+
+//| Precios en vivo para el gráfico de la app                        |
+//+------------------------------------------------------------------+
+ENUM_TIMEFRAMES TfOf(const string tf)
+  {
+   if(tf == "1m") return(PERIOD_M1);
+   if(tf == "5m") return(PERIOD_M5);
+   if(tf == "15m") return(PERIOD_M15);
+   if(tf == "1h") return(PERIOD_H1);
+   if(tf == "4h") return(PERIOD_H4);
+   if(tf == "1d") return(PERIOD_D1);
+   return(PERIOD_CURRENT);
+  }
+
+string BarsJson(const MqlRates &r[], const int n, const int digits, const long off)
+  {
+   string out = "";
+   for(int i = 0; i < n; i++)
+     {
+      if(i > 0)
+         out += ",";
+      out += "[" + IntegerToString(((long)r[i].time - off) * 1000) + "," + DoubleToString(r[i].open, digits) + "," +
+             DoubleToString(r[i].high, digits) + "," + DoubleToString(r[i].low, digits) + "," +
+             DoubleToString(r[i].close, digits) + "," + IntegerToString(r[i].tick_volume) + "]";
+     }
+   return(out);
+  }
+
+string JsonGet(const string js, const string key)
+  {
+   int p = StringFind(js, "\"" + key + "\":");
+   if(p < 0)
+      return("");
+   p += StringLen(key) + 3;
+   while(p < StringLen(js) && StringGetCharacter(js, p) == ' ')
+      p++;                                         // Postgres deja un espacio tras los dos puntos
+   if(StringSubstr(js, p, 1) == "\"")
+     {
+      int q = StringFind(js, "\"", p + 1);
+      return(q > p ? StringSubstr(js, p + 1, q - p - 1) : "");
+     }
+   int e = p;
+   while(e < StringLen(js))
+     {
+      ushort c = StringGetCharacter(js, e);
+      if(c == ',' || c == '}')
+         break;
+      e++;
+     }
+   return(StringSubstr(js, p, e - p));
+  }
+
+void Sync()
+  {
+   string data = "";
+   long   off  = ServerOffset();
+   if(g_wUntil > TimeLocal() && g_wSym != "" && SymbolSelect(g_wSym, true))
+     {
+      ENUM_TIMEFRAMES tf = TfOf(g_wTf);
+      int digits = (int)SymbolInfoInteger(g_wSym, SYMBOL_DIGITS);
+      MqlRates r[];
+      ArraySetAsSeries(r, false);
+      int n = CopyRates(g_wSym, tf, 0, 2, r);
+      if(n > 0)
+         data = "\"live\":{\"sym\":\"" + JsonEsc(g_wSym) + "\",\"tf\":\"" + g_wTf + "\",\"bars\":[" + BarsJson(r, n, digits, off) + "]}";
+     }
+   string js = "{\"p_key\":\"" + JsonEsc(g_key) + "\",\"p_data\":{" + data + "}}";
+   string err = "", resp = "";
+   if(!PostTo("/rest/v1/rpc/bridge_sync", js, err, resp))
+      return;
+   g_lastOk = TimeLocal();
+   string sym = JsonGet(resp, "sym");
+   if(sym == "")
+     {
+      g_wUntil = 0;                                // nadie mira el gráfico
+      return;
+     }
+   g_wSym = sym;
+   g_wTf = JsonGet(resp, "tf");
+   g_wUntil = TimeLocal() + 60;
+   string req = JsonGet(resp, "req");
+   if(req != "" && req != g_lastReq)
+      SendHistory(req, StringToInteger(JsonGet(resp, "to")), (int)StringToInteger(JsonGet(resp, "n")));
+  }
+
+void SendHistory(const string req, const long toMs, int n)
+  {
+   if(!SymbolSelect(g_wSym, true))
+      return;
+   if(n <= 0 || n > 1500)
+      n = 1000;
+   ENUM_TIMEFRAMES tf = TfOf(g_wTf);
+   int digits = (int)SymbolInfoInteger(g_wSym, SYMBOL_DIGITS);
+   long off = ServerOffset();
+   MqlRates r[];
+   ArraySetAsSeries(r, false);
+   int got;
+   if(toMs > 0)
+      got = CopyRates(g_wSym, tf, (datetime)(toMs / 1000 + off - 1), n, r);
+   else
+      got = CopyRates(g_wSym, tf, 0, n, r);
+   if(got < 0)
+      return;                                      // MT5 aún está descargando el historial: lo intentamos en el siguiente segundo
+   string js = "{\"p_key\":\"" + JsonEsc(g_key) + "\",\"p_data\":{\"hist\":{\"req\":\"" + JsonEsc(req) + "\",\"sym\":\"" + JsonEsc(g_wSym) +
+               "\",\"tf\":\"" + g_wTf + "\",\"bars\":[" + BarsJson(r, got, digits, off) + "]}}}";
+   string err = "", resp = "";
+   if(PostTo("/rest/v1/rpc/bridge_sync", js, err, resp))
+      g_lastReq = req;
   }
 
 //+------------------------------------------------------------------+
