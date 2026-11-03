@@ -363,7 +363,7 @@
     function atr(i) { const n = 14; let a = null; for (let k = Math.max(1, i - 100); k <= i; k++) { const c = R.all[k], pc = R.all[k - 1].close; const tr = Math.max(c.high - c.low, Math.abs(c.high - pc), Math.abs(c.low - pc)); a = a == null ? tr : (a * (n - 1) + tr) / n; } return a; }
     function openSim(side) {
       if (R.pos || !bar()) return;
-      const b = bar(), e = b.close, d = (atr(R.idx) || e * 0.002) * 1.5, dg = digits(), rd = v => +v.toFixed(dg);
+      const b = bar(), dg = digits(), rd = v => +v.toFixed(dg), e = rd(b.close), d = (atr(R.idx) || e * 0.002) * 1.5;
       const s = rd(side === "buy" ? e - d : e + d), t = rd(side === "buy" ? e + 2 * d : e - 2 * d), tw = TF_MS[st.tf] * 24;
       const id = ch.createOverlay({
         name: "tkPos", groupId: "sim", extendData: { side, sim: true }, points: [{ timestamp: b.timestamp, value: e }, { timestamp: b.timestamp + tw, value: s }, { timestamp: b.timestamp + tw, value: t }],
