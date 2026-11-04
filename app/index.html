@@ -84,6 +84,59 @@ h3{font-family:var(--head);letter-spacing:-.015em}
 .tkends{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:10px;color:var(--suave)}
 .tkchip{padding:4px 10px;border-radius:999px;background:var(--sub);font-size:12px}
 @media (min-width:1024px){.tk .paper{padding:22px 24px 14px}.tktot .v{font-size:44px}.stub .big{font-size:32px}.stub .left{font-size:36px}.stub .a,.stub .b{padding:20px 24px}.stub .c{padding:16px 24px 18px}}
+/* ---------- panel de Hoy ---------- */
+.dtop{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.greet{font-size:clamp(28px,3.4vw,38px)}
+.greet .acc{color:var(--cobalto)}
+.achip{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 14px;border-radius:999px;border:1px solid var(--linea);background:var(--card);color:var(--tinta);font-size:13px;font-weight:600;text-decoration:none}
+.achip:hover{border-color:var(--cobalto);color:var(--tinta)}
+.kgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kc{background:var(--card);border:1px solid var(--linea);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 18px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kc.kbig{grid-column:span 2;grid-row:span 1}
+.kc-h{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--suave);font-weight:500}
+.kic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-style:normal}
+.kic.c{background:var(--cobaltoC);color:var(--cobalto)}.kic.a{background:var(--ambarB);color:var(--ambarT)}
+.kv{font-family:var(--head);font-weight:700;font-size:28px;letter-spacing:-.025em;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kv small{font-size:15px;font-weight:600;color:var(--suave);letter-spacing:0}
+.kbig .kv{font-size:clamp(40px,4.6vw,58px);letter-spacing:-.04em}
+.ks{font-size:12.5px;color:var(--suave)}
+.khide{display:inline-flex;align-items:center;gap:8px;color:var(--suave);font-size:22px}
+.scbig{font-family:var(--head);font-weight:800;font-size:44px;line-height:1;color:var(--ambarT);letter-spacing:-.03em}
+.heat{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.hd{display:grid;grid-template-rows:16px repeat(5,14px);gap:3px;font-size:10px;color:var(--suave)}
+.hw{display:flex;flex-direction:column;gap:3px}
+.hm{display:grid;gap:3px;height:16px;font-size:10px;color:var(--suave);text-transform:capitalize}
+.hg2{display:flex;gap:3px}
+.hc{display:grid;grid-template-rows:repeat(5,14px);gap:3px}
+.hc i,.hleg i{width:14px;height:14px;border-radius:4px;display:block}
+.h0{background:var(--linea2)}.hz{background:transparent}
+.hg{background:var(--cobalto)}
+.hb{background:repeating-linear-gradient(135deg,var(--ambar) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 1.5px var(--ambar)}
+.hleg{display:flex;gap:12px;font-size:12px;color:var(--suave)}
+.hleg span{display:inline-flex;align-items:center;gap:6px}
+.hleg i{width:11px;height:11px;border-radius:3px}
+.hstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;border-top:1px solid var(--linea);padding-top:12px;text-align:center}
+.hstats b{display:block;font-family:var(--head);font-size:24px;font-weight:700;color:var(--cobalto);letter-spacing:-.02em}
+.hstats span{font-size:12px;color:var(--suave)}
+.acards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.acard{background:var(--card);border:1px solid var(--linea);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.anum{font-family:var(--head);font-size:26px;font-weight:600;letter-spacing:-.02em}
+.abadge{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:var(--ambarB);color:var(--ambarT)}
+.abadge.on{background:var(--cobaltoC);color:var(--cobalto)}
+.aicons{display:inline-flex;gap:8px;padding:6px;border-radius:14px;background:var(--sub);align-self:flex-start}
+.aicons a{width:40px;height:40px;border-radius:50%;border:1px solid var(--borde);display:flex;align-items:center;justify-content:center;color:var(--tinta2)}
+.aicons a.on{background:var(--cobalto);border-color:var(--cobalto);color:var(--onAccent)}
+.aicons a:hover{border-color:var(--cobalto)}
+.aplat{font-family:var(--head);font-size:22px;font-weight:600;color:var(--cobalto);letter-spacing:-.01em}
+.abox{background:var(--sub);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.abal.hid{font-size:18px;color:var(--suave)}
+.grid2>*{min-width:0}
+.abal{font-family:var(--head);font-size:28px;font-weight:600;letter-spacing:-.02em;display:inline-flex;align-items:center;gap:8px}
+.apill{font-size:13px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--card);color:var(--cobalto)}
+.navlink[aria-current="page"]{background:linear-gradient(90deg,var(--cobaltoC),transparent)!important;position:relative}
+.navlink[aria-current="page"]::after{content:"";position:absolute;right:12px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--cobalto)}
+@media (max-width:1100px){.kgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.hstats{grid-template-columns:1fr 1fr;row-gap:14px}.hleg{flex-direction:column;gap:4px}.kgrid{grid-template-columns:1fr 1fr;gap:10px}.kc{padding:14px}.kv{font-size:22px}.kc.kbig{grid-column:span 2}.hstats b{font-size:20px}.dtop .btn{display:none}}
 .card{background:var(--card);border:1px solid var(--linea);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
 .stack{display:flex;flex-direction:column;gap:12px}
 .row{display:flex;align-items:center;gap:12px}
@@ -563,22 +616,109 @@ function shell(view,content){
 </div>`;
 }
 
+/* ---------- Hoy: panel ---------- */
+const SVG=(p,sz=18,w=1.8)=>`<svg width="${sz}" height="${sz}" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC2={pulse:'<path d="M2 10h3l2-5 4 10 2-5h5"/>',wallet:'<rect x="3" y="5" width="14" height="11" rx="2"/><path d="M13 10.5h4"/>',trend:'<path d="M3 14l5-5 3 3 6-6M13 6h4v4"/>',flame:'<path d="M10 2c2 3 5 4.5 5 9a5 5 0 01-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3 0-5 1-7.5z"/>',bars:'<path d="M5 16V9M10 16V4M15 16v-5"/>',trophy:'<path d="M6 3h8v4a4 4 0 01-8 0zM6 5H3a3 3 0 003 3M14 5h3a3 3 0 01-3 3M10 11v3M7 17h6"/>',star:'<path d="M10 2.5l2.3 4.7 5.2.8-3.8 3.6.9 5.1L10 14.3 5.4 16.7l.9-5.1L2.5 8l5.2-.8z"/>',lock:'<rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 016 0v3"/>',chart:'<path d="M6 3v14M14 5v12"/><rect x="4" y="6" width="4" height="7"/><rect x="12" y="8" width="4" height="6"/>',prog:'<path d="M3 16l5-6 4 3 5-8"/>',gear:'<circle cx="10" cy="10" r="3"/><path d="M10 2v2.5M10 15.5V18M2 10h2.5M15.5 10H18M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M4.3 15.7l1.8-1.8M13.9 6.1l1.8-1.8"/>',refresh:'<path d="M16 6a7 7 0 10.8 6"/><path d="M16 2v4h-4"/>'};
+function greet(){const h=new Date().getHours();return h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches"}
+function inSession(p){const m=minOfDate(Date.now());return m>=minOf(p.start)&&m<minOf(p.end)}
+function money(v,cur){try{return Number(v).toLocaleString("es-ES",{style:"currency",currency:cur||"EUR",maximumFractionDigits:2})}catch(e){return num(v,2)+" "+(cur||"")}}
+function dayInfo(){
+  const byDay={};S.trades.filter(t=>t.status==="closed"&&t.open_time).forEach(t=>{const k=dayKey(t.open_time);(byDay[k]=byDay[k]||[]).push(t)});
+  const days=Object.keys(byDay).sort().map(k=>({k,list:byDay[k],r:byDay[k].reduce((a,t)=>a+(t.r||0),0),ok:byDay[k].every(t=>evaluate(t).good)}));
+  let cur=0;for(let i=days.length-1;i>=0;i--){if(days[i].ok)cur++;else break}
+  let best=0,run=0;days.forEach(d=>{run=d.ok?run+1:0;best=Math.max(best,run)});
+  return {byDay,days,cur,best};
+}
+function scoreOf(list){
+  const L=list.filter(t=>t.status==="closed");if(L.length<1)return null;
+  const p=S.plan,pc=f=>Math.round(L.filter(f).length/L.length*100);
+  const s=minOf(p.start),e=minOf(p.end);
+  const ax=[["Stop",pc(t=>t.sl!=null&&!t.sl_moved)],["Riesgo",pc(t=>t.risk_pct==null||t.risk_pct<=p.riskPct*1.15)],["Horario",pc(t=>{const m=minOfDate(t.open_time);return m>=s&&m<=e})],
+    ["Paciencia",pc(t=>{const ev=evaluate(t);return !ev.fail.some(c=>/máximo|límite/.test(c.bad))})],["Objetivo",pc(t=>t.tp!=null)],["Constancia",(()=>{const d={};L.forEach(t=>{const k=dayKey(t.open_time);d[k]=(d[k]!==false)&&evaluate(t).good});const v=Object.values(d);return Math.round(v.filter(Boolean).length/v.length*100)})()]];
+  return {ax,score:Math.round(ax.reduce((a,x)=>a+x[1],0)/ax.length),n:L.length};
+}
+function radarSvg(ax){
+  const W=360,H=250,cx=180,cy=128,R=84,n=ax.length,pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [cx+r*Math.cos(a),cy+r*Math.sin(a)]};
+  let g="";[.25,.5,.75,1].forEach(k=>{g+=`<polygon points="${ax.map((_,i)=>pt(i,R*k).map(v=>v.toFixed(1)).join(",")).join(" ")}" fill="none" stroke="var(--linea)" stroke-width="1"/>`});
+  ax.forEach((_,i)=>{const [x,y]=pt(i,R);g+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--linea)"/>`});
+  const poly=ax.map((x,i)=>pt(i,R*Math.max(.04,x[1]/100)).map(v=>v.toFixed(1)).join(",")).join(" ");
+  g+=`<polygon points="${poly}" fill="var(--cobaltoA)" stroke="var(--cobalto)" stroke-width="2" stroke-linejoin="round"/>`;
+  ax.forEach((x,i)=>{const [px,py]=pt(i,R*Math.max(.04,x[1]/100));g+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3.5" fill="var(--cobalto)"/>`;const [lx,ly]=pt(i,R+22);g+=`<text x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}" text-anchor="middle" font-size="11" font-family="Inter,system-ui,sans-serif" fill="var(--suave)">${x[0]} · ${x[1]}%</text>`});
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto" role="img" aria-label="Nota de disciplina por apartados: ${ax.map(x=>x[0]+" "+x[1]+" por ciento").join(", ")}">${g}</svg>`;
+}
+function heatHtml(info){
+  const end=new Date();end.setHours(0,0,0,0);const start=new Date(end);start.setDate(start.getDate()-7*25-((end.getDay()+6)%7));
+  let cols="",d=new Date(start),months="",lastM=-1,w=0;
+  while(d<=end){
+    let col="";for(let i=0;i<5;i++){const day=new Date(d);day.setDate(d.getDate()+i);const k=dayKey(day);const x=info.byDay[k];
+      const cls=day>end?"hz":x?(x.every(t=>evaluate(t).good)?"hg":"hb"):"h0";
+      col+=`<i class="${cls}" title="${day.toLocaleDateString("es-ES",{day:"numeric",month:"short"})}${x?" · "+x.length+" operaci"+(x.length>1?"ones":"ón")+" · "+fmtR(x.reduce((a,t)=>a+(t.r||0),0)):""}"></i>`}
+    if(d.getMonth()!==lastM){months+=`<span style="grid-column:${w+1}">${d.toLocaleDateString("es-ES",{month:"short"}).replace(".","")}</span>`;lastM=d.getMonth()}
+    cols+=`<div class="hc">${col}</div>`;d.setDate(d.getDate()+7);w++;
+  }
+  return `<div class="heat"><div class="hd"><span></span><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span></div><div class="hw"><div class="hm" style="grid-template-columns:repeat(${w},14px)">${months}</div><div class="hg2">${cols}</div></div></div>`;
+}
+function acctCards(){
+  const list=S.bridges||[];if(!list.length)return "";
+  const p=S.plan,hide=inSession(p),tk=todayKey(),f=S.acctF||"todas";
+  const live=b=>b.last_seen&&(Date.now()-new Date(b.last_seen))<15*60*1000;
+  const rows=list.filter(b=>f==="todas"||(f==="activas"?live(b):!live(b))).map(b=>{const i=b.last_info||{},acc=i.account||"—",on=live(b);
+    const r=S.trades.filter(t=>t.account===acc&&t.open_time&&dayKey(t.open_time)===tk&&t.status==="closed").reduce((a,t)=>a+(t.r||0),0);
+    return `<div class="acard"><div class="between" style="align-items:center"><b class="anum">#${esc(acc)}</b><span class="abadge ${on?"on":""}">${on?"Conectada":"Sin señal"}</span></div>
+      <div class="aicons"><a href="#analizar" aria-label="Analizar" title="Analizar">${SVG(IC2.chart)}</a><a href="#progreso" aria-label="Progreso" title="Progreso">${SVG(IC2.prog)}</a><a href="#plan" class="on" aria-label="Ajustes de la conexión" title="Ajustes de la conexión">${SVG(IC2.gear)}</a></div>
+      <div><div style="font-size:15px">${esc(i.broker||"Bróker")}</div><div class="aplat">MetaTrader 5</div></div>
+      <div class="abox"><span class="lbl">Saldo</span><div class="row" style="gap:10px;flex-wrap:wrap"><b class="abal${hide?" hid":""}">${hide?SVG(IC2.lock,18)+" Oculto en tu horario":i.balance!=null?esc(money(i.balance,i.currency)):"—"}</b>${r?`<span class="apill">hoy ${fmtR(r)}</span>`:""}</div></div></div>`}).join("");
+  return `<section class="stack" style="gap:12px"><div class="between" style="align-items:center"><h2 style="font-size:20px">Tus cuentas</h2><div class="seg" role="group" aria-label="Filtrar cuentas">${["todas","activas","inactivas"].map(k=>`<button type="button" data-acctf="${k}" aria-pressed="${f===k}">${k[0].toUpperCase()+k.slice(1)}</button>`).join("")}</div></div>
+    <div class="acards">${rows||`<div class="card small muted">No hay cuentas en este filtro.</div>`}</div></section>`;
+}
 function viewHoy(){
-  const p=S.plan, tk=todayKey();
+  const p=S.plan, tk=todayKey(), now=new Date();
   const today=S.trades.filter(t=>t.open_time&&dayKey(t.open_time)===tk).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time));
-  const dayR=today.reduce((s,t)=>s+(t.r||0),0), margin=p.dayLimitR+dayR;
-  const now=new Date(), e=minOf(p.end), left=e!=null?e-minOfDate(now):null;
+  const dayR=today.reduce((s,t)=>s+(t.r||0),0), margin=Math.max(0,p.dayLimitR+dayR);
+  const mo=S.trades.filter(t=>{const d=new Date(t.open_time);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()});
+  const ms=tradeStats(mo), all=tradeStats(S.trades), info=dayInfo();
+  const closed=S.trades.filter(t=>t.status==="closed"&&t.r!=null);
+  const bestT=closed.reduce((m,t)=>!m||t.r>m.r?t:m,null), bestD=info.days.reduce((m,d)=>!m||d.r>m.r?d:m,null);
+  const since=Date.now()-30*864e5, sc=scoreOf(S.trades.filter(t=>new Date(t.open_time)>=since)), scPrev=scoreOf(S.trades.filter(t=>{const x=new Date(t.open_time);return x<since&&x>=since-30*864e5}));
+  const hide=inSession(p), bi=S.bridge&&S.bridge.last_info||{}, live=S.bridge&&S.bridge.last_seen&&(Date.now()-new Date(S.bridge.last_seen))<15*60*1000;
+  const pfTxt=all.pf==null?"—":all.pf===Infinity?"∞":num(all.pf,2), pfLab=all.pf==null?"Aún sin datos":all.pf>=2?"Excelente":all.pf>=1.3?"Bueno":all.pf>=1?"Justo":"A mejorar";
+  const kc=(lab,ic,tone,val,sub,extra)=>`<div class="kc ${extra||""}"><div class="kc-h"><span>${lab}</span><i class="kic ${tone}">${SVG(IC2[ic],16)}</i></div><div class="kv">${val}</div><div class="ks">${sub}</div></div>`;
   const ops=today.length?today.map(t=>{const ev=evaluate(t);return `<a class="op" href="#op/${encodeURIComponent(t.id)}">${thumb(t,72,46)}<div style="min-width:0"><div class="opname" style="font-weight:600;font-size:15px">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"}</div><div class="small muted">${hhmm(t.open_time)} · ${ev.title.toLowerCase()}${t.status==="closed"?(ev.good?", dentro del pacto":", "+ev.fail.length+" norma"+(ev.fail.length>1?"s":"")+" sin cumplir"):""}</div></div><div class="mono" style="font-weight:700;font-size:14px">${t.status==="closed"?fmtR(t.r):"abierta"}</div></a>`}).reverse().join(""):
     `<div style="padding:14px 0;font-size:14px" class="muted">Aún no hay operaciones hoy. ${S.bridge?"Cuando abras una en MT5, aparecerá aquí sola.":'<a href="#plan">Conecta MT5</a> y tus operaciones se apuntarán solas.'}</div>`;
-  return `<div class="stack">
-    <div class="between" style="align-items:flex-end">
-      <div class="stack" style="gap:4px"><div class="lbl" style="font-size:11px">${fechaCorta(now)}</div><h1>Hola, ${esc(S.name)}</h1></div>
-      <div class="stack" style="gap:8px;align-items:flex-end">${bridgeChip()}<a class="btn2" href="#analizar" style="height:38px">${ico("analizar",18)}Analizar</a></div>
+  const scLab=!sc?"":sc.score>=80?"Muy disciplinado":scPrev&&sc.score>scPrev.score?"Mejorando":sc.score>=60?"Vas bien":"A trabajar";
+  return `<div class="stack dash" style="gap:16px">
+    <div class="dtop">
+      <div class="stack" style="gap:4px"><h1 class="greet">${greet()}, <span class="acc">${esc((S.name||"").split(" ")[0])}</span></h1><div class="muted" style="font-size:15px">${fechaCorta(now)} · así va tu trading</div></div>
+      <div class="row" style="gap:10px;flex-wrap:wrap;justify-content:flex-end">
+        <a class="achip" href="#plan"><span class="dot" style="background:${live?"var(--verde)":S.bridge?"var(--ambar)":"var(--borde)"}"></span>${S.bridge?"MT5 #"+esc(bi.account||"—"):"MT5 sin conectar"} <b style="color:${live?"var(--verdeT)":"var(--suave)"}">${live?"Conectado":S.bridge?"Sin señal":"Conectar"}</b></a>
+        <a class="btn" href="#analizar" style="height:42px">${SVG(IC2.chart,18)}Analizar</a>
+      </div>
     </div>
-    ${S.dbMissing?`<div class="card" style="background:var(--ambarB);color:var(--ambarT)"><b>Falta preparar la base de datos.</b> Hay que pegar el archivo supabase-v1.sql en Supabase → SQL Editor → Run.</div>`:""}
+    ${S.dbMissing?`<div class="card" style="background:var(--ambarB);color:var(--ambarT)"><b>Falta preparar la base de datos.</b></div>`:""}
+    <div class="kgrid">
+      ${kc("Hoy","pulse","c",`<span class="rot">${today.some(t=>t.status==="closed")?fmtR(dayR):"0,0 R"}</span>`,`${today.length} de ${p.maxTrades} operaciones · margen ${num(margin,1)} R`,"kbig")}
+      ${kc("Saldo de la cuenta","wallet","c",hide?`<span class="khide">${SVG(IC2.lock,20)}Oculto</span>`:bi.balance!=null?esc(money(bi.balance,bi.currency)):"—",hide?"Lo verás al cerrar tu horario ("+esc(p.end)+")":(S.bridge?"Cuenta #"+esc(bi.account||"—"):"Conecta tu MT5"))}
+      ${kc("Este mes","trend","c",`${ms.n?fmtR(ms.tot):"—"}`,ms.n?`${ms.n} operaciones · acierto ${num(ms.win,0)} %`:"Aún sin operaciones este mes")}
+      ${kc("Racha","flame","a",`${info.cur} <small>día${info.cur===1?"":"s"}</small>`,info.cur>=3?"Días seguidos cumpliendo tu plan. ¡Sigue así!":"Días seguidos cumpliendo tu plan")}
+      ${kc("Factor de beneficio","bars","c",pfTxt,pfLab)}
+      ${kc("Mejor operación","trophy","c",bestT?fmtR(bestT.r):"—",bestT?esc(bestT.symbol)+" · "+fechaCorta(bestT.open_time):"Aún sin datos")}
+      ${kc("Mejor día","star","a",bestD?fmtR(bestD.r):"—",bestD?fechaCorta(bestD.k+"T12:00:00"):"Aún sin datos")}
+    </div>
+    ${acctCards()}
     <div class="grid2 even" style="align-items:start">
       ${ticketDia(today,dayR,p)}
       ${ticketSesion(today,p,now)}
+    </div>
+    <div class="grid2 even" style="align-items:stretch">
+      <div class="card stack" style="gap:6px">
+        <div class="between" style="align-items:flex-start"><div><h2 style="font-size:19px">Nota de disciplina</h2><div class="small muted">Últimos 30 días · solo tu proceso, no tu dinero</div></div>${sc?`<div style="text-align:right"><div class="scbig">${sc.score}</div><div class="small" style="color:var(--cobalto);font-weight:600">${scLab}</div></div>`:""}</div>
+        ${sc?radarSvg(sc.ax):`<div class="small muted" style="padding:30px 0;text-align:center">Tu nota aparecerá con tus primeras operaciones cerradas.</div>`}
+      </div>
+      <div class="card stack" style="gap:12px">
+        <div class="between" style="align-items:flex-start"><div><h2 style="font-size:19px">Actividad</h2><div class="small muted">${info.days.length} días operados</div></div><div class="hleg"><span><i class="hb"></i>Fuera del plan</span><span><i class="hg"></i>Dentro del plan</span></div></div>
+        ${heatHtml(info)}
+        <div class="hstats"><div><b>${info.days.length}</b><span>Días operados</span></div><div><b>${info.cur}</b><span>Racha actual</span></div><div><b>${info.best}</b><span>Racha más larga</span></div><div><b>${all.n?fmtR(all.tot):"—"}</b><span>Resultado total</span></div></div>
+      </div>
     </div>
     <div class="grid2">
       <div class="card" style="padding:12px 16px">
@@ -594,7 +734,6 @@ function viewHoy(){
           <span>Horario</span><b class="mono">${esc(p.start)}–${esc(p.end)}</b>
         </div>
         ${p.rules&&p.rules.length?`<div class="stack" style="gap:8px;padding-top:10px;border-top:1px dashed var(--borde)">${p.rules.map(r=>`<div class="si"><b>SI</b><span>${esc(r.si)}</span><b>→</b><span>${esc(r.entonces)}</span></div>`).join("")}</div>`:""}
-        <div class="small muted" style="padding-top:8px;border-top:1px dashed var(--borde)">El pacto de la mañana, el semáforo y el cierre del día llegan en el siguiente paso.</div>
       </div>
     </div>
   </div>`;
@@ -1030,6 +1169,7 @@ function bindView(r){
     document.onkeydown=e=>{if(e.key==="Escape"&&card.classList.contains("full")){const fb=card.querySelector('[data-act="full"]');if(fb)fb.click()}};
     mountTicker();mountChart();paintAnalizar();
   }
+  if(r.view==="hoy"){document.querySelectorAll(".heat").forEach(h=>h.scrollLeft=h.scrollWidth);document.querySelectorAll("[data-acctf]").forEach(b=>b.onclick=()=>{S.acctF=b.dataset.acctf;S.lastView=null;render()})}
   if(r.view==="op"){
     const t=S.trades.find(x=>x.id===r.id);if(!t)return;
     const saveReview=async patch=>{t.review=Object.assign({},t.review||{},patch);const {error}=await sb.from("trades").update({review:t.review}).eq("id",t.id);if(error)toast("No se pudo guardar")};
