@@ -7,7 +7,7 @@
   const KC = window.klinecharts;
   if (!KC) { window.TkChart = null; return; }
 
-  const NUMF = "JetBrains Mono, ui-monospace, monospace";
+  const NUMF = "Inter, system-ui, -apple-system, sans-serif";
   const TFS = [["1m", "1 minuto", { type: "minute", span: 1 }], ["5m", "5 minutos", { type: "minute", span: 5 }], ["15m", "15 minutos", { type: "minute", span: 15 }],
     ["30m", "30 minutos", { type: "minute", span: 30 }], ["1h", "1 hora", { type: "hour", span: 1 }], ["4h", "4 horas", { type: "hour", span: 4 }],
     ["1d", "1 día", { type: "day", span: 1 }], ["1w", "1 semana", { type: "week", span: 1 }]];
@@ -60,7 +60,7 @@
       overlay: {
         point: { color: p.cob, borderColor: p.cobA, activeColor: p.cob, activeBorderColor: p.cobA },
         line: { color: p.cob, size: 1.5 }, rect: { color: p.cobA, borderColor: p.cob }, polygon: { color: p.cobA, borderColor: p.cob },
-        text: { color: p.tinta, family: "Sora, sans-serif" },
+        text: { color: p.tinta, family: "Inter, system-ui, sans-serif" },
         rectText: { color: "#ffffff", backgroundColor: p.cob, borderColor: p.cob, family: NUMF }
       }
     };
@@ -70,7 +70,7 @@
   /* ---------- estilo de cada dibujo ---------- */
   const sty = o => { const ed = o.extendData || {}; return { color: ed.color || pal().cob, width: ed.width || 1.5, dash: ed.dash || "solid", text: ed.text || "", size: ed.size || 14, fill: ed.fill !== false }; };
   const lineSt = s => ({ color: s.color, size: s.width, style: s.dash === "solid" ? "solid" : "dashed", dashedValue: s.dash === "dotted" ? [2, 3] : [6, 4] });
-  const textSt = (s, x) => Object.assign({ color: s.color, size: s.size, family: "Sora, sans-serif", weight: 500, backgroundColor: "transparent", borderSize: 0, borderColor: "transparent", paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 4 }, x || {});
+  const textSt = (s, x) => Object.assign({ color: s.color, size: s.size, family: "Inter, system-ui, sans-serif", weight: 500, backgroundColor: "transparent", borderSize: 0, borderColor: "transparent", paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 4 }, x || {});
   const labelSt = (s, x) => textSt(s, Object.assign({ color: "#ffffff", backgroundColor: s.color, size: 12, family: NUMF, paddingLeft: 6, paddingRight: 6, paddingTop: 4, paddingBottom: 4 }, x || {}));
   const fmtP = v => nf(v, CUR_DIGITS);
   function reg(name, totalStep, fig, extra) {
