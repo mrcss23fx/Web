@@ -92,6 +92,21 @@ h3{font-family:var(--head);letter-spacing:-.015em}
 .navlink[aria-current="page"]{background:var(--cobaltoC)!important;border-color:color-mix(in srgb,var(--cobalto) 55%,transparent);color:var(--tinta)!important;font-weight:600}
 .navlink[aria-current="page"] svg{color:var(--cobalto)}
 .themes{display:flex;gap:6px;padding:0 6px}
+.acsel{position:relative;display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--linea);border-radius:12px;background:var(--sub);color:var(--tinta);cursor:pointer;margin:2px 0 6px}
+.acsel:hover{border-color:var(--borde)}
+.acsel:focus-within{outline:2px solid var(--cobalto);outline-offset:2px}
+.acsel .aic{width:34px;height:34px;border-radius:10px}
+.acsel-t{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.25}
+.acsel-t small{font-size:11px;color:var(--suave)}
+.acsel-t b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acsel>svg{color:var(--suave);flex:none}
+.acsel select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:16px}
+.acsel.mini{margin:0 0 0 auto;padding:4px 8px;gap:8px;max-width:190px;height:38px}
+.acsel.mini .aic{width:26px;height:26px;border-radius:8px}
+.acsel.mini .acsel-t small{display:none}
+.acsel.mini .acsel-t b{font-size:13px}
+.mtop{gap:10px}
+.acc2.cur{border-color:color-mix(in srgb,var(--cobalto) 60%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--cobalto) 30%,transparent),var(--shadow)}
 .themes button{width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--suave);display:flex;align-items:center;justify-content:center}
 .themes button[aria-pressed="true"]{color:var(--tinta);background:var(--sub)}
 .avatar{width:36px;height:36px;border-radius:50%;background:var(--borde);color:var(--tinta);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 6px;text-decoration:none}
@@ -547,13 +562,13 @@ async function savePlan(changes,immediate){
   }
   const {error}=await sb.from("docs").upsert({user_id:S.user.id,col:"v1",id:"plan",data:d,updated_at:new Date().toISOString()});
   if(error){toast("No se pudo guardar: "+error.message);return false}
-  S.planDoc=d;S.plan=effectivePlan();return true;
+  S.planDoc=d;S.basePlan=effectivePlan();applyAcct();return true;
 }
 
 /* ---------- cómo fue cada operación ---------- */
-function dayTradesOf(t){return S.trades.filter(x=>x.open_time&&dayKey(x.open_time)===dayKey(t.open_time)).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time))}
+function dayTradesOf(t){return (S.allTrades||S.trades).filter(x=>x.open_time&&String(x.account||"")===String(t.account||"")&&dayKey(x.open_time)===dayKey(t.open_time)).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time))}
 function evaluate(t){
-  const p=S.plan, day=dayTradesOf(t), idx=day.findIndex(x=>x.id===t.id);
+  const p=planFor(t.account), day=dayTradesOf(t), idx=day.findIndex(x=>x.id===t.id);
   const before=day.slice(0,Math.max(0,idx)).reduce((s,x)=>s+(x.r||0),0);
   const c=[];
   c.push({ok:t.sl!=null,good:"Stop puesto desde la entrada",bad:"Entraste sin stop",fix:"Pon el stop al entrar, antes de nada más."});
@@ -581,9 +596,9 @@ async function loadAll(){
     sb.from("docs").select("id,data,updated_at").eq("col","acct")
   ]);
   if(trades.error&&/relation|does not exist|schema cache/i.test(trades.error.message)){S.dbMissing=true}
-  S.planDoc=plan.data?plan.data.data:null;S.plan=effectivePlan();
+  S.planDoc=plan.data?plan.data.data:null;S.basePlan=effectivePlan();S.plan=S.basePlan;
   S.consents={};(cons.data||[]).forEach(c=>{if(c.version===LEGAL_VERSION)S.consents[c.kind]=c.granted});
-  S.trades=trades.data||[];S.bridges=keys.data||[];S.bridge=S.bridges[0]||null;S.accts=(accts&&accts.data||[]).map(d=>Object.assign({id:d.id},d.data)).sort((a,b)=>(a.created||0)-(b.created||0));S.loaded=true;
+  S.allTrades=trades.data||[];S.bridges=keys.data||[];S.accts=(accts&&accts.data||[]).map(d=>Object.assign({id:d.id},d.data)).sort((a,b)=>(a.created||0)-(b.created||0));try{S.acctSel=localStorage.getItem("tk-acct")||""}catch(e){S.acctSel=""}applyAcct();S.loaded=true;
   drainInbox();
 }
 async function drainInbox(){
@@ -614,9 +629,9 @@ function subscribe(){
   if(S.chan||!sb)return;
   S.chan=sb.channel("trades-"+S.user.id).on("postgres_changes",{event:"*",schema:"public",table:"trades",filter:"user_id=eq."+S.user.id},payload=>{
     const row=payload.new;if(!row||!row.id)return;
-    const i=S.trades.findIndex(x=>x.id===row.id);
-    if(i>=0)S.trades[i]=Object.assign(S.trades[i],row);else S.trades.unshift(row);
-    S.trades.sort((a,b)=>new Date(b.open_time)-new Date(a.open_time));
+    const T=S.allTrades,i=T.findIndex(x=>x.id===row.id);
+    if(i>=0)T[i]=Object.assign(T[i],row);else T.unshift(row);
+    T.sort((a,b)=>new Date(b.open_time)-new Date(a.open_time));applyAcct();
     if(payload.eventType==="INSERT")toast(row.symbol+": operación apuntada");
     render();setTimeout(drainInbox,1500);
   }).subscribe();
@@ -723,12 +738,13 @@ function shell(view,content){
   return `<div class="shell">
   <aside class="side" aria-label="Secciones">
     <a class="brand2" href="#hoy"><svg class="tlogo" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="var(--cobalto)"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="var(--cobalto)"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="var(--cobalto2)" opacity=".8"/></svg><span>TICKORA</span></a>
+    ${acctSwitch()}
     <nav style="display:flex;flex-direction:column;gap:4px">${side}</nav>
     <div style="flex:1"></div>
     <div class="themes" role="group" aria-label="Apariencia"><button type="button" data-theme-set="dark" aria-pressed="${getThemePref()==="dark"}" aria-label="Oscuro" title="Oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button><button type="button" data-theme-set="light" aria-pressed="${getThemePref()==="light"}" aria-label="Claro" title="Claro">${SVG('<circle cx="10" cy="10" r="3.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4"/>',18)}</button></div>
     <a class="avatar" href="#plan" title="${esc(S.name)} · ${esc(S.user.email||"")}">${esc(initials())}</a>
   </aside>
-  <main class="main" id="main"><div class="mtop"><a class="brand2" href="#hoy"><svg class="tlogo" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="var(--cobalto)"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="var(--cobalto)"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="var(--cobalto2)" opacity=".8"/></svg><span>TICKORA</span></a><button type="button" class="mthemebtn" data-theme-toggle aria-label="Cambiar entre claro y oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button></div>${content}</main>
+  <main class="main" id="main"><div class="mtop"><a class="brand2" href="#hoy"><svg class="tlogo" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="var(--cobalto)"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="var(--cobalto)"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="var(--cobalto2)" opacity=".8"/></svg><span>TICKORA</span></a>${acctSwitch("mini")}<button type="button" class="mthemebtn" data-theme-toggle aria-label="Cambiar entre claro y oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button></div>${content}</main>
   <nav class="tabs" aria-label="Secciones">${nav}</nav>
 </div>`;
 }
@@ -819,7 +835,7 @@ function acctList(){
   const loose=(S.bridges||[]).filter(b=>(b.last_info||{}).account&&!known.has(String(b.last_info.account))).map(b=>({a:{id:null,type:null,number:String(b.last_info.account),broker:b.last_info.broker||"",currency:b.last_info.currency},b}));
   return reg.concat(loose);
 }
-function acctTrades(a){return S.trades.filter(t=>a.number&&String(t.account||"")===String(a.number)&&t.status==="closed"&&t.r!=null&&(!a.start||dayKey(t.open_time)>=a.start))}
+function acctTrades(a){return (S.allTrades||S.trades).filter(t=>a.number&&String(t.account||"")===String(a.number)&&t.status==="closed"&&t.r!=null&&(!a.start||dayKey(t.open_time)>=a.start))}
 function acctStats(a){
   if(typeof a!=="object")a={number:a};
   const L=acctTrades(a), tk=todayKey(), st=tradeStats(L), T=L.filter(t=>dayKey(t.open_time)===tk);
@@ -840,11 +856,11 @@ function metricVal(L,m){
 }
 const fmtM=(m,v)=>v==null?"—":METR[m][1]==="R"?fmtR(v):METR[m][1]==="%"?num(v,0)+" %":m==="pf"?num(v,2):String(Math.round(v));
 function goalsBlock(a,x){
-  const rp=nOr(a.risk)||S.plan.riskPct||1, toR=(v,u)=>u==="R"?v:v/rp, out=[];
+  const BP=S.basePlan||S.plan, rp=nOr(a.risk)||BP.riskPct||1, toR=(v,u)=>u==="R"?v:v/rp, out=[];
   const bar=(label,val,frac,state,hint)=>`<div class="pbar"><div class="between"><span>${label}</span><b class="${state==="ok"?"okc":state==="warn"?"wc":""}">${state==="ok"?SVG(IC2.check,14,2.4)+" ":""}${val}</b></div><div class="pbt ${state==="warn"?"warn":""}"><i style="width:${(Math.max(0,Math.min(1,frac||0))*100).toFixed(1)}%"></i></div>${hint?`<div class="pbh">${hint}</div>`:""}</div>`;
   const uTxt=(v,u)=>u==="R"?num(v,1)+" R":fmtPct(v)+" ≈ "+num(v/rp,1)+" R";
   const tg=nOr(a.target);if(tg){const need=toR(tg,a.targetU);out.push(bar("Objetivo de beneficio",`${fmtR(x.sum)} de +${num(need,1)} R`,x.sum/need,x.sum>=need?"ok":"",`Meta: ${uTxt(tg,a.targetU)}`+(a.deadline?` · fecha límite ${new Date(a.deadline+"T12:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} (${Math.max(0,Math.ceil((new Date(a.deadline+"T23:59")-Date.now())/864e5))} días)`:"")))}
-  const dd=nOr(a.dailyDD);if(dd){const lim=toR(dd,a.dailyU),left=Math.max(0,lim+Math.min(0,x.today));out.push(bar("Te queda hoy",`${num(left,1)} R`,left/lim,left/lim<.35?"warn":"",`Pérdida máx. diaria: ${uTxt(dd,a.dailyU)}`+(S.plan.dayLimitR>lim?` · <b>tu plan permite ${num(S.plan.dayLimitR,1)} R: bájalo</b>`:"")))}
+  const dd=nOr(a.dailyDD);if(dd){const lim=toR(dd,a.dailyU),left=Math.max(0,lim+Math.min(0,x.today));out.push(bar("Te queda hoy",`${num(left,1)} R`,left/lim,left/lim<.35?"warn":"",`Pérdida máx. diaria: ${uTxt(dd,a.dailyU)}`+(BP.dayLimitR>lim?` · <b>tu plan permite ${num(BP.dayLimitR,1)} R: se usa el de la cuenta</b>`:"")))}
   const mx=nOr(a.maxDD);if(mx){const lim=toR(mx,a.maxU),left=Math.max(0,lim+Math.min(0,x.sum));out.push(bar("Te queda en total",`${num(left,1)} R`,left/lim,left/lim<.35?"warn":"",`Pérdida máx. total: ${uTxt(mx,a.maxU)}`))}
   const md=nOr(a.minDays);if(md)out.push(bar("Días operados",`${x.days} de ${md}`,x.days/md,x.days>=md?"ok":"",""));
   const mt=nOr(a.maxTradesDay);if(mt)out.push(bar("Operaciones hoy",`${x.todayN} de ${mt} máx.`,x.todayN/mt,x.todayN>=mt?"warn":"",x.todayN>=mt?"Has llegado al máximo de hoy en esta cuenta":""));
@@ -855,14 +871,46 @@ function goalsBlock(a,x){
   if(!out.length)return a.id?`<button type="button" class="pbempty" data-aedit="${esc(a.id)}">+ Ponle objetivos y límites a esta cuenta</button>`:"";
   return `<div class="stack" style="gap:12px"><div class="lbl">Objetivos y límites</div>${out.join("")}<div class="small muted">En R con ${nOr(a.risk)?"el riesgo de esta cuenta":"el riesgo de tu plan"} (${fmtPct(rp)} por operación), contando desde ${a.start?new Date(a.start+"T12:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"}):"la primera operación"}.${a.type==="fondeo"?" Orientativo: manda lo que diga tu empresa.":""}</div></div>`;
 }
+const acctKey=x=>x.a.id||("n:"+x.a.number);
+const acctName=a=>a.name||(a.number?"#"+a.number:"Cuenta");
+function selAcct(){return S.acctSel?acctList().find(x=>acctKey(x)===S.acctSel)||null:null}
+function planWith(a){
+  const p=Object.assign({},S.basePlan||effectivePlan());p.acct=null;if(!a)return p;
+  const rp=nOr(a.risk),mt=nOr(a.maxTradesDay),dd=nOr(a.dailyDD),b0=p.dayLimitR;
+  if(rp)p.riskPct=rp;if(mt)p.maxTrades=mt;if(dd){const r=a.dailyU==="R"?dd:dd/p.riskPct;if(r<p.dayLimitR)p.dayLimitR=r}
+  p.acct={name:acctName(a),type:a.type,id:a.id,risk:!!rp,trades:!!mt,day:p.dayLimitR!==b0};return p;
+}
+function planFor(num){const a=num?(S.accts||[]).find(x=>String(x.number||"")===String(num)):null;return a?planWith(a):(S.basePlan||S.plan)}
+function applyAcct(){
+  if(!S.basePlan)S.basePlan=effectivePlan();
+  let sel=selAcct();if(S.acctSel&&!sel&&S.accts){S.acctSel="";sel=null}
+  const all=S.allTrades||[];
+  S.trades=sel?all.filter(t=>sel.a.number&&String(t.account||"")===String(sel.a.number)):all;
+  S.bridge=sel?sel.b:(S.bridges||[])[0]||null;
+  S.plan=sel?planWith(sel.a):Object.assign({},S.basePlan,{acct:null});
+}
+function setAcct(v){
+  S.acctSel=v||"";try{localStorage.setItem("tk-acct",S.acctSel)}catch(e){}
+  if(window.TkChart&&TkChart.current){TkChart.destroy();document.body.style.overflow=""}
+  applyAcct();S.lastView=null;render();
+  const sel=selAcct();toast(sel?"Viendo "+acctName(sel.a)+(sel.a.type?" · "+ATIPO[sel.a.type]:""):"Viendo todas las cuentas");
+}
+function acctNote(){const sel=selAcct();return sel?`<div class="small muted">Solo <b style="color:var(--tinta)">${esc(acctName(sel.a))}</b>${sel.a.type?" · "+ATIPO[sel.a.type]:""} · <button type="button" class="link" data-acct-all style="font-size:inherit">ver todas</button></div>`:`<div class="small muted">Todas tus cuentas juntas</div>`}
+function acctSwitch(cls){
+  const l=acctList().filter(x=>x.a.status!=="archivada"),sel=selAcct(),t=sel&&sel.a.type;
+  return `<label class="acsel ${cls||""}" title="Cambia de cuenta: todo se adapta a ella"><span class="aic">${SVG(sel?(ICA[t]||ICA.otra):'<rect x="3" y="4" width="6" height="5" rx="1.2"/><rect x="11" y="4" width="6" height="5" rx="1.2"/><rect x="3" y="11" width="6" height="5" rx="1.2"/><rect x="11" y="11" width="6" height="5" rx="1.2"/>',17)}</span>
+    <span class="acsel-t"><small>Cuenta</small><b>${sel?esc(acctName(sel.a)):"Todas las cuentas"}</b></span>${SVG('<path d="M6 8l4 4 4-4"/>',16,2)}
+    <select data-acct-sel aria-label="Cuenta que estás viendo"><option value="">Todas las cuentas</option>${l.map(x=>`<option value="${esc(acctKey(x))}" ${acctKey(x)===S.acctSel?"selected":""}>${esc(acctName(x.a))}${x.a.type?" · "+ATIPO[x.a.type]:" · sin datos"}</option>`).join("")}<option value="__manage">Gestionar cuentas…</option></select></label>`;
+}
 function acctCard({a,b}){
   const x=acctStats(a), on=isLive(b), hide=inSession(S.plan), i=(b&&b.last_info)||{};
   const head=`<div class="between" style="align-items:flex-start;gap:10px"><div class="row" style="gap:12px;min-width:0"><span class="aic">${SVG(ICA[a.type]||ICA.otra,20)}</span><div style="min-width:0"><b class="anum" style="font-size:17px">${esc(a.name||(a.number?"#"+a.number:"Cuenta"))}</b><div class="abro">${esc(a.broker||"Sin bróker")}${a.number?" · #"+esc(a.number):""}</div></div></div>
     <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">${a.type?`<span class="tag">${ATIPO[a.type]}</span>`:`<span class="tag warn">Sin datos</span>`}${a.type==="fondeo"&&a.phase?`<span class="tag">${AFASE[a.phase]}</span>`:""}${a.status&&a.status!=="activa"?`<span class="tag muted">${AEST[a.status]}</span>`:""}</div></div>`;
   const conn=`<div class="ast ${on?"on":""}" style="font-size:13.5px"><span class="dot" style="${b?"":"background:var(--borde)"}"></span>${b?(on?"Conectada a MT5":"MT5 sin señal"):"Sin conectar a MT5"}</div>`;
   const nums=`<div class="anums"><div><span>Operaciones</span><b>${x.st.n}</b></div><div><span>Acierto</span><b>${x.st.win==null?"—":num(x.st.win,0)+"%"}</b></div><div><span>Resultado</span><b>${x.st.n?fmtR(x.sum):"—"}</b></div><div><span>Saldo</span><b>${hide?SVG(IC2.lock,14)+" Oculto":i.balance!=null?esc(money(i.balance,i.currency)):nOr(a.size)?esc(money(a.size,a.currency))+"<small> inicial</small>":"—"}</b></div></div>`;
-  const acts=a.id?`<div class="row" style="gap:8px"><button type="button" class="btn2" data-aedit="${esc(a.id)}" style="height:36px">Editar</button>${a.number?`<a class="btn2" href="#progreso" data-aprog="${esc(a.number)}" style="height:36px">Ver progreso</a>`:""}</div>`:`<button type="button" class="btn" data-anew="${esc(a.number)}" style="height:38px">Añadir sus datos</button>`;
-  return `<article class="card stack acc2" style="gap:14px">${head}${conn}${nums}${goalsBlock(a,x)}${acts}</article>`;
+  const key=acctKey({a}),cur=S.acctSel===key;
+  const acts=a.id?`<div class="row" style="gap:8px;flex-wrap:wrap">${cur?`<span class="tag" style="height:36px;padding:0 14px">${SVG(IC2.check,14,2.4)} La estás viendo</span>`:`<button type="button" class="btn" data-ause="${esc(key)}" style="height:36px;font-size:13.5px">Usar esta cuenta</button>`}<button type="button" class="btn2" data-aedit="${esc(a.id)}" style="height:36px">Editar</button></div>`:`<button type="button" class="btn" data-anew="${esc(a.number)}" style="height:38px">Añadir sus datos</button>`;
+  return `<article class="card stack acc2 ${S.acctSel===acctKey({a})?"cur":""}" style="gap:14px">${head}${conn}${nums}${goalsBlock(a,x)}${acts}</article>`;
 }
 function vu(label,name,uname,a,ph){const u=a[uname]||"%";return `<div class="field"><span>${label}</span><div class="vu"><input class="input" name="${name}" value="${esc(a[name]==null?"":String(a[name]))}" inputmode="decimal" placeholder="${ph}" aria-label="${label}"><select class="input" name="${uname}" aria-label="Unidad de ${label.toLowerCase()}"><option value="%" ${u==="%"?"selected":""}>%</option><option value="R" ${u==="R"?"selected":""}>R</option></select></div></div>`}
 function goalRow(g){g=g||{metric:"gooddays",dir:"min",period:"mes"};const o=(m,c)=>Object.entries(m).map(([k,l])=>`<option value="${k}" ${c===k?"selected":""}>${Array.isArray(l)?l[0]:l}</option>`).join("");
@@ -891,7 +939,7 @@ function acctForm(){
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><span class="small muted">Empezar con:</span>${[["reto","Reto de fondeo típico"],["propia","Cuenta propia prudente"],["demo","Demo de práctica"],["vacio","Vacío"]].map(([k,l])=>`<button type="button" class="chipb" data-tpl="${k}">${l}</button>`).join("")}</div>
       <div class="fgrid">
         <label class="field only-fondeo"><span>Fase</span><select class="input" name="phase">${opt(AFASE,a.phase||"f1")}</select></label>
-        <label class="field"><span>Riesgo por operación aquí (%)</span><input class="input" name="risk" value="${v("risk")}" inputmode="decimal" placeholder="${esc(String(S.plan.riskPct))} (el de tu plan)"></label>
+        <label class="field"><span>Riesgo por operación aquí (%)</span><input class="input" name="risk" value="${v("risk")}" inputmode="decimal" placeholder="${esc(String((S.basePlan||S.plan).riskPct))} (el de tu plan)"></label>
         <label class="field"><span>Desde (fecha de inicio)</span><input class="input" type="date" name="start" value="${v("start")}"></label>
         ${vu("Objetivo de beneficio","target","targetU",a,"10")}
         ${vu("Pérdida máx. diaria","dailyDD","dailyU",a,"5")}
@@ -920,14 +968,17 @@ function viewCuentas(){
     <div class="small muted">Si una cuenta está conectada con el programa de MT5, sus operaciones aparecen solas. Para conectar otra cuenta, ve a <a href="#plan">Mi plan → Conectar MetaTrader 5</a> y repite el código en esa cuenta.</div>
   </div>`;
 }
-function acctRows(){
-  const all=acctList().filter(x=>x.a.status!=="archivada"), p=S.plan, hide=inSession(p), f=S.acctF||"todas";
-  const show=all.filter(x=>f==="todas"||x.a.type===f);
-  const rows=show.map(({a,b})=>{const i=(b&&b.last_info)||{},on=isLive(b),x=acctStats(a);
+function acctRowsHtml(list){const p=S.plan,hide=inSession(p);return list.map(({a,b})=>{const i=(b&&b.last_info)||{},on=isLive(b),x=acctStats(a);
     return `<div class="arow"><div style="min-width:0"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="anum">${esc(a.name||"#"+(a.number||"—"))}</b>${a.type?`<span class="tag">${ATIPO[a.type]}${a.type==="fondeo"&&a.phase?" · "+AFASE[a.phase]:""}</span>`:`<a class="tag warn" href="#cuentas">Añadir datos</a>`}</div><div class="abro">${esc(a.broker||i.broker||"Bróker")}${a.name&&a.number?" · #"+esc(a.number):""}</div></div>
       <div class="ast ${on?"on":""}"><span class="dot" style="${b?"":"background:var(--borde)"}"></span>${b?(on?"Conectada":"Sin señal"):"Sin MT5"}</div>
       <div class="abal2"><div>Saldo: <b>${hide?"———":i.balance!=null?esc(money(i.balance,i.currency)):nOr(a.size)?esc(money(a.size,a.currency)):"—"}</b></div><div>Hoy: <b class="acc">${fmtR(x.today)}</b></div></div>
-      <a class="amore" href="#cuentas" aria-label="Ver la cuenta">${SVG(IC2.dots,18)}</a></div>`}).join("");
+      <a class="amore" href="#cuentas" aria-label="Ver la cuenta">${SVG(IC2.dots,18)}</a></div>`}).join("")}
+function acctRows(){
+  const one=selAcct();
+  if(one){const x=acctStats(one.a),gb=goalsBlock(one.a,x);return `<section class="stack" style="gap:12px"><div class="row" style="gap:14px;flex-wrap:wrap"><h2 class="h2b">Tu cuenta</h2><button type="button" class="link" data-acct-all style="margin-left:auto;font-size:14px">Ver todas</button></div>${acctRowsHtml([one])}${gb?`<div class="card">${gb}</div>`:""}</section>`}
+  const all=acctList().filter(x=>x.a.status!=="archivada"), p=S.plan, hide=inSession(p), f=S.acctF||"todas";
+  const show=all.filter(x=>f==="todas"||x.a.type===f);
+  const rows=acctRowsHtml(show);
   const types=["fondeo","propia","demo"].filter(k=>all.some(x=>x.a.type===k));
   return `<section class="stack" style="gap:12px"><div class="row" style="gap:14px;flex-wrap:wrap"><h2 class="h2b">Tus cuentas</h2>${types.length>1?`<div class="pills" role="group" aria-label="Filtrar cuentas">${["todas"].concat(types).map(k=>`<button type="button" data-acctf="${k}" aria-pressed="${f===k}">${k==="todas"?"Todas":ATIPO[k]}</button>`).join("")}</div>`:""}<a class="link" href="#cuentas" style="margin-left:auto;font-size:14px">+ Añadir cuenta</a></div>
     ${all.length?(rows||`<div class="card small muted">No hay cuentas en este filtro.</div>`):`<a class="card arow" href="#cuentas" style="text-decoration:none"><div><b class="anum">Añade tus cuentas</b><div class="abro">Demo, fondeo o capital propio</div></div><span class="btn" style="height:38px">Añadir</span></a>`}</section>`;
@@ -1022,8 +1073,7 @@ function curveSvg(c){
   const pts=c.map((v,i)=>X(i).toFixed(1)+","+Y(v).toFixed(1)).join(" ");
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:130px;display:block" role="img" aria-label="Curva de resultados en R: ${fmtR(c[c.length-1])}"><line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--linea)" stroke-dasharray="4 4"/><polygon points="0,${Y(0)} ${pts} ${W},${Y(0)}" fill="var(--cobaltoA)"/><polyline points="${pts}" fill="none" stroke="var(--cobalto)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
 }
-function viewProgreso(){const all=S.trades;if(S.progA)S.trades=all.filter(t=>String(t.account||"")===S.progA);try{return viewProgreso0()}finally{S.trades=all}}
-function viewProgreso0(){
+function viewProgreso(){
   const now=new Date(), y=now.getFullYear(), mo=now.getMonth();
   const month=S.trades.filter(t=>{const d=new Date(t.open_time);return d.getFullYear()===y&&d.getMonth()===mo&&t.status==="closed"}).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time));
   const evs=month.map(t=>({t,ev:evaluate(t)}));
@@ -1050,7 +1100,7 @@ function viewProgreso0(){
   const ring=v=>{const a=Math.max(0,Math.min(100,v||0))/100,C=2*Math.PI*20;return `<svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="20" fill="none" stroke="var(--linea)" stroke-width="6"/><circle cx="27" cy="27" r="20" fill="none" stroke="var(--cobalto)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C*a).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 27 27)" style="filter:drop-shadow(0 0 4px var(--cobalto))"/></svg>`};
   const fpf=v=>v==null?"—":v===Infinity?"∞":num(v,2);
   return `<div class="stack">
-    <div class="ptop"><div class="row" style="gap:14px;flex-wrap:wrap"><h1>Progreso</h1>${(()=>{const l=acctList().filter(x=>x.a.number);return l.length>1||S.progA?`<select class="input" id="progA" aria-label="Cuenta" style="height:36px;width:auto;border-radius:999px;font-size:13px"><option value="">Todas las cuentas</option>${l.map(({a})=>`<option value="${esc(a.number)}" ${S.progA===String(a.number)?"selected":""}>${esc((a.name||"#"+a.number)+(a.type?" · "+ATIPO[a.type]:""))}</option>`).join("")}</select>`:""})()}</div><div class="pseg" role="group" aria-label="Periodo">${["6M","3M","1M"].map(k=>`<button type="button" data-per="${k}" aria-pressed="${P===k}">${k}</button>`).join("")}</div></div>
+    <div class="ptop"><div class="stack" style="gap:4px"><h1>Progreso</h1>${acctNote()}</div><div class="pseg" role="group" aria-label="Periodo">${["6M","3M","1M"].map(k=>`<button type="button" data-per="${k}" aria-pressed="${P===k}">${k}</button>`).join("")}</div></div>
     <div class="pk"><div class="pkc"><b>${pst.n?fmtR(pst.tot):"0,0 R"}</b><span>Resultado total</span><div class="k3v">${spark(pcum,110,46)}</div></div><div class="pkc"><b>${pst.win==null?"—":num(pst.win,0)+"%"}</b><span>Acierto</span><div class="k3v">${ring(pst.win)}</div></div></div>
     <div class="card"><div class="mbars" role="img" aria-label="Resultado por mes en R">${months.map(m=>`<div title="${m.l}: ${fmtR(m.r)}"><i class="${m.r<0?"neg":""}" style="height:${Math.max(4,Math.abs(m.r)/mx*110).toFixed(0)}px"></i><small>${m.l}</small></div>`).join("")}</div></div>
     <h2 class="h2b">Resumen</h2>
@@ -1237,7 +1287,7 @@ function mt5Provider(sym){
 async function mountChart(){
   let el=document.getElementById("tkchart");if(!el||!window.TkChart)return;
   if(TkChart.current&&TkChart.current.el===el)return;
-  try{const {data}=await sb.from("bridge_keys").select("key_hash,created_at,last_seen,last_info").order("last_seen",{ascending:false}).limit(1);if(data&&data[0])S.bridge=data[0]}catch(e){/* seguimos con lo que había */}
+  try{await refreshBridges()}catch(e){/* seguimos con lo que había */}
   el=document.getElementById("tkchart");if(!el||(TkChart.current&&TkChart.current.el===el))return;
   TkChart.mount(el,{
     sym:S.an.sym,dark:isDark(),
@@ -1261,17 +1311,17 @@ function viewSoon(title,text){
 }
 
 function viewPlan(){
-  const p=S.plan, d=S.planDoc||{}, b=S.bridge, health=S.consents.health===true;
+  const p=S.basePlan||S.plan, ep=S.plan, d=S.planDoc||{}, b=S.bridge, health=S.consents.health===true;
   const live=b&&b.last_seen&&(Date.now()-new Date(b.last_seen))<15*60*1000;
   const info=b&&b.last_info||{};
   const pend=d.pending&&d.pendingFrom>todayKey()?`<div class="small" style="background:var(--cobaltoC);color:var(--cobalto);border-radius:10px;padding:8px 10px">Tienes cambios guardados que valen desde mañana.</div>`:"";
   const rules=(p.rules||[]).map((r,i)=>`<div class="si" style="gap:6px 8px"><b>SI</b><input class="input" style="height:40px" data-rule="${i}" data-part="si" value="${esc(r.si)}" aria-label="Norma ${i+1}: si"><b>→</b><input class="input" style="height:40px" data-rule="${i}" data-part="entonces" value="${esc(r.entonces)}" aria-label="Norma ${i+1}: entonces"></div>`).join("");
   return `<div class="stack">
-    <div class="ptop"><div class="stack" style="gap:4px"><h1>Mi plan de hoy</h1><div class="small muted">Lo decides en frío, nunca en sesión</div></div><a class="btn2" href="#planForm" id="planEdit" style="height:36px">Editar</a></div>
+    <div class="ptop"><div class="stack" style="gap:4px"><h1>Mi plan de hoy</h1>${ep.acct?acctNote():`<div class="small muted">Lo decides en frío, nunca en sesión</div>`}</div><a class="btn2" href="#planForm" id="planEdit" style="height:36px">Editar</a></div>
     <div class="plan5">
-      <div class="pkc"><span>Riesgo</span><b>${fmtPct(p.riskPct)}</b><span>= 1 R por operación</span></div>
-      <div class="pkc"><span>Máx. operaciones</span><b>${p.maxTrades}</b></div>
-      <div class="pkc"><span>Límite del día</span><b>${num(p.dayLimitR,1)} R</b></div>
+      <div class="pkc"><span>Riesgo</span><b>${fmtPct(ep.riskPct)}</b><span>${ep.acct&&ep.acct.risk?"de la cuenta "+esc(ep.acct.name):"= 1 R por operación"}</span></div>
+      <div class="pkc"><span>Máx. operaciones</span><b>${ep.maxTrades}</b>${ep.acct&&ep.acct.trades?`<span>de la cuenta ${esc(ep.acct.name)}</span>`:""}</div>
+      <div class="pkc"><span>Límite del día</span><b>${num(ep.dayLimitR,1)} R</b>${ep.acct&&ep.acct.day?`<span>lo marca ${esc(ep.acct.name)}</span>`:""}</div>
       <div class="pkc"><span>Horario</span><b>${esc(p.start)} – ${esc(p.end)}</b></div>
       <div class="pkc wide"><span>Si pasa esto → hago esto:</span>${(p.rules||[]).length?(p.rules||[]).map(r=>`<div style="font-size:14.5px;margin-top:6px">Si ${esc(r.si.replace(/,$/,""))} → ${esc(r.entonces)}</div>`).join(""):`<div class="small muted" style="margin-top:6px">Aún sin normas. Añádelas con Editar.</div>`}</div>
     </div>
@@ -1279,6 +1329,7 @@ function viewPlan(){
     <div class="grid2 even">
     <form class="card stack" id="planForm">
       <div class="between"><h2>Tu plan de cada día</h2></div>
+      ${ep.acct?`<div class="small" style="background:var(--cobaltoC);border-radius:10px;padding:8px 10px;color:var(--tinta2)">Este es tu plan general, para todas las cuentas. Lo propio de <b>${esc(ep.acct.name)}</b> (riesgo, operaciones, límites y metas) se cambia en <a href="#cuentas">Cuentas</a>.</div>`:""}
       ${pend}
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
         <label class="field"><span>Riesgo por operación (%)</span><input class="input mono" name="riskPct" type="number" min="0.05" max="5" step="0.05" value="${p.riskPct}" required></label>
@@ -1381,6 +1432,9 @@ function render(){
   $app.innerHTML=shell(r.view==="op"?"hoy":r.view,content);
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{applyTheme(b.dataset.themeSet);document.querySelectorAll("[data-theme-set]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.themeSet===b.dataset.themeSet)));refreshWidgets()});
   document.querySelectorAll("[data-theme-toggle]").forEach(b=>b.onclick=()=>{applyTheme(isDark()?"light":"dark");refreshWidgets()});
+  document.querySelectorAll("[data-acct-sel]").forEach(x=>x.onchange=()=>{if(x.value==="__manage"){x.value=S.acctSel;location.hash="#cuentas";return}setAcct(x.value)});
+  document.querySelectorAll("[data-acct-all]").forEach(b=>b.onclick=()=>setAcct(""));
+  document.querySelectorAll("[data-ause]").forEach(b=>b.onclick=()=>setAcct(b.dataset.ause));
   bindView(r);
 }
 function bindAuth(){
@@ -1418,7 +1472,6 @@ function bindConsent(){
   };
 }
 function bindView(r){
-  document.querySelectorAll("[data-aprog]").forEach(b=>b.onclick=()=>{S.progA=b.dataset.aprog});
   if(r.view==="cuentas"){
     document.querySelectorAll("[data-acctt]").forEach(b=>b.onclick=()=>{S.acctT=b.dataset.acctt;S.lastView=null;render()});
     const open=v=>{S.acctEdit=v;S.lastView=null;render();window.scrollTo({top:0,behavior:"smooth"})};
@@ -1474,7 +1527,7 @@ function bindView(r){
     document.onkeydown=e=>{if(e.key==="Escape"&&card.classList.contains("full")){const fb=card.querySelector('[data-act="full"]');if(fb)fb.click()}};
     mountTicker();mountChart();paintAnalizar();
   }
-  if(r.view==="progreso"){const pa=document.getElementById("progA");if(pa)pa.onchange=()=>{S.progA=pa.value;S.lastView=null;render()};document.querySelectorAll("[data-per]").forEach(b=>b.onclick=()=>{S.progP=b.dataset.per;S.lastView=null;render()})}
+  if(r.view==="progreso"){document.querySelectorAll("[data-per]").forEach(b=>b.onclick=()=>{S.progP=b.dataset.per;S.lastView=null;render()})}
   if(r.view==="hoy"){document.querySelectorAll(".heat").forEach(h=>h.scrollLeft=h.scrollWidth);document.querySelectorAll("[data-acctf]").forEach(b=>b.onclick=()=>{S.acctF=b.dataset.acctf;S.lastView=null;render()})}
   if(r.view==="op"){
     const t=S.trades.find(x=>x.id===r.id);if(!t)return;
@@ -1550,7 +1603,7 @@ function confirmInline(id,msg){const b=document.getElementById(id);if(b.dataset.
 
 window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
 setInterval(()=>{if(S.user&&S.loaded&&!document.activeElement.matches("input,textarea"))render()},60000);
-async function refreshBridges(){const {data}=await sb.from("bridge_keys").select("key_hash,created_at,last_seen,last_info").order("last_seen",{ascending:false,nullsFirst:false});if(data){S.bridges=data;S.bridge=data[0]||null}}
+async function refreshBridges(){const {data}=await sb.from("bridge_keys").select("key_hash,created_at,last_seen,last_info").order("last_seen",{ascending:false,nullsFirst:false});if(data){S.bridges=data;applyAcct()}}
 setInterval(()=>{if(S.user&&S.loaded)refreshBridges()},300000);
 
 async function onSession(session,event){
