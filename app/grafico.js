@@ -598,6 +598,8 @@
     tree: '<path d="M4 4h5M4 10h5M4 16h5"/><rect x="11" y="2.5" width="6" height="3" rx="1"/><rect x="11" y="8.5" width="6" height="3" rx="1"/><rect x="11" y="14.5" width="6" height="3" rx="1"/>',
     star: '<path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z"/>',
     starOn: '<path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z" fill="currentColor"/>',
+    chevL: '<path d="M12 5l-5 5 5 5"/>',
+    chevR: '<path d="M8 5l5 5-5 5"/>',
     grip: '<circle cx="7" cy="5" r="1.1" fill="currentColor"/><circle cx="13" cy="5" r="1.1" fill="currentColor"/><circle cx="7" cy="10" r="1.1" fill="currentColor"/><circle cx="13" cy="10" r="1.1" fill="currentColor"/><circle cx="7" cy="15" r="1.1" fill="currentColor"/><circle cx="13" cy="15" r="1.1" fill="currentColor"/>',
     eyeOff: '<path d="M2 10s3-6 8-6c2 0 3.6.9 4.9 2M18 10s-3 6-8 6c-2 0-3.6-.9-4.9-2M3 17L17 3"/>'
   };
@@ -720,9 +722,10 @@
           <button type="button" class="gx-tool" data-act="clear" aria-label="Borrar todos los dibujos de este mercado" title="Borrar todos los dibujos de este mercado">${icon("trash")}</button>
           <span class="gx-tsep"></span>
           <button type="button" class="gx-tool" data-act="tree" aria-label="Lista de dibujos" title="Lista de dibujos">${icon("tree")}</button>
+          <button type="button" class="gx-tool gx-hidet" data-act="hidetools" aria-label="Guardar la barra de herramientas" title="Guardar la barra de herramientas">${icon("chevL")}</button>
           <button type="button" class="gx-tool" data-act="favbar" aria-pressed="${st.favShow}" aria-label="Barra de favoritos" title="Barra de favoritos (marca herramientas con la estrella)">${icon(st.favShow ? "starOn" : "star")}</button>
         </div>
-        <div class="gx-canvas"><div class="gx-chart"></div><svg class="gx-free" hidden aria-hidden="true"></svg><div class="gx-favbar" hidden role="toolbar" aria-label="Herramientas favoritas"><span class="gx-fgrip" title="Arrastra para mover">${icon("grip", 16)}</span><div class="gx-favs"></div></div><div class="gx-btbadge" hidden>Backtesting · <span></span></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
+        <div class="gx-canvas"><button type="button" class="gx-showtools" data-act="showtools" aria-label="Mostrar la barra de herramientas" title="Mostrar la barra de herramientas">${icon("chevR", 14)}</button><div class="gx-chart"></div><svg class="gx-free" hidden aria-hidden="true"></svg><div class="gx-favbar" hidden role="toolbar" aria-label="Herramientas favoritas"><span class="gx-fgrip" title="Arrastra para mover">${icon("grip", 16)}</span><div class="gx-favs"></div></div><div class="gx-btbadge" hidden>Backtesting · <span></span></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
           <div class="gx-float" hidden role="toolbar" aria-label="Dibujo elegido">
             <div class="gx-sw">${PALETTE.map(c => `<button type="button" class="gx-c" data-color="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join("")}<label class="gx-cc" title="Otro color"><input type="color" data-f="color" aria-label="Otro color"></label></div>
             <span class="gx-vs"></span>
@@ -1320,6 +1323,7 @@
       if (a === "stay") { st.stay = !st.stay; ls.set("tk-stay", st.stay); t.setAttribute("aria-pressed", String(st.stay)); hint(st.stay ? "Seguir dibujando: activado" : "Seguir dibujando: desactivado"); setTimeout(() => hint(""), 1500); return; }
       if (a === "zoom") { try { ch.zoomAtCoordinate(e.shiftKey ? 0.75 : 1.35, undefined, 160); } catch (x) { /* sin zoom */ } return; }
       if (a === "tree") { modalTree(); return; }
+      if (a === "hidetools" || a === "showtools") { const h = a === "hidetools"; ls.set("tk-notools", h); el.querySelector(".gx").classList.toggle("notools", h); setTimeout(() => ch.resize(), 30); return; }
       if (a === "favbar") { st.favShow = !st.favShow; ls.set("tk-favshow", st.favShow); renderFav(); if (st.favShow && !st.fav.length) { hint("Marca herramientas con la estrella en sus menús para verlas aquí."); setTimeout(() => hint(""), 3000); } return; }
       if (a === "lockall") { st.locked = !st.locked; t.setAttribute("aria-pressed", String(st.locked)); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, lock: st.locked })); return; }
       if (a === "hide") { st.hidden = !st.hidden; t.setAttribute("aria-pressed", String(st.hidden)); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, visible: !st.hidden })); return; }
@@ -1377,6 +1381,7 @@
     };
     ALL.add(me); ALL.forEach(x => x.el.classList.toggle("tk-act", x === me));
     load(); applyInd(); restore(); renderFav(); applyCursor();
+    if (ls.get("tk-notools", false)) el.querySelector(".gx").classList.add("notools");
     if (st.baseCur !== "cursor") $$("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === st.baseCur)));
     return me;
   }
