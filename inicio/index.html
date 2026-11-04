@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tickora · El diario de trading que te ayuda a cumplir tu plan</title>
+<meta name="description" content="Tus operaciones de MetaTrader 5 se apuntan solas, con la foto del gráfico. Tickora revisa cada una contra tu plan, te frena a tiempo y mide tu disciplina en R.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300..800&family=JetBrains+Mono:wght@400..700&display=swap">
+<script>
+/* tema: ?tema=claro|oscuro, o lo último que eligió esta persona */
+(function(){try{var q=new URLSearchParams(location.search).get("tema");var t=q==="claro"?"light":q==="oscuro"?"dark":localStorage.getItem("tk-landing-tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}})();
+</script>
+<style>
+:root{
+  --sans:'Sora',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  --maxw:1180px;--r:18px;
+}
+:root[data-theme="light"]{
+  --bg:#f2f4f7;--bg2:#e9edf3;--card:#ffffff;--card2:#f7f8fb;--ink:#14213a;--ink2:#2a3651;--soft:#556079;--line:#e1e6ee;--line2:#c9d1de;
+  --acc:#2443c7;--acc2:#16298a;--accC:#eef1fb;--accA:rgba(36,67,199,.14);--hl:linear-gradient(transparent 58%,#fbe27a 58%);--hlText:#14213a;
+  --glow:rgba(36,67,199,.16);--grid:rgba(20,33,58,.06);--shadow:0 30px 80px -30px rgba(20,33,58,.35);--onAcc:#fff;
+  --good:#2f8f67;--goodB:#e2f2ea;--warn:#7a4f0f;--warnB:#fbf0da;--candUp:#2443c7;--candDn:#14213a;
+}
+:root[data-theme="dark"]{
+  --bg:#070b16;--bg2:#0b1120;--card:#0f1626;--card2:#131c30;--ink:#eef1f8;--ink2:#c6cee0;--soft:#8f9ab3;--line:#1d2741;--line2:#2c3958;
+  --acc:#7b93ff;--acc2:#a3b4ff;--accC:#18224a;--accA:rgba(123,147,255,.18);--hl:linear-gradient(transparent 80%,#fbe27a 80%,#fbe27a 90%,transparent 90%);--hlText:#ffffff;
+  --glow:rgba(91,120,255,.30);--grid:rgba(160,180,255,.07);--shadow:0 40px 120px -40px rgba(0,0,0,.9);--onAcc:#0a1022;
+  --good:#4fbf8f;--goodB:#12302a;--warn:#f0c674;--warnB:#2f2614;--candUp:#7b93ff;--candDn:#c6cee0;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s}
+a{color:inherit}
+img,svg{display:block}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+.mono{font-family:var(--mono)}
+.hl{background:var(--hl);padding:0 .08em;color:var(--hlText)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);font-weight:600}
+h1,h2,h3{margin:0;letter-spacing:-.025em;line-height:1.05}
+h2{font-size:clamp(30px,4.2vw,48px);font-weight:800}
+h3{font-size:22px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
+p{margin:0}
+.lead{font-size:clamp(16px,1.6vw,19px);color:var(--soft);max-width:640px}
+.btn{display:inline-flex;align-items:center;gap:10px;height:50px;padding:0 22px;border-radius:999px;font-weight:700;font-size:15px;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:transform .15s,box-shadow .2s,background .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn-p{background:var(--acc);color:var(--onAcc);box-shadow:0 10px 30px -8px var(--glow)}
+.btn-p:hover{box-shadow:0 16px 40px -8px var(--glow)}
+.btn-s{background:transparent;color:var(--ink);border-color:var(--line2)}
+.btn-s:hover{border-color:var(--acc)}
+.btn svg{width:18px;height:18px}
+section{position:relative}
+.sec{padding:110px 0}
+.sec-h{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;margin-bottom:56px}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.float{animation:none!important}html{scroll-behavior:auto}}
+
+/* aviso superior y cabecera */
+.bar{background:var(--acc);color:var(--onAcc);font-size:13px;text-align:center;padding:8px 16px}
+.bar a{font-weight:700;text-decoration:none}
+.nav{position:sticky;top:12px;z-index:50;margin:12px auto 0;max-width:var(--maxw);padding:0 12px}
+.nav-in{display:flex;align-items:center;gap:18px;height:62px;padding:0 10px 0 18px;border-radius:18px;background:color-mix(in srgb,var(--card) 72%,transparent);border:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.02em;text-decoration:none}
+.logo i{width:30px;height:30px;border-radius:9px;background:var(--ink);display:flex;align-items:center;justify-content:center}
+.logo i::after{content:"";width:6px;height:16px;border-radius:2px;background:#fbe27a;box-shadow:0 -4px 0 -2px #fbe27a,0 4px 0 -2px #fbe27a}
+.links{display:flex;gap:4px;margin-left:12px}
+.links a{font-size:14px;color:var(--ink2);text-decoration:none;padding:8px 12px;border-radius:10px}
+.links a:hover{background:var(--card2);color:var(--ink)}
+.nav-sp{flex:1}
+.theme{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.theme svg{width:16px;height:16px}
+.nav .btn{height:42px;padding:0 18px;font-size:14px}
+.enter{font-size:14px;text-decoration:none;color:var(--ink2);padding:8px 10px}
+
+/* portada */
+.hero{padding:70px 0 40px;overflow:hidden}
+.hero-bg{position:absolute;inset:-200px 0 0;pointer-events:none;background:
+  radial-gradient(600px 380px at 50% 18%,var(--glow),transparent 70%),
+  radial-gradient(500px 300px at 85% 60%,color-mix(in srgb,var(--glow) 60%,transparent),transparent 70%);
+}
+.hero-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,#000 30%,transparent 75%)}
+.hero-in{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px}
+.pill{display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border-radius:999px;border:1px solid var(--line2);background:color-mix(in srgb,var(--card) 60%,transparent);font-size:13px;color:var(--ink2);text-decoration:none}
+.pill b{background:var(--acc);color:var(--onAcc);border-radius:999px;padding:3px 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono)}
+.hero h1{font-size:clamp(44px,7.6vw,92px);font-weight:800;letter-spacing:-.045em;max-width:980px}
+.hero h1 .hl{border-radius:4px}
+.hero .lead{text-align:center;max-width:700px;font-size:clamp(16px,1.8vw,20px)}
+.ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.note{font-size:13px;color:var(--soft);display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.note span{display:inline-flex;align-items:center;gap:6px}
+.note svg{width:14px;height:14px;color:var(--good)}
+
+/* maqueta de la app */
+.stage{position:relative;margin:56px auto 0;max-width:1080px}
+.frame{position:relative;border-radius:22px;padding:10px;background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 40%,var(--line2)),var(--line));box-shadow:var(--shadow)}
+.frame::before{content:"";position:absolute;inset:-1px;border-radius:23px;background:radial-gradient(400px 120px at 50% 0,var(--glow),transparent);pointer-events:none}
+.app{position:relative;border-radius:14px;background:var(--bg);overflow:hidden;display:grid;grid-template-columns:190px minmax(0,1fr);min-height:520px;text-align:left}
+.app-side{border-right:1px solid var(--line);background:var(--card);padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.app-side .lg{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;padding:4px 6px 14px}
+.app-side .lg i{width:22px;height:22px;border-radius:7px;background:var(--ink)}
+.app-side a{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink2);padding:8px 10px;border-radius:9px;text-decoration:none}
+.app-side a.on{background:var(--accC);color:var(--acc);font-weight:700}
+.app-side a i{width:14px;height:14px;border-radius:4px;border:1.6px solid currentColor}
+.app-main{padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.app-top{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.app-top small{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--soft)}
+.app-top h4{margin:2px 0 0;font-size:24px;letter-spacing:-.02em}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--good)}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 25%,transparent)}
+.app-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:14px}
+.tk{background:var(--card);border-radius:14px 14px 0 0;padding:16px 16px 10px;display:flex;flex-direction:column;gap:9px;position:relative}
+.tk::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:10px;background:linear-gradient(135deg,var(--card) 50%,transparent 50%) 0 0/10px 10px repeat-x,linear-gradient(225deg,var(--card) 50%,transparent 50%) 0 0/10px 10px repeat-x;transform:rotate(180deg)}
+.tk-h{display:flex;justify-content:space-between;align-items:baseline}
+.tk-h b{font-size:12px;letter-spacing:.2em}
+.tk-h span,.lbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--soft);text-transform:uppercase}
+.cut{border-top:1.5px dashed var(--line2)}
+.ldr{display:flex;gap:6px;align-items:baseline;font-family:var(--mono);font-size:11.5px}
+.ldr i{flex:1;border-bottom:1.5px dotted var(--line2);transform:translateY(-3px)}
+.sub{font-size:10.5px;color:var(--soft);display:flex;gap:5px;align-items:center;margin-top:-4px}
+.tot{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono)}
+.tot b{font-size:12px}.tot strong{font-size:30px;letter-spacing:-.02em}
+.chartc{background:var(--card);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:260px}
+.chartc .row{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px}
+.chartc .row b{font-size:12px}
+.tfs{display:flex;gap:3px;background:var(--card2);border-radius:8px;padding:2px}
+.tfs span{font-family:var(--mono);font-size:10px;padding:3px 7px;border-radius:6px;color:var(--soft)}
+.tfs span.on{background:var(--card);color:var(--ink);font-weight:700}
+#heroChart{width:100%;height:auto;flex:1}
+.stub{background:var(--card);border-radius:14px;display:grid;grid-template-columns:1fr auto;grid-column:1/-1}
+.stub>div{padding:12px 16px}
+.stub .a{border-right:2px dashed var(--line2);display:flex;flex-direction:column;gap:4px}
+.stub .a strong{font-family:var(--mono);font-size:22px;letter-spacing:-.02em}
+.stub .b{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:110px}
+.stub .b strong{font-family:var(--mono);font-size:24px;color:var(--acc)}
+.bars{grid-column:1/-1;border-top:2px dashed var(--line2);padding:10px 16px 12px!important}
+.bars svg{width:100%;height:30px}
+
+/* tarjetas flotantes */
+.fc{position:absolute;z-index:3;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--card) 88%,transparent);border:1px solid var(--line2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 18px 40px -16px rgba(0,0,0,.45);text-align:left;min-width:210px}
+.fc .ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.fc .ic svg{width:18px;height:18px}
+.fc small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--soft);text-transform:uppercase}
+.fc b{display:block;font-size:14px;letter-spacing:-.01em}
+.fc .stamp{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--acc);border:1.5px dashed var(--acc);border-radius:7px;padding:3px 8px;transform:rotate(-2deg)}
+.f1{left:-46px;top:90px}.f2{right:-40px;top:60px}.f3{left:-40px;bottom:-26px}.f4{right:-52px;bottom:120px}
+.float{animation:bob 6s ease-in-out infinite}.f2{animation-delay:-1.5s}.f3{animation-delay:-3s}.f4{animation-delay:-4.5s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+/* fila de herramientas */
+.tools{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:70px}
+.tool{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 10px;border-radius:16px;text-decoration:none;color:var(--ink2);font-size:13px;font-weight:600;text-align:center;border:1px solid transparent;transition:border-color .2s,background .2s}
+.tool:hover{border-color:var(--line2);background:var(--card)}
+.tool i{width:48px;height:48px;border-radius:14px;background:var(--accC);color:var(--acc);display:flex;align-items:center;justify-content:center}
+.tool i svg{width:22px;height:22px}
+
+/* pasos */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;counter-reset:s}
+.step{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:28px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.step .n{font-family:var(--mono);font-size:12px;color:var(--acc);font-weight:700;letter-spacing:.1em}
+.step p{color:var(--soft);font-size:15px}
+.step .vis{margin-top:auto;padding-top:16px}
+.code{display:flex;gap:6px}
+.code span{width:38px;height:46px;border-radius:10px;background:var(--card2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:22px;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line)}
+
+/* pestañas de funciones */
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:28px}
+.tabs button{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line2);background:var(--card);color:var(--ink2);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.tabs button svg{width:16px;height:16px}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.panel{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:40px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:26px;padding:44px}
+.panel[hidden]{display:none}
+.panel .txt{display:flex;flex-direction:column;gap:16px}
+.panel .txt p{color:var(--soft)}
+.ticks{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ticks li{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.ticks li::before{content:"";flex:none;width:20px;height:20px;border-radius:50%;margin-top:2px;background:var(--accC) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='%237b93ff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat}
+:root[data-theme="light"] .ticks li::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='%232443c7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.vis-box{background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:20px;min-height:320px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+.mini{background:var(--card);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;border:1px solid var(--line)}
+.mini .th{width:64px;height:40px;border-radius:8px;background:var(--card2);border:1px solid var(--line);flex:none;overflow:hidden}
+.mini .grow{flex:1;min-width:0}
+.mini b{font-size:14px;display:block}
+.mini small{font-size:12px;color:var(--soft)}
+.mini .r{font-family:var(--mono);font-weight:700}
+.check{display:flex;gap:10px;align-items:center;font-size:14px}
+.check svg{width:16px;height:16px;flex:none}
+.callout{display:flex;gap:10px;padding:12px 14px;border-radius:12px;background:var(--warnB);color:var(--warn);font-size:14px}
+.sem{display:flex;gap:14px;align-items:center}
+.sem i{width:54px;height:54px;border-radius:50%;opacity:.25}
+.sem i.on{opacity:1;box-shadow:0 0 0 6px color-mix(in srgb,currentColor 20%,transparent)}
+.steps4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.steps4 div{border-radius:10px;padding:10px;background:var(--card);border:1px solid var(--line);font-size:12px}
+.steps4 div b{display:block;font-family:var(--mono);font-size:11px;color:var(--acc)}
+.steps4 div.on{border-color:var(--acc);background:var(--accC)}
+.rbars{display:flex;align-items:flex-end;gap:8px;height:150px;padding:0 4px;border-bottom:1px solid var(--line2)}
+.rbars span{flex:1;border-radius:4px 4px 0 0;background:var(--acc)}
+.rbars span.neg{background:transparent;border:1.5px solid var(--candDn);border-bottom:0}
+.rbars span.av{background:repeating-linear-gradient(135deg,var(--line2) 0 4px,transparent 4px 8px);border:1.5px solid var(--line2);border-bottom:0}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kpis div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpis small{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--soft);text-transform:uppercase;display:block}
+.kpis b{font-family:var(--mono);font-size:20px}
+
+/* psicología */
+.psy{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.rule{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:10px}
+.rule .big{font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--acc)}
+.rule p{color:var(--soft);font-size:14.5px}
+.quote{margin-top:22px;text-align:center;font-size:clamp(20px,2.6vw,30px);font-weight:700;letter-spacing:-.02em;max-width:820px;margin-left:auto;margin-right:auto}
+
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
+.bx{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px;display:flex;flex-direction:column;gap:12px;overflow:hidden;position:relative;min-height:240px}
+.bx p{color:var(--soft);font-size:15px}
+.b1{grid-column:span 4}.b2{grid-column:span 2}.b3{grid-column:span 2}.b4{grid-column:span 2}.b5{grid-column:span 2}
+.dev{display:flex;gap:14px;align-items:flex-end;margin-top:auto}
+.dev .lap{flex:1;height:120px;border-radius:12px 12px 4px 4px;border:1px solid var(--line2);background:var(--bg);padding:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.dev .lap i,.dev .ph i{border-radius:6px;background:var(--card2)}
+.dev .ph{width:64px;height:130px;border-radius:14px;border:1px solid var(--line2);background:var(--bg);padding:8px 6px;display:flex;flex-direction:column;gap:5px}
+.dev .ph i{flex:1}
+.mk{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.mk span{font-family:var(--mono);font-size:12px;padding:5px 9px;border-radius:999px;border:1px solid var(--line2)}
+.snap{margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.snap div{height:70px;border-radius:10px;background:var(--bg);border:1px solid var(--line);position:relative;overflow:hidden}
+.snap small{position:absolute;left:6px;bottom:4px;font-family:var(--mono);font-size:9px;color:var(--soft)}
+
+/* precio */
+.price{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;max-width:900px;margin:0 auto}
+.pc{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:14px}
+.pc.main{border-color:var(--acc);box-shadow:0 30px 70px -40px var(--glow)}
+.pc .amt{font-family:var(--mono);font-size:52px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.pc .amt small{font-size:15px;color:var(--soft);font-weight:400;letter-spacing:0}
+.pc p{color:var(--soft)}
+.tag{align-self:flex-start;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--accC);color:var(--acc);font-weight:700}
+
+/* preguntas */
+.faq{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+details{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 22px}
+summary{list-style:none;cursor:pointer;padding:20px 0;font-weight:700;font-size:16px;display:flex;justify-content:space-between;gap:16px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--mono);font-size:22px;color:var(--acc);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--soft);padding:0 0 20px}
+
+/* final y pie */
+.final{text-align:center;padding:110px 20px;border-radius:32px;margin:0 20px;background:radial-gradient(600px 300px at 50% 0,var(--glow),transparent 70%),var(--card);border:1px solid var(--line);position:relative;overflow:hidden}
+.final h2{font-size:clamp(34px,5vw,60px);max-width:820px;margin:0 auto 18px}
+.final .lead{margin:0 auto 30px;text-align:center}
+footer{padding:70px 0 40px;color:var(--soft);font-size:14px}
+.foot{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:30px}
+.foot h5{margin:0 0 12px;color:var(--ink);font-size:13px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.foot a{display:block;text-decoration:none;padding:4px 0}
+.foot a:hover{color:var(--ink)}
+.risk{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);font-size:12.5px;line-height:1.6}
+
+/* comparar estilos */
+.cmp{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;align-items:center;gap:4px;padding:4px;border-radius:999px;background:var(--card);border:1px solid var(--line2);box-shadow:0 10px 30px -10px rgba(0,0,0,.4)}
+.cmp span{font-size:12px;color:var(--soft);padding:0 8px 0 10px}
+.cmp button{height:34px;padding:0 14px;border-radius:999px;border:0;background:transparent;color:var(--ink2);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.cmp button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+@media (max-width:1100px){.f1,.f3{left:-10px}.f2,.f4{right:-10px}}
+@media (max-width:960px){
+  .links{display:none}
+  .app{grid-template-columns:1fr}.app-side{display:none}
+  .app-grid{grid-template-columns:1fr}
+  .tools{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .steps,.psy{grid-template-columns:1fr 1fr}
+  .panel{grid-template-columns:1fr;padding:26px}
+  .bento{grid-template-columns:1fr 1fr}.b1,.b2,.b3,.b4,.b5{grid-column:span 2}
+  .price{grid-template-columns:1fr}
+  .foot{grid-template-columns:1fr 1fr}
+  .fc{position:relative;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;animation:none;margin:0}
+  .fcs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+}
+@media (max-width:600px){
+  .sec{padding:76px 0}
+  .nav-in{gap:8px;padding:0 8px 0 12px}
+  .enter,.theme span{display:none}
+  .steps,.psy{grid-template-columns:1fr}
+  .tools{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fcs{grid-template-columns:1fr}
+  .stub{grid-template-columns:1fr}.stub .a{border-right:0;border-bottom:2px dashed var(--line2)}.stub .b{align-items:flex-start}
+  .steps4{grid-template-columns:1fr 1fr}
+  .final{margin:0 10px;padding:70px 18px}
+  .cmp span{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">Nuevo: gráfico propio con dibujos, 32 indicadores y modo «volver atrás» para practicar. <a href="#herramientas">Verlo →</a></div>
+
+<nav class="nav" aria-label="Principal">
+  <div class="nav-in">
+    <a class="logo" href="#"><i aria-hidden="true"></i>Tickora</a>
+    <div class="links"><a href="#como">Cómo funciona</a><a href="#herramientas">Herramientas</a><a href="#psicologia">Psicología</a><a href="#precio">Precio</a><a href="#preguntas">Preguntas</a></div>
+    <span class="nav-sp"></span>
+    <button type="button" class="theme" id="themeBtn" aria-label="Cambiar entre oscuro y claro"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/></svg><span id="themeLbl">Oscuro</span></button>
+    <a class="enter" href="../app/">Entrar</a>
+    <a class="btn btn-p" href="../app/">Empieza gratis</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-bg" aria-hidden="true"></div><div class="hero-grid" aria-hidden="true"></div>
+  <div class="wrap hero-in">
+    <a class="pill reveal" href="#psicologia"><b>Beta</b>El diario de trading con psicología dentro</a>
+    <h1 class="reveal">Opera tu plan.<br><span class="hl">No tus emociones.</span></h1>
+    <p class="lead reveal">Tus operaciones de MetaTrader 5 se apuntan solas, con la foto del gráfico. Tickora revisa cada una contra tu plan, te frena antes de que un mal día se convierta en uno peor y mide tu disciplina en R.</p>
+    <div class="ctas reveal">
+      <a class="btn btn-p" href="../app/">Empieza gratis <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5"/></svg></a>
+      <a class="btn btn-s" href="#como">Ver cómo funciona</a>
+    </div>
+    <div class="note reveal"><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10.5l3 3 7-8"/></svg>Gratis durante la beta</span><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10.5l3 3 7-8"/></svg>Sin tarjeta</span><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10.5l3 3 7-8"/></svg>Se conecta con un código de 6 cifras</span></div>
+
+    <div class="stage reveal">
+      <div class="frame">
+        <div class="app" aria-label="Así se ve Tickora: la pantalla Hoy">
+          <aside class="app-side" aria-hidden="true">
+            <div class="lg"><i></i>Tickora</div>
+            <a class="on"><i></i>Hoy</a><a><i></i>Analizar</a><a><i></i>Progreso</a><a><i></i>Grupo</a><a><i></i>Aprender</a><a><i></i>Mi plan</a>
+          </aside>
+          <div class="app-main">
+            <div class="app-top"><div><small>VIE 30 OCT · 16:12 · DÍA 9</small><h4>Hola, Marcos</h4></div><span class="live">MT5 conectado</span></div>
+            <div class="app-grid">
+              <div>
+                <div class="tk">
+                  <div class="tk-h"><b>TICKORA</b><span>Tu día en R · 2 de 3</span></div>
+                  <div class="cut"></div>
+                  <div class="ldr"><span>15:42 NAS100 VENTA</span><i></i><b>+1,8 R</b></div>
+                  <div class="sub"><span style="color:var(--acc)">✓</span>15:42 → 15:57 · dentro del pacto</div>
+                  <div class="ldr"><span>16:05 EURUSD COMPRA</span><i></i><b>−1,0 R</b></div>
+                  <div class="sub"><span style="color:var(--warn)">!</span>pérdida buena · a mejorar: pon objetivo</div>
+                  <div class="cut"></div>
+                  <div class="tot"><b>TOTAL</b><strong><span class="hl">+0,8 R</span></strong></div>
+                </div>
+              </div>
+              <div class="chartc">
+                <div class="row"><b>EURUSD</b><span class="tfs"><span>1m</span><span class="on">5m</span><span>15m</span><span>1h</span></span></div>
+                <svg id="heroChart" viewBox="0 0 420 230" preserveAspectRatio="none" role="img" aria-label="Gráfico de velas con una zona marcada y una entrada"></svg>
+              </div>
+              <div class="stub">
+                <div class="a"><span class="lbl">Tu horario</span><strong>15:30 → 17:30</strong></div>
+                <div class="b"><span class="lbl">Quedan</span><strong>1:18</strong></div>
+                <div class="bars"><svg id="heroBars" viewBox="0 0 360 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fcs">
+        <div class="fc f1 float"><span class="stamp">PACTO FIRMADO · 08:42</span></div>
+        <div class="fc f2 float"><span class="ic" style="background:var(--accC);color:var(--acc)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h3l1.5-2h5L14 6h3v10H3z"/><circle cx="10" cy="11" r="3"/></svg></span><span><small>MT5 · hace 20 s</small><b>Entrada apuntada con foto</b></span></div>
+        <div class="fc f3 float"><span class="ic" style="background:var(--goodB);color:var(--good)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3 3 7-8"/></svg></span><span><small>Repaso de la operación</small><b>Pérdida buena · 6 de 6 normas</b></span></div>
+        <div class="fc f4 float"><span class="ic" style="background:var(--warnB);color:var(--warn)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 2c2 3 5 4.5 5 9a5 5 0 01-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3 0-5 1-7.5z"/></svg></span><span><small>Racha de disciplina</small><b><span class="mono">7</span> días cumpliendo tu plan</b></span></div>
+      </div>
+    </div>
+
+    <div class="tools" id="herramientas">
+      <a class="tool reveal" href="#t-diario"><i><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h8l3 3v11H5z"/><path d="M8 9h5M8 12h5M8 15h3"/></svg></i>Diario automático</a>
+      <a class="tool reveal" href="#t-repaso"><i><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l3 3 9-9"/><path d="M4 16h12"/></svg></i>Repaso de cada operación</a>
+      <a class="tool reveal" href="#t-grafico"><i><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 3v14M14 5v12"/><rect x="4" y="6" width="4" height="7"/><rect x="12" y="8" width="4" height="6"/></svg></i>Gráfico y volver atrás</a>
+      <a class="tool reveal" href="#t-freno"><i><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="5" r="2.2"/><circle cx="10" cy="10" r="2.2"/><circle cx="10" cy="15" r="2.2"/></svg></i>Semáforo y freno</a>
+      <a class="tool reveal" href="#t-progreso"><i><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16l5-6 4 3 5-8"/></svg></i>Progreso en R</a>
+      <a class="tool reveal" href="#psicologia"><i><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="3"/><circle cx="14" cy="8" r="2.4"/><path d="M2 17c0-3 2.5-5 5-5s5 2 5 5M12.5 12.5c2.8-.6 5.5 1 5.5 4"/></svg></i>Grupos sin dinero</a>
+    </div>
+  </div>
+</header>
+
+<section class="sec" id="como">
+  <div class="wrap">
+    <div class="sec-h reveal"><span class="eyebrow">Cómo funciona</span><h2>Lo pones en marcha en <span class="hl">3 minutos</span>.</h2><p class="lead">No tienes que apuntar nada a mano. Tickora se encarga de lo aburrido para que tú te ocupes de cumplir tu plan.</p></div>
+    <div class="steps">
+      <div class="step reveal"><span class="n">PASO 01</span><h3>Conecta tu MetaTrader 5</h3><p>Pegas una línea, pones el programa en un gráfico y escribes en la app el código que te enseña. Sin contraseñas.</p><div class="vis"><div class="code" aria-label="Código de ejemplo 780 711"><span>7</span><span>8</span><span>0</span><span>7</span><span>1</span><span>1</span></div></div></div>
+      <div class="step reveal"><span class="n">PASO 02</span><h3>Opera como siempre</h3><p>Desde el ordenador o el móvil. Cada entrada y cada salida se apunta sola, con el stop, el riesgo, el resultado en R y la foto del gráfico.</p><div class="vis"><span class="chip"><span class="live" style="font-size:12px">EURUSD · entrada apuntada con foto</span></span></div></div>
+      <div class="step reveal"><span class="n">PASO 03</span><h3>Revisa en un minuto</h3><p>Cada operación llega con lo que hiciste bien y una sola cosa a mejorar. Por la noche cierras el día y empiezas mañana con la cabeza limpia.</p><div class="vis"><span class="chip">3 cosas bien · 1 a mejorar</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" style="padding-top:20px">
+  <div class="wrap">
+    <div class="sec-h reveal"><span class="eyebrow">Todo en un sitio</span><h2>Cinco herramientas. <span class="hl">Un solo plan.</span></h2></div>
+    <div class="tabs reveal" role="tablist" aria-label="Herramientas">
+      <button type="button" role="tab" aria-selected="true" aria-controls="t-diario" id="b-diario"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h8l3 3v11H5z"/></svg>Diario automático</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="t-repaso" id="b-repaso"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l3 3 9-9"/></svg>Repaso</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="t-grafico" id="b-grafico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 3v14M14 5v12"/></svg>Gráfico y práctica</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="t-freno" id="b-freno"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="6"/></svg>Semáforo y freno</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="t-progreso" id="b-progreso"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16l5-6 4 3 5-8"/></svg>Progreso en R</button>
+    </div>
+
+    <div class="panel" role="tabpanel" id="t-diario" aria-labelledby="b-diario">
+      <div class="txt"><span class="eyebrow">Diario automático</span><h3 style="font-size:30px">Cada operación, apuntada sola. Con su foto.</h3><p>El programa puente lee tu MetaTrader 5 y guarda la entrada, la salida, el stop con el que entraste y el riesgo real. Si operaste desde el móvil o con el ordenador apagado, rehace la foto con el historial.</p>
+        <ul class="ticks"><li>Foto del gráfico al entrar y al salir</li><li>Detecta si moviste el stop en contra</li><li>Varias cuentas a la vez, también de fondeo</li><li>Solo lee: nunca abre ni cierra operaciones</li></ul></div>
+      <div class="vis-box">
+        <div class="mini"><span class="th"><svg viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M0 30 L10 24 L18 27 L28 14 L38 18 L48 8 L64 12" fill="none" stroke="var(--acc)" stroke-width="2"/></svg></span><span class="grow"><b>NAS100 · Venta</b><small>15:42 → 15:57 · dentro del pacto</small></span><span class="r">+1,8 R</span></div>
+        <div class="mini"><span class="th"><svg viewBox="0 0 64 40" width="64" height="40" aria-hidden="true"><path d="M0 12 L12 16 L20 10 L30 22 L40 18 L50 28 L64 30" fill="none" stroke="var(--candDn)" stroke-width="2"/></svg></span><span class="grow"><b>EURUSD · Compra</b><small>16:05 → 16:11 · pérdida buena</small></span><span class="r">−1,0 R</span></div>
+        <div class="mini" style="opacity:.6"><span class="th"></span><span class="grow"><b>XAUUSD · Compra</b><small>ayer 15:51 · dentro del pacto</small></span><span class="r">+2,0 R</span></div>
+      </div>
+    </div>
+    <div class="panel" role="tabpanel" id="t-repaso" aria-labelledby="b-repaso" hidden>
+      <div class="txt"><span class="eyebrow">Repaso de cada operación</span><h3 style="font-size:30px">Juzga el proceso, no el resultado.</h3><p>Una pérdida dentro de tu plan es una buena operación. Tickora revisa cada una contra tus normas y te dice hasta tres cosas que hiciste bien y una sola a mejorar.</p>
+        <ul class="ticks"><li>Stop puesto desde la entrada</li><li>Riesgo dentro de tu plan</li><li>Dentro de tu horario y de tu máximo de operaciones</li><li>«Una cosa para mañana», no una lista de culpas</li></ul></div>
+      <div class="vis-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">Pérdida buena</b><span class="tag">6 de 6 normas</span></div>
+        <span class="lbl">Lo que hiciste bien</span>
+        <div class="check"><svg viewBox="0 0 20 20" fill="none" stroke="var(--acc)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3 3 7-8"/></svg>Stop puesto desde la entrada</div>
+        <div class="check"><svg viewBox="0 0 20 20" fill="none" stroke="var(--acc)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3 3 7-8"/></svg>Riesgo de 0,5 %, el de tu plan</div>
+        <div class="check"><svg viewBox="0 0 20 20" fill="none" stroke="var(--acc)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3 3 7-8"/></svg>Dentro de tu horario</div>
+        <div class="callout"><b>Una cosa a mejorar:</b> entraste sin objetivo puesto. Ponlo al entrar y la salida no la decidirá el momento.</div>
+      </div>
+    </div>
+    <div class="panel" role="tabpanel" id="t-grafico" aria-labelledby="b-grafico" hidden>
+      <div class="txt"><span class="eyebrow">Gráfico y práctica</span><h3 style="font-size:30px">Analiza, dibuja y vuelve atrás para practicar.</h3><p>Un gráfico profesional con tus precios de MT5 en vivo, cripto en tiempo real y todas las herramientas. Y un modo para viajar al pasado, avanzar vela a vela y practicar con operaciones simuladas.</p>
+        <ul class="ticks"><li>Líneas, canales, Fibonacci, formas, textos y notas</li><li>32 indicadores con buscador</li><li>Operaciones simuladas con resultado en R</li><li>Las simuladas nunca se mezclan con las reales</li></ul></div>
+      <div class="vis-box" style="padding:12px"><svg id="tabChart" viewBox="0 0 520 300" role="img" aria-label="Gráfico con herramienta de posición: stop y objetivo"></svg>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="chip">◀︎ ▶︎ 2 velas/s</span><span class="chip">mar 3 nov · 03:50</span><span class="chip" style="background:var(--acc);color:var(--onAcc);border-color:var(--acc)">Comprar</span><span class="chip">Vender</span></div></div>
+    </div>
+    <div class="panel" role="tabpanel" id="t-freno" aria-labelledby="b-freno" hidden>
+      <div class="txt"><span class="eyebrow">Semáforo y freno</span><h3 style="font-size:30px">Te para antes de que un mal día empeore.</h3><p>Por la mañana firmas tu pacto en 40 segundos. Si llegas a tu límite o pierdes dos seguidas, el freno te lleva por escalones: aviso, pausa guiada, cierre del día.</p>
+        <ul class="ticks"><li>Semáforo con cómo duermes y cómo estás (si quieres)</li><li>Pausa guiada con respiración</li><li>Tus propias normas «si pasa esto → hago esto»</li><li>Los cambios del plan valen desde mañana</li></ul></div>
+      <div class="vis-box">
+        <div class="sem" aria-label="Semáforo en ámbar"><i style="background:#2f8f67;color:#2f8f67"></i><i class="on" style="background:#b7791f;color:#b7791f"></i><i style="background:#c2412f;color:#c2412f"></i><span><b style="font-size:18px">Ámbar</b><br><small style="color:var(--soft)">Margen de hoy: 0,4 R</small></span></div>
+        <div class="steps4"><div><b>1</b>Aviso</div><div class="on"><b>2</b>Pausa 15 min</div><div><b>3</b>Revisa tu plan</div><div><b>4</b>Cierra el día</div></div>
+        <div class="mini"><span class="grow"><b><span style="color:var(--acc);font-family:var(--mono)">SI</span> pierdo dos seguidas, <span style="color:var(--acc);font-family:var(--mono)">→</span> <span class="hl">me levanto 15 minutos.</span></b></span></div>
+      </div>
+    </div>
+    <div class="panel" role="tabpanel" id="t-progreso" aria-labelledby="b-progreso" hidden>
+      <div class="txt"><span class="eyebrow">Progreso en R</span><h3 style="font-size:30px">Mide lo que depende de ti.</h3><p>Resultados en R, no en euros, para que un día no te cambie el humor. La métrica principal son tus días disciplinados: el dinero llega después.</p>
+        <ul class="ticks"><li>Días disciplinados al mes</li><li>Pérdidas buenas frente a evitables</li><li>Esperanza, acierto y factor de beneficio</li><li>Curva en R con tu peor caída</li></ul></div>
+      <div class="vis-box">
+        <div class="kpis"><div><small>Días disciplinados</small><b>6 de 7</b></div><div><small>Resultado</small><b>+4,5 R</b></div><div><small>Evitables</small><b>2</b></div></div>
+        <div class="rbars" aria-label="Velas de R de octubre"><span style="height:45%"></span><span class="neg" style="height:30%"></span><span class="av" style="height:24%"></span><span style="height:60%"></span><span class="neg" style="height:30%"></span><span style="height:36%"></span><span class="neg" style="height:30%"></span><span style="height:18%"></span><span style="height:60%"></span><span class="neg" style="height:30%"></span><span style="height:54%"></span><span class="neg" style="height:30%"></span></div>
+        <small style="color:var(--soft)">Rellena = buena · hueca = pérdida buena · rayada = evitable. Nunca en rojo o verde.</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="psicologia" style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sec-h reveal"><span class="eyebrow">Psicología, en el centro</span><h2>Disciplina antes que <span class="hl">dinero</span>.</h2><p class="lead">Tickora está diseñado con lo que sabemos de cómo decidimos bajo presión. Cada pantalla te empuja a cumplir tu plan, no a operar más.</p></div>
+    <div class="psy">
+      <div class="rule reveal"><span class="big">R</span><h3>Resultados en R</h3><p>Ganas o pierdes «veces tu riesgo». Así una operación no pesa más por el tamaño, y comparas días de verdad.</p></div>
+      <div class="rule reveal"><span class="big">€</span><h3>Dinero en frío</h3><p>Los euros solo aparecen al cerrar el día. Durante la sesión miras tu plan, no tu saldo.</p></div>
+      <div class="rule reveal"><span class="big">→ mañana</span><h3>Decides en frío</h3><p>Los cambios de riesgo o de normas valen desde mañana. Nada de subir el riesgo en caliente.</p></div>
+      <div class="rule reveal"><span class="big">1</span><h3>Una cosa a mejorar</h3><p>Hasta tres cosas bien y una sola a mejorar. Igual en ganancias que en pérdidas.</p></div>
+    </div>
+    <p class="quote reveal">«Una pérdida dentro de tu plan es una buena operación. <span class="hl">Una ganancia fuera de él, no.</span>»</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-h reveal"><span class="eyebrow">Hecho para tu día a día</span><h2>Todo lo que necesitas. <span class="hl">Nada que te distraiga.</span></h2></div>
+    <div class="bento">
+      <div class="bx b1 reveal"><h3>En el ordenador y en el móvil</h3><p>La misma app en cualquier pantalla. Instálala en el móvil y recibe el aviso cuando toca parar.</p><div class="dev" aria-hidden="true"><div class="lap"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="ph"><i></i><i></i><i></i></div></div></div>
+      <div class="bx b2 reveal"><h3>Fotos del gráfico</h3><p>Al entrar y al salir, solas.</p><div class="snap" aria-hidden="true"><div><svg viewBox="0 0 100 70" width="100%" height="100%" preserveAspectRatio="none"><path d="M0 50 L20 40 L35 46 L55 25 L70 30 L100 12" fill="none" stroke="var(--acc)" stroke-width="2"/></svg><small>ENTRADA</small></div><div><svg viewBox="0 0 100 70" width="100%" height="100%" preserveAspectRatio="none"><path d="M0 40 L25 30 L45 36 L60 18 L80 22 L100 8" fill="none" stroke="var(--acc)" stroke-width="2"/></svg><small>SALIDA</small></div></div></div>
+      <div class="bx b3 reveal"><h3>Todos los mercados</h3><p>Divisas, índices, oro y cripto.</p><div class="mk"><span>EURUSD</span><span>XAUUSD</span><span>NAS100</span><span>GER40</span><span>BTCUSD</span><span>US30</span><span>GBPJPY</span></div></div>
+      <div class="bx b4 reveal"><h3>Grupos sin dinero</h3><p>Comparte tu racha y tus lecciones con tus compañeros. Nunca saldos ni rankings.</p></div>
+      <div class="bx b5 reveal"><h3>Tus datos son tuyos</h3><p>Descárgalos o bórralos cuando quieras. Las emociones, solo si tú das permiso.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="precio" style="padding-top:20px">
+  <div class="wrap">
+    <div class="sec-h reveal"><span class="eyebrow">Precio</span><h2>Gratis mientras estamos en <span class="hl">beta</span>.</h2><p class="lead">Estamos probando Tickora con un grupo pequeño de traders. Si entras ahora, lo usas gratis y nos ayudas a hacerlo mejor.</p></div>
+    <div class="price">
+      <div class="pc main reveal"><span class="tag">Beta abierta</span><div class="amt">0 € <small>durante la beta</small></div><p>Todo lo que hay ya en la app: diario automático con MT5, repaso de cada operación, gráfico con volver atrás, progreso en R.</p><ul class="ticks"><li>Sin tarjeta</li><li>Te avisamos antes de que llegue el plan de pago</li></ul><a class="btn btn-p" href="../app/" style="align-self:flex-start;margin-top:auto">Empieza gratis</a></div>
+      <div class="pc reveal"><span class="tag" style="background:var(--card2);color:var(--soft)">Más adelante</span><div class="amt" style="font-size:34px;font-family:var(--sans);letter-spacing:-.02em">Plan completo</div><p>Formación, mentor con inteligencia artificial que lee tus capturas, varias cuentas de fondeo juntas y abrir operaciones desde el gráfico pasando siempre por tu pacto.</p><p style="font-size:13px">El precio lo anunciaremos antes de cobrar nada.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="preguntas" style="padding-top:20px">
+  <div class="wrap">
+    <div class="sec-h reveal"><span class="eyebrow">Preguntas</span><h2>Lo que nos suelen preguntar</h2></div>
+    <div class="faq">
+      <details class="reveal"><summary>¿Funciona si opero desde el móvil?</summary><p>Sí. El programa puente vive en MetaTrader 5 de tu ordenador y recoge también lo que hagas desde el móvil. Si el ordenador estaba apagado, al encenderlo recupera los últimos días y rehace las fotos con el historial.</p></details>
+      <details class="reveal"><summary>¿Tickora abre o cierra operaciones por mí?</summary><p>No. Solo lee tus operaciones y hace capturas del gráfico. Las decisiones son siempre tuyas. Tickora no da señales ni consejos de inversión.</p></details>
+      <details class="reveal"><summary>¿Necesitáis la contraseña de mi cuenta?</summary><p>No. Se conecta con un código de 6 cifras que aparece en tu gráfico. Nunca te pediremos la contraseña de tu bróker.</p></details>
+      <details class="reveal"><summary>¿Sirve con cuentas de empresas de fondeo?</summary><p>Sí, si usan MetaTrader 5. Puedes conectar varias cuentas a la vez. Las fichas con las normas de cada empresa irán llegando.</p></details>
+      <details class="reveal"><summary>¿Qué pasa con mis datos?</summary><p>Son tuyos: puedes descargarlos o borrar tu cuenta cuando quieras. Los datos de cómo te sientes solo se guardan si das permiso, y puedes quitarlo en cualquier momento.</p></details>
+      <details class="reveal"><summary>¿Cuánto cuesta?</summary><p>Ahora, nada: es gratis durante la beta. Antes de que llegue el plan de pago te avisaremos con tiempo y el precio.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="sec" style="padding-top:20px">
+  <div class="final reveal">
+    <span class="eyebrow">Empieza hoy</span>
+    <h2 style="margin-top:16px">Tu próximo trade, <span class="hl">dentro del plan</span>.</h2>
+    <p class="lead">Conecta tu MetaTrader 5 en tres minutos y deja que Tickora se encargue de apuntar, revisar y frenarte cuando haga falta.</p>
+    <a class="btn btn-p" href="../app/">Empieza gratis <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5"/></svg></a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div><a class="logo" href="#" style="padding:0;margin-bottom:12px"><i aria-hidden="true"></i>Tickora</a><p>El diario de trading que te ayuda a cumplir tu plan.</p></div>
+      <div><h5>Producto</h5><a href="#como">Cómo funciona</a><a href="#herramientas">Herramientas</a><a href="#precio">Precio</a><a href="../app/">Entrar</a></div>
+      <div><h5>Aprende</h5><a href="#psicologia">Psicología</a><a href="#preguntas">Preguntas</a></div>
+      <div><h5>Legal</h5><a href="../app/legal.html#riesgo">Aviso de riesgo</a><a href="../app/legal.html#condiciones">Condiciones</a><a href="../app/legal.html#privacidad">Privacidad</a></div>
+    </div>
+    <p class="risk">Operar con CFD, divisas, índices y otros productos con apalancamiento tiene un riesgo alto de perder dinero rápidamente. La mayoría de las cuentas de pequeños inversores pierden dinero con estos productos. Tickora es una herramienta para apuntar tus operaciones y cuidar tu disciplina: no es asesoramiento financiero, no da señales y no gestiona tu dinero. Los resultados pasados no garantizan resultados futuros. MetaTrader es una marca de MetaQuotes; Tickora no está afiliado a MetaQuotes.</p>
+    <p class="risk" style="border:0;margin-top:0;padding-top:0">© 2026 Tickora</p>
+  </div>
+</footer>
+
+<div class="cmp" role="group" aria-label="Comparar estilos"><span>Estilo</span><button type="button" data-t="dark">Oscuro</button><button type="button" data-t="light">Claro</button></div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function setTheme(t){root.dataset.theme=t;try{localStorage.setItem("tk-landing-tema",t)}catch(e){}
+    document.querySelectorAll(".cmp [data-t]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.t===t))});
+    document.getElementById("themeLbl").textContent=t==="dark"?"Oscuro":"Claro";draw()}
+  document.getElementById("themeBtn").onclick=function(){setTheme(root.dataset.theme==="dark"?"light":"dark")};
+  document.querySelectorAll(".cmp [data-t]").forEach(function(b){b.onclick=function(){setTheme(b.dataset.t)}});
+
+  /* aparecer al bajar */
+  var io="IntersectionObserver" in window?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{threshold:.12}):null;
+  document.querySelectorAll(".reveal").forEach(function(el,i){if(io){el.style.transitionDelay=(i%6)*60+"ms";io.observe(el)}else el.classList.add("in")});
+
+  /* pestañas */
+  var tabs=[].slice.call(document.querySelectorAll('[role="tab"]'));
+  function show(id){tabs.forEach(function(t){var on=t.getAttribute("aria-controls")===id;t.setAttribute("aria-selected",String(on));document.getElementById(t.getAttribute("aria-controls")).hidden=!on})}
+  tabs.forEach(function(t,i){t.onclick=function(){show(t.getAttribute("aria-controls"))};t.onkeydown=function(e){if(e.key==="ArrowRight"||e.key==="ArrowLeft"){var n=tabs[(i+(e.key==="ArrowRight"?1:tabs.length-1))%tabs.length];n.focus();n.click()}}});
+  document.querySelectorAll('.tool[href^="#t-"]').forEach(function(a){a.onclick=function(e){e.preventDefault();show(a.getAttribute("href").slice(1));document.getElementById("b-diario").scrollIntoView({behavior:"smooth",block:"center"})}});
+
+  /* velas de la maqueta (mismos datos siempre) */
+  function css(v){return getComputedStyle(root).getPropertyValue(v).trim()}
+  function candles(n,seed,start){var s=seed,p=start,out=[];function r(){s=(s*9301+49297)%233280;return s/233280}
+    for(var i=0;i<n;i++){var o=p,c=o+(Math.sin(i/6)*1.2+(r()-.5)*2.4);out.push({o:o,c:c,h:Math.max(o,c)+r()*1.2,l:Math.min(o,c)-r()*1.2});p=c}return out}
+  function svgCandles(el,data,W,H,pad,extra){
+    var up=css("--candUp"),dn=css("--candDn"),acc=css("--acc"),line=css("--line2"),soft=css("--soft");
+    var mn=Math.min.apply(null,data.map(function(d){return d.l})),mx=Math.max.apply(null,data.map(function(d){return d.h}));
+    var y=function(v){return pad+(mx-v)/(mx-mn)*(H-2*pad)},w=(W-20)/data.length,h="";
+    for(var g=1;g<4;g++)h+='<line x1="0" x2="'+W+'" y1="'+(H/4*g)+'" y2="'+(H/4*g)+'" stroke="'+line+'" stroke-width=".6" stroke-dasharray="2 4"/>';
+    if(extra)h+=extra({y:y,w:w,acc:acc,soft:soft,W:W,H:H,data:data});
+    data.forEach(function(d,i){var x=10+i*w+w/2,col=d.c>=d.o?up:dn;h+='<line x1="'+x+'" x2="'+x+'" y1="'+y(d.h)+'" y2="'+y(d.l)+'" stroke="'+col+'" stroke-width="1"/><rect x="'+(x-w*.32)+'" y="'+Math.min(y(d.o),y(d.c))+'" width="'+(w*.64)+'" height="'+Math.max(1,Math.abs(y(d.o)-y(d.c)))+'" fill="'+col+'" rx="1"/>'});
+    el.innerHTML=h}
+  function draw(){
+    var d1=candles(46,7,100);
+    svgCandles(document.getElementById("heroChart"),d1,420,230,16,function(k){
+      var a=k.data[28],b=k.data[34],top=k.y(Math.max(a.h,b.h)),bot=k.y(Math.min(a.l,b.l));
+      return '<rect x="'+(10+28*k.w)+'" y="'+top+'" width="'+(7*k.w)+'" height="'+(bot-top)+'" fill="'+k.acc+'" fill-opacity=".14" stroke="'+k.acc+'" stroke-width="1"/>'+
+        '<text x="'+(12+28*k.w)+'" y="'+(top-5)+'" font-family="JetBrains Mono,monospace" font-size="9" fill="'+k.acc+'">ZONA DE RUPTURA</text>'+
+        '<line x1="0" x2="'+k.W+'" y1="'+k.y(k.data[45].c)+'" y2="'+k.y(k.data[45].c)+'" stroke="'+k.acc+'" stroke-dasharray="4 3" stroke-width="1"/>';
+    });
+    var bars="",i;for(i=0;i<120;i++){var x=i*3,tr=(i===12||i===35);bars+=tr?'<rect x="'+x+'" y="0" width="1.8" height="30" fill="'+css("--acc")+'"/>':'<rect x="'+x+'" y="5" width="1.2" height="20" fill="'+(i<42?css("--ink"):css("--line2"))+'"/>'}
+    bars+='<rect x="125" y="0" width="2.5" height="30" fill="#fbe27a"/>';
+    document.getElementById("heroBars").innerHTML=bars;
+    var d2=candles(60,21,100);
+    svgCandles(document.getElementById("tabChart"),d2,520,300,20,function(k){
+      var i=40,e=k.data[i].c,s=e-3.2,t=e+6.4,x0=10+i*k.w,x1=x0+15*k.w;
+      return '<rect x="'+x0+'" y="'+k.y(t)+'" width="'+(x1-x0)+'" height="'+(k.y(e)-k.y(t))+'" fill="'+k.acc+'" fill-opacity=".16"/>'+
+        '<rect x="'+x0+'" y="'+k.y(e)+'" width="'+(x1-x0)+'" height="'+(k.y(s)-k.y(e))+'" fill="'+css("--ink")+'" fill-opacity=".10"/>'+
+        '<line x1="'+x0+'" x2="'+x1+'" y1="'+k.y(e)+'" y2="'+k.y(e)+'" stroke="'+css("--ink")+'" stroke-width="1.5"/>'+
+        '<text x="'+(x0+4)+'" y="'+(k.y(t)+12)+'" font-family="JetBrains Mono,monospace" font-size="10" fill="'+k.acc+'">Objetivo +2,0 R</text>'+
+        '<text x="'+(x0+4)+'" y="'+(k.y(s)-4)+'" font-family="JetBrains Mono,monospace" font-size="10" fill="'+k.soft+'">Stop −1 R</text>';
+    });
+  }
+  setTheme(root.dataset.theme||"dark");
+})();
+</script>
+</body>
+</html>
