@@ -126,6 +126,262 @@
     const s = sty(o);
     return [{ type: "line", attrs: { coordinates: [{ x: 0, y: c[0].y }, { x: b.width, y: c[0].y }] }, styles: lineSt(s) }, { type: "line", attrs: { coordinates: [{ x: c[0].x, y: 0 }, { x: c[0].x, y: b.height }] }, styles: lineSt(s) }];
   });
+  /* ---------- más herramientas de dibujo ---------- */
+  const LN = (pts, s, o) => ({ type: "line", attrs: { coordinates: pts }, styles: Object.assign(lineSt(s), o || {}) });
+  const LNi = (pts, s, o) => Object.assign(LN(pts, s, o), { ignoreEvent: true });
+  const DASH = { style: "dashed", dashedValue: [4, 4] };
+  const TX = (x, y, text, s, o, align, base) => ({ type: "text", ignoreEvent: true, attrs: { x, y, text, align: align || "left", baseline: base || "middle" }, styles: textSt(s, Object.assign({ size: 11, family: NUMF }, o || {})) });
+  const POLY = (pts, s, a) => ({ type: "polygon", ignoreEvent: true, attrs: { coordinates: pts }, styles: { style: "fill", color: alpha(s.color, a == null ? .1 : a) } });
+  const extendTo = (a, b, bd) => { const dx = b.x - a.x, dy = b.y - a.y; if (!dx && !dy) return b; const k = Math.max(bd.width, bd.height) * 4 / Math.hypot(dx, dy); return { x: a.x + dx * k, y: a.y + dy * k }; };
+  const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  const FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+  const ratio = (a, b) => b ? nf(Math.abs(a / b), 3) : "—";
+  // líneas
+  reg("tkInfoLine", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const p = o.points, dp = p[1].value - p[0].value, pct = p[0].value ? dp / p[0].value * 100 : 0, bars = Math.round(Math.abs((p[1].timestamp || 0) - (p[0].timestamp || 0)) / (TF_MS[CUR_TF] || 3e5));
+    const ang = Math.atan2(c[0].y - c[1].y, c[1].x - c[0].x) * 180 / Math.PI;
+    return [LN([c[0], c[1]], s), TX(c[1].x + 8, c[1].y, `${dp >= 0 ? "+" : "−"}${nf(Math.abs(dp), CUR_DIGITS)} (${pct >= 0 ? "+" : "−"}${nf(Math.abs(pct), 2)} %) · ${bars} velas · ${nf(ang, 1)}°`, s, { color: "#fff", backgroundColor: s.color, paddingLeft: 6, paddingRight: 6, paddingTop: 3, paddingBottom: 3, borderRadius: 4 })];
+  });
+  reg("tkAngle", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const ang = Math.atan2(c[0].y - c[1].y, c[1].x - c[0].x), r = 30, f = [LN([c[0], c[1]], s), LNi([c[0], { x: c[0].x + 60, y: c[0].y }], s, DASH)];
+    f.push({ type: "arc", ignoreEvent: true, attrs: { x: c[0].x, y: c[0].y, r, startAngle: Math.min(0, -ang), endAngle: Math.max(0, -ang) }, styles: { color: s.color, size: 1 } });
+    f.push(TX(c[0].x + r + 6, c[0].y - (ang > 0 ? 10 : -10), nf(ang * 180 / Math.PI, 1) + "°", s, { weight: 700 }));
+    return f;
+  });
+  // canales
+  reg("tkRegression", 3, ({ coordinates: c, overlay: o, chart, xAxis, yAxis }) => {
+    const s = sty(o); if (c.length < 2 || !chart || !xAxis || !yAxis) return c.length > 1 ? [LN([c[0], c[1]], s)] : [];
+    const L = chart.getDataList(), t0 = Math.min(o.points[0].timestamp, o.points[1].timestamp), t1 = Math.max(o.points[0].timestamp, o.points[1].timestamp);
+    const seg = L.filter(k => k.timestamp >= t0 && k.timestamp <= t1); if (seg.length < 2) return [LN([c[0], c[1]], s)];
+    const n = seg.length; let sx = 0, sy = 0, sxy = 0, sxx = 0; seg.forEach((k, i) => { sx += i; sy += k.close; sxy += i * k.close; sxx += i * i; });
+    const m = (n * sxy - sx * sy) / (n * sxx - sx * sx || 1), q = (sy - m * sx) / n; let dev = 0; seg.forEach((k, i) => { dev = Math.max(dev, Math.abs(k.close - (m * i + q))); });
+    const X0 = xAxis.convertTimestampToPixel(seg[0].timestamp), X1 = xAxis.convertTimestampToPixel(seg[n - 1].timestamp), Y = v => yAxis.convertToPixel(v);
+    const a = { x: X0, y: Y(q) }, b = { x: X1, y: Y(m * (n - 1) + q) }, au = { x: X0, y: Y(q + dev) }, bu = { x: X1, y: Y(m * (n - 1) + q + dev) }, ad = { x: X0, y: Y(q - dev) }, bd = { x: X1, y: Y(m * (n - 1) + q - dev) };
+    return [POLY([au, bu, bd, ad], s, .08), LN([a, b], s), LNi([au, bu], s), LNi([ad, bd], s)];
+  });
+  reg("tkFlatTB", 4, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o), f = []; if (c.length > 1) f.push(LN([c[0], c[1]], s));
+    if (c.length > 2) { const a = { x: c[0].x, y: c[2].y }, b = { x: c[1].x, y: c[2].y }; f.unshift(POLY([c[0], c[1], b, a], s)); f.push(LN([a, b], s)); }
+    return f;
+  });
+  reg("tkDisjoint", 4, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o), f = []; if (c.length > 1) f.push(LN([c[0], c[1]], s));
+    if (c.length > 2) { const d = { x: c[2].x + (c[1].x - c[0].x), y: c[2].y - (c[1].y - c[0].y) }; f.unshift(POLY([c[0], c[1], d, c[2]], s)); f.push(LN([c[2], d], s)); }
+    return f;
+  });
+  function forkFig(kind) {
+    return ({ coordinates: c, overlay: o, bounding: bd }) => {
+      const s = sty(o); if (c.length < 2) return [];
+      const f = [LN([c[0], c[1]], s, DASH)]; if (c.length < 3) return f;
+      let origin = c[0];
+      if (kind === "schiff") origin = { x: c[0].x, y: (c[0].y + c[1].y) / 2 };
+      if (kind === "mschiff") origin = mid(c[0], c[1]);
+      const m = mid(c[1], c[2]), dir = { x: m.x - origin.x, y: m.y - origin.y };
+      const ray = p => [p, extendTo(p, { x: p.x + dir.x, y: p.y + dir.y }, bd)];
+      const r1 = ray(c[1]), r2 = ray(c[2]);
+      f.push(POLY([r1[0], r1[1], r2[1], r2[0]], s, .07));
+      f.push(LN([c[1], c[2]], s), LN(ray(m).map((p, i) => i ? p : origin), s), LNi(r1, s), LNi(r2, s));
+      if (kind === "inside") { f.push(LNi(ray(mid(c[1], m)), s, DASH), LNi(ray(mid(c[2], m)), s, DASH)); }
+      return f;
+    };
+  }
+  reg("tkPitchfork", 4, forkFig("std")); reg("tkSchiff", 4, forkFig("schiff")); reg("tkSchiffMod", 4, forkFig("mschiff")); reg("tkInsidePf", 4, forkFig("inside"));
+  // Fibonacci y Gann
+  reg("tkFibChannel", 4, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const f = [LN([c[0], c[1]], s)]; if (c.length < 3) return f;
+    const dx = c[1].x - c[0].x, dy = c[1].y - c[0].y, off = c[2].y - (c[0].y + (dx ? dy * (c[2].x - c[0].x) / dx : 0));
+    [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.618].forEach(k => { const a = { x: c[0].x, y: c[0].y + off * k }, b = extendTo(a, { x: a.x + dx, y: a.y + dy }, bd); f.push(LNi([a, b], s, { color: alpha(s.color, k === 0 || k === 1 ? 1 : .55) }), TX(a.x - 4, a.y, nf(k, 3), s, {}, "right")); });
+    return f;
+  });
+  reg("tkFibTime", 3, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const dx = c[1].x - c[0].x, f = [LN([c[0], c[1]], s, DASH)]; if (Math.abs(dx) < 2) return f;
+    [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89].forEach(n => { const x = c[0].x + dx * n; if (x < -5 || x > bd.width + 5) return; f.push(LNi([{ x, y: 0 }, { x, y: bd.height }], s, { color: alpha(s.color, .7) }), TX(x + 3, 12, String(n), s)); });
+    return f;
+  });
+  reg("tkFibTrendTime", 4, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const f = [LN(c.slice(0, 3), s, DASH)]; if (c.length < 3) return f;
+    const dx = c[1].x - c[0].x;
+    [0, 0.382, 0.5, 0.618, 1, 1.382, 1.618, 2, 2.618].forEach(k => { const x = c[2].x + dx * k; f.push(LNi([{ x, y: 0 }, { x, y: bd.height }], s, { color: alpha(s.color, .7) }), TX(x + 3, 12, nf(k, 3), s)); });
+    return f;
+  });
+  reg("tkFibFan", 3, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const dx = c[1].x - c[0].x, dy = c[1].y - c[0].y, f = [LNi([c[0], { x: c[1].x, y: c[0].y }], s, DASH), LNi([{ x: c[1].x, y: c[0].y }, c[1]], s, DASH)];
+    [0.25, 0.382, 0.5, 0.618, 0.75, 1].forEach(k => {
+      const p1 = { x: c[1].x, y: c[0].y + dy * k }, p2 = { x: c[0].x + dx * k, y: c[1].y };
+      f.push(LN([c[0], extendTo(c[0], p1, bd)], s, { color: alpha(s.color, k === 1 ? 1 : .6) }), TX(p1.x + 4, p1.y, nf(k, 3), s));
+      if (k !== 1) f.push(LNi([c[0], extendTo(c[0], p2, bd)], s, { color: alpha(s.color, .4) }));
+    });
+    return f;
+  });
+  reg("tkFibCircles", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const r = Math.hypot(c[1].x - c[0].x, c[1].y - c[0].y), f = [LN([c[0], c[1]], s, DASH)];
+    [0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.618].forEach(k => f.push({ type: "circle", ignoreEvent: true, attrs: { x: c[0].x, y: c[0].y, r: r * k }, styles: { style: "stroke", borderColor: alpha(s.color, k === 1 ? 1 : .6), borderSize: 1 } }));
+    return f;
+  });
+  reg("tkFibArcs", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const r = Math.hypot(c[1].x - c[0].x, c[1].y - c[0].y), up = c[0].y < c[1].y, f = [LN([c[0], c[1]], s, DASH)];
+    [0.236, 0.382, 0.5, 0.618, 0.786, 1].forEach(k => { f.push({ type: "arc", ignoreEvent: true, attrs: { x: c[1].x, y: c[1].y, r: r * k, startAngle: up ? Math.PI : 0, endAngle: up ? 2 * Math.PI : Math.PI }, styles: { color: alpha(s.color, k === 1 ? 1 : .6), size: 1 } }); f.push(TX(c[1].x + 3, c[1].y + (up ? -r * k : r * k), nf(k, 3), s)); });
+    return f;
+  });
+  reg("tkFibWedge", 4, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const f = [LN([c[0], c[1]], s)]; if (c.length < 3) return f;
+    f.push(LN([c[0], c[2]], s));
+    const r = Math.hypot(c[1].x - c[0].x, c[1].y - c[0].y), a1 = Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x), a2 = Math.atan2(c[2].y - c[0].y, c[2].x - c[0].x);
+    [0.236, 0.382, 0.5, 0.618, 0.786, 1].forEach(k => f.push({ type: "arc", ignoreEvent: true, attrs: { x: c[0].x, y: c[0].y, r: r * k, startAngle: Math.min(a1, a2), endAngle: Math.max(a1, a2) }, styles: { color: alpha(s.color, .7), size: 1 } }));
+    return f;
+  });
+  reg("tkPitchfan", 4, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const f = [LN([c[0], c[1]], s, DASH)]; if (c.length < 3) return f;
+    f.push(LN([c[1], c[2]], s, DASH));
+    [0, 0.382, 0.5, 0.618, 1].forEach(k => { const p = { x: c[1].x + (c[2].x - c[1].x) * k, y: c[1].y + (c[2].y - c[1].y) * k }; f.push(LNi([c[0], extendTo(c[0], p, bd)], s, { color: alpha(s.color, k === 0.5 ? 1 : .6) })); });
+    return f;
+  });
+  reg("tkGannBox", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const x = Math.min(c[0].x, c[1].x), y = Math.min(c[0].y, c[1].y), w = Math.abs(c[1].x - c[0].x), h = Math.abs(c[1].y - c[0].y);
+    const f = [{ type: "rect", attrs: { x, y, width: w, height: h }, styles: { style: "stroke_fill", color: alpha(s.color, .06), borderColor: s.color, borderSize: 1 } }];
+    [0.25, 0.382, 0.5, 0.618, 0.75].forEach(k => { f.push(LNi([{ x: x + w * k, y }, { x: x + w * k, y: y + h }], s, { color: alpha(s.color, .5) }), LNi([{ x, y: y + h * k }, { x: x + w, y: y + h * k }], s, { color: alpha(s.color, .5) })); f.push(TX(x + w * k, y - 8, nf(k, 3), s, {}, "center")); });
+    f.push(LNi([{ x, y }, { x: x + w, y: y + h }], s, DASH), LNi([{ x, y: y + h }, { x: x + w, y }], s, DASH));
+    return f;
+  });
+  reg("tkGannSq", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const d = Math.max(Math.abs(c[1].x - c[0].x), Math.abs(c[1].y - c[0].y)), sx = Math.sign(c[1].x - c[0].x) || 1, sy = Math.sign(c[1].y - c[0].y) || 1;
+    const x = sx > 0 ? c[0].x : c[0].x - d, y = sy > 0 ? c[0].y : c[0].y - d, f = [{ type: "rect", attrs: { x, y, width: d, height: d }, styles: { style: "stroke", borderColor: s.color, borderSize: 1 } }];
+    [1 / 3, 2 / 3].forEach(k => f.push(LNi([{ x: x + d * k, y }, { x: x + d * k, y: y + d }], s, { color: alpha(s.color, .5) }), LNi([{ x, y: y + d * k }, { x: x + d, y: y + d * k }], s, { color: alpha(s.color, .5) })));
+    f.push(LNi([{ x, y }, { x: x + d, y: y + d }], s), LNi([{ x, y: y + d }, { x: x + d, y }], s), { type: "circle", ignoreEvent: true, attrs: { x: x + d / 2, y: y + d / 2, r: d / 2 }, styles: { style: "stroke", borderColor: alpha(s.color, .5), borderSize: 1 } });
+    return f;
+  });
+  reg("tkGannFan", 3, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const dx = c[1].x - c[0].x, dy = c[1].y - c[0].y, f = [];
+    [[1, 8], [1, 4], [1, 3], [1, 2], [1, 1], [2, 1], [3, 1], [4, 1], [8, 1]].forEach(([a, b]) => { const p = { x: c[0].x + dx * (b >= a ? 1 : a / b) / (b >= a ? 1 : 1), y: c[0].y + dy * (a / b) }; const q = b > a ? { x: c[0].x + dx, y: c[0].y + dy * a / b } : { x: c[0].x + dx * b / a, y: c[0].y + dy }; const e = extendTo(c[0], a === b ? c[1] : q, bd); f.push(LN([c[0], e], s, { color: alpha(s.color, a === b ? 1 : .55) }), TX((a === b ? c[1] : q).x + 4, (a === b ? c[1] : q).y, a + "x" + b, s)); });
+    return f;
+  });
+  // patrones
+  function pathFig(labels, opt) {
+    opt = opt || {};
+    return ({ coordinates: c, overlay: o }) => {
+      const s = sty(o), f = []; if (c.length < 2) return [];
+      if (opt.fill) opt.fill.forEach(t => { if (t.every(i => c[i])) f.push(POLY(t.map(i => c[i]), s, .12)); });
+      f.push(LN(c, s));
+      if (opt.dash) opt.dash.forEach(([a, b, num]) => { if (c[a] && c[b]) { f.push(LNi([c[a], c[b]], s, DASH)); if (num) { const v = num(o.points); if (v) f.push(TX((c[a].x + c[b].x) / 2, (c[a].y + c[b].y) / 2, v, s, { color: "#fff", backgroundColor: alpha(s.color, .85), paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }, "center")); } } });
+      c.forEach((p, i) => { if (!labels[i]) return; const up = i > 0 ? p.y <= c[i - 1].y : (c[1] ? p.y <= c[1].y : true); f.push(TX(p.x, p.y + (up ? -12 : 12), labels[i], s, { weight: 700, size: 12, color: s.color }, "center")); });
+      if (opt.neck && c[opt.neck[0]] && c[opt.neck[1]]) f.push(LNi([c[opt.neck[0]], c[opt.neck[1]]], s, { size: 2 }));
+      return f;
+    };
+  }
+  const rv = (p, a, b, c2, d) => { const x = Math.abs(p[b].value - p[a].value), y = Math.abs(p[d].value - p[c2].value); return x ? nf(y / x, 3) : null; };
+  reg("tkXABCD", 6, pathFig(["X", "A", "B", "C", "D"], { fill: [[0, 1, 2], [2, 3, 4]], dash: [[0, 2, p => rv(p, 0, 1, 1, 2)], [1, 3, p => p[3] && rv(p, 1, 2, 2, 3)], [2, 4, p => p[4] && rv(p, 2, 3, 3, 4)], [0, 4, p => p[4] && rv(p, 0, 1, 1, 4)]] }));
+  reg("tkCypher", 6, pathFig(["X", "A", "B", "C", "D"], { fill: [[0, 1, 2], [2, 3, 4]], dash: [[0, 2, p => rv(p, 0, 1, 1, 2)], [1, 3, p => p[3] && rv(p, 0, 1, 2, 3)], [0, 4, p => p[4] && rv(p, 0, 3, 3, 4)]] }));
+  reg("tkABCD", 5, pathFig(["A", "B", "C", "D"], { dash: [[0, 2, p => rv(p, 0, 1, 1, 2)], [1, 3, p => p[3] && rv(p, 1, 2, 2, 3)]] }));
+  reg("tkHS", 8, pathFig(["", "Hombro izq.", "", "Cabeza", "", "Hombro der.", ""], { fill: [[1, 2, 4, 5]], neck: [2, 4] }));
+  reg("tkTriPat", 5, pathFig(["A", "B", "C", "D"], { fill: [[0, 1, 3, 2]], dash: [[0, 2], [1, 3]] }));
+  reg("tkThreeDrives", 8, pathFig(["", "1", "", "2", "", "3", ""], {}));
+  reg("tkEw5", 7, pathFig(["(0)", "(1)", "(2)", "(3)", "(4)", "(5)"]));
+  reg("tkEwABC", 5, pathFig(["", "(A)", "(B)", "(C)"]));
+  reg("tkEwTri", 7, pathFig(["", "(A)", "(B)", "(C)", "(D)", "(E)"]));
+  reg("tkEwWXY", 5, pathFig(["", "(W)", "(X)", "(Y)"]));
+  reg("tkEwWXYXZ", 7, pathFig(["", "(W)", "(X)", "(Y)", "(X)", "(Z)"]));
+  reg("tkCyclic", 3, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const dx = Math.abs(c[1].x - c[0].x), f = [LN([c[0], c[1]], s, DASH)]; if (dx < 3) return f;
+    for (let x = c[0].x % dx; x < bd.width; x += dx) f.push(LNi([{ x, y: 0 }, { x, y: bd.height }], s, { color: alpha(s.color, .6) }));
+    return f;
+  });
+  reg("tkTimeCycles", 3, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const d = Math.abs(c[1].x - c[0].x), f = []; if (d < 3) return [LN([c[0], c[1]], s)];
+    for (let x = Math.min(c[0].x, c[1].x) - d * Math.floor(Math.min(c[0].x, c[1].x) / d); x < bd.width + d; x += d) f.push({ type: "arc", attrs: { x: x + d / 2, y: c[0].y, r: d / 2, startAngle: Math.PI, endAngle: 2 * Math.PI }, styles: { color: s.color, size: s.width } });
+    return f;
+  });
+  reg("tkSine", 3, ({ coordinates: c, overlay: o, bounding: bd }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const half = Math.abs(c[1].x - c[0].x) || 1, amp = (c[1].y - c[0].y) / 2, y0 = (c[0].y + c[1].y) / 2, pts = [];
+    for (let x = 0; x <= bd.width; x += 3) pts.push({ x, y: y0 - amp * Math.cos(Math.PI * (x - c[0].x) / half) });
+    return [LN(pts, s)];
+  });
+  // previsión y medición
+  reg("tkForecast", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const p = o.points, dp = p[1].value - p[0].value, pct = p[0].value ? dp / p[0].value * 100 : 0, bars = Math.round(Math.abs((p[1].timestamp || 0) - (p[0].timestamp || 0)) / (TF_MS[CUR_TF] || 3e5));
+    return [LN([c[0], c[1]], s, DASH), { type: "circle", ignoreEvent: true, attrs: { x: c[1].x, y: c[1].y, r: 4 }, styles: { style: "fill", color: s.color } },
+      TX(c[1].x + 8, c[1].y, `Previsión ${pct >= 0 ? "+" : "−"}${nf(Math.abs(pct), 2)} % · ${fmtP(p[1].value)} · ${bars} velas`, s, { color: "#fff", backgroundColor: s.color, paddingLeft: 6, paddingRight: 6, paddingTop: 3, paddingBottom: 3, borderRadius: 4 })];
+  });
+  reg("tkAvwap", 2, ({ coordinates: c, overlay: o, chart, xAxis, yAxis }) => {
+    const s = sty(o); if (!c.length || !chart || !xAxis || !yAxis) return [];
+    const L = chart.getDataList(), i0 = L.findIndex(k => k.timestamp >= o.points[0].timestamp); if (i0 < 0) return [];
+    let pv = 0, vv = 0; const pts = [];
+    for (let i = i0; i < L.length; i++) { const k = L[i], v = k.volume || 1, tp = (k.high + k.low + k.close) / 3; pv += tp * v; vv += v; pts.push({ x: xAxis.convertTimestampToPixel(k.timestamp), y: yAxis.convertToPixel(pv / vv) }); }
+    const last = pts[pts.length - 1];
+    return [LN(pts, s, { size: Math.max(1.5, s.width) }), { type: "circle", ignoreEvent: true, attrs: { x: c[0].x, y: c[0].y, r: 3.5 }, styles: { style: "fill", color: s.color } }, TX(last.x + 6, last.y, "VWAP anclado", s, { color: s.color, weight: 600 })];
+  }, { needDefaultXAxisFigure: true });
+  // formas
+  reg("tkArrowMarker", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const a = Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x), L = Math.hypot(c[1].x - c[0].x, c[1].y - c[0].y), hw = Math.min(14, L / 3), sw = hw / 2.4, head = Math.min(L * .45, hw * 1.8);
+    const P = (d, w) => ({ x: c[0].x + Math.cos(a) * d - Math.sin(a) * w, y: c[0].y + Math.sin(a) * d + Math.cos(a) * w });
+    return [{ type: "polygon", attrs: { coordinates: [P(0, -sw), P(L - head, -sw), P(L - head, -hw), P(L, 0), P(L - head, hw), P(L - head, sw), P(0, sw)] }, styles: { style: "fill", color: s.color } }];
+  });
+  function markFig(up) {
+    return ({ coordinates: c, overlay: o }) => {
+      const s = sty(o), x = c[0].x, y = c[0].y, d = up ? 1 : -1, w = 9, h = 22;
+      const f = [{ type: "polygon", attrs: { coordinates: [{ x, y }, { x: x + w, y: y + d * 10 }, { x: x + 4, y: y + d * 10 }, { x: x + 4, y: y + d * h }, { x: x - 4, y: y + d * h }, { x: x - 4, y: y + d * 10 }, { x: x - w, y: y + d * 10 }] }, styles: { style: "fill", color: s.color } }];
+      if (s.text) f.push(TX(x, y + d * (h + 10), s.text, s, { color: s.color, size: s.size || 12, weight: 600, family: "Inter, sans-serif" }, "center"));
+      return f;
+    };
+  }
+  reg("tkArrowUp", 2, markFig(true), { needDefaultXAxisFigure: false }); reg("tkArrowDown", 2, markFig(false), { needDefaultXAxisFigure: false });
+  reg("tkRotRect", 4, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    if (c.length < 3) return [LN([c[0], c[1]], s)];
+    const dx = c[1].x - c[0].x, dy = c[1].y - c[0].y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, w = (c[2].x - c[0].x) * nx + (c[2].y - c[0].y) * ny;
+    const pts = [c[0], c[1], { x: c[1].x + nx * w, y: c[1].y + ny * w }, { x: c[0].x + nx * w, y: c[0].y + ny * w }];
+    return [{ type: "polygon", attrs: { coordinates: pts }, styles: { style: s.fill ? "stroke_fill" : "stroke", color: alpha(s.color, .14), borderColor: s.color, borderSize: s.width } }];
+  });
+  reg("tkEllipse", 3, ({ coordinates: c, overlay: o }) => {
+    const s = sty(o); if (c.length < 2) return [];
+    const rx = Math.abs(c[1].x - c[0].x), ry = Math.abs(c[1].y - c[0].y), pts = [];
+    for (let i = 0; i <= 64; i++) { const t = i / 64 * 2 * Math.PI; pts.push({ x: c[0].x + rx * Math.cos(t), y: c[0].y + ry * Math.sin(t) }); }
+    return [{ type: "polygon", attrs: { coordinates: pts }, styles: { style: s.fill ? "stroke_fill" : "stroke", color: alpha(s.color, .14), borderColor: s.color, borderSize: s.width } }];
+  });
+  const bez = (p0, p1, p2, p3) => { const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, u = 1 - t; pts.push(p3 ? { x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x, y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y } : { x: u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x, y: u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y }); } return pts; };
+  reg("tkArc", 4, ({ coordinates: c, overlay: o }) => { const s = sty(o); if (c.length < 3) return c.length > 1 ? [LN(c, s)] : []; const m2 = mid(c[0], c[1]), ctl = { x: 2 * c[2].x - m2.x, y: 2 * c[2].y - m2.y }; return [LN(bez(c[0], ctl, c[1]), s)]; });
+  reg("tkCurve", 4, ({ coordinates: c, overlay: o }) => { const s = sty(o); if (c.length < 3) return c.length > 1 ? [LN(c, s)] : []; return [LN(bez(c[0], c[2], c[1]), s), LNi([c[0], c[2], c[1]], s, Object.assign({ color: alpha(s.color, .3) }, DASH))]; });
+  reg("tkDoubleCurve", 5, ({ coordinates: c, overlay: o }) => { const s = sty(o); if (c.length < 4) return c.length > 1 ? [LN(c, s)] : []; return [LN(bez(c[0], c[2], c[3], c[1]), s)]; });
+  // trazos libres (pincel, rotulador, trayecto, polilínea): los puntos van en extendData.pts, relativos al primero
+  function freeFig(kind) {
+    return ({ overlay: o, chart }) => {
+      const s = sty(o), ed = o.extendData || {}, p0 = o.points[0]; if (!chart || !p0 || !ed.pts) return [];
+      let px = []; try { px = chart.convertToPixel(ed.pts.map(q => ({ timestamp: p0.timestamp + q[0], value: p0.value + q[1] })), { paneId: "candle_pane" }); } catch (e) { return []; }
+      px = px.filter(q => q && isFinite(q.x) && isFinite(q.y)); if (px.length < 2) return [];
+      const f = [];
+      if (kind === "hl") f.push({ type: "line", attrs: { coordinates: px }, styles: { color: alpha(s.color, .35), size: Math.max(10, s.width * 6), style: "solid" } });
+      else f.push({ type: "line", attrs: { coordinates: ed.closed ? px.concat([px[0]]) : px }, styles: lineSt(s) });
+      if (kind === "path") { const a = px[px.length - 2], b = px[px.length - 1], ang = Math.atan2(b.y - a.y, b.x - a.x), L = 10 + s.width * 2; f.push({ type: "polygon", ignoreEvent: true, attrs: { coordinates: [b, { x: b.x - L * Math.cos(ang - .45), y: b.y - L * Math.sin(ang - .45) }, { x: b.x - L * Math.cos(ang + .45), y: b.y - L * Math.sin(ang + .45) }] }, styles: { style: "fill", color: s.color } }); }
+      if (kind === "poly" && ed.closed && s.fill) f.unshift(POLY(px, s, .14));
+      return f;
+    };
+  }
+  [["tkBrush", "brush"], ["tkHighlighter", "hl"], ["tkPath", "path"], ["tkPolyline", "poly"]].forEach(([n, k]) => KC.registerOverlay({ name: n, totalStep: 2, needDefaultPointFigure: false, needDefaultXAxisFigure: false, needDefaultYAxisFigure: false, createPointFigures: freeFig(k) }));
+  // anotaciones
+  const boxSt = (s, o) => textSt(s, Object.assign({ color: pal().tinta, backgroundColor: pal().card, borderColor: s.color, borderSize: 1, borderRadius: 6, paddingLeft: 8, paddingRight: 8, paddingTop: 6, paddingBottom: 6, size: s.size || 13 }, o || {}));
+  reg("tkNote", 2, ({ coordinates: c, overlay: o }) => { const s = sty(o); return [{ type: "circle", attrs: { x: c[0].x, y: c[0].y, r: 5 }, styles: { style: "fill", color: s.color } }, LNi([c[0], { x: c[0].x, y: c[0].y - 18 }], s), { type: "text", attrs: { x: c[0].x, y: c[0].y - 20, text: s.text || "Nota", align: "center", baseline: "bottom" }, styles: boxSt(s) }]; }, { needDefaultXAxisFigure: false });
+  reg("tkPriceNote", 3, ({ coordinates: c, overlay: o }) => { const s = sty(o), v = o.points[0] && o.points[0].value, at = c[1] || c[0]; return [{ type: "circle", ignoreEvent: true, attrs: { x: c[0].x, y: c[0].y, r: 3.5 }, styles: { style: "fill", color: s.color } }, LN([c[0], at], s), { type: "text", attrs: { x: at.x, y: at.y, text: (s.text ? s.text + "  " : "") + (v != null ? fmtP(v) : ""), align: "left", baseline: "middle" }, styles: labelSt(s) }]; });
+  reg("tkSignpost", 2, ({ coordinates: c, overlay: o }) => { const s = sty(o); return [LN([c[0], { x: c[0].x, y: c[0].y - 34 }], s, { size: 2 }), { type: "circle", ignoreEvent: true, attrs: { x: c[0].x, y: c[0].y, r: 3 }, styles: { style: "fill", color: s.color } }, { type: "text", attrs: { x: c[0].x, y: c[0].y - 36, text: s.text || "Señal", align: "center", baseline: "bottom" }, styles: textSt(s, { color: "#fff", backgroundColor: s.color, borderRadius: 4, paddingLeft: 8, paddingRight: 8, paddingTop: 5, paddingBottom: 5, size: s.size || 12, weight: 600 }) }]; }, { needDefaultXAxisFigure: false });
+  reg("tkComment", 2, ({ coordinates: c, overlay: o }) => { const s = sty(o); return [{ type: "polygon", ignoreEvent: true, attrs: { coordinates: [c[0], { x: c[0].x + 8, y: c[0].y - 12 }, { x: c[0].x + 18, y: c[0].y - 12 }] }, styles: { style: "fill", color: s.color } }, { type: "text", attrs: { x: c[0].x, y: c[0].y - 12, text: s.text || "Comentario", align: "left", baseline: "bottom" }, styles: textSt(s, { color: "#fff", backgroundColor: s.color, borderRadius: 10, paddingLeft: 10, paddingRight: 10, paddingTop: 6, paddingBottom: 6, size: s.size || 13 }) }]; }, { needDefaultXAxisFigure: false });
+  reg("tkFlag", 2, ({ coordinates: c, overlay: o }) => { const s = sty(o), x = c[0].x, y = c[0].y; const f = [LN([{ x, y }, { x, y: y - 26 }], s, { size: 2 }), { type: "polygon", attrs: { coordinates: [{ x, y: y - 26 }, { x: x + 16, y: y - 21 }, { x, y: y - 15 }] }, styles: { style: "fill", color: s.color } }]; if (s.text) f.push(TX(x + 20, y - 21, s.text, s, { color: s.color, size: s.size || 12, weight: 600 })); return f; }, { needDefaultXAxisFigure: false });
+  reg("tkEmoji", 2, ({ coordinates: c, overlay: o }) => { const s = sty(o); return [{ type: "text", attrs: { x: c[0].x, y: c[0].y, text: s.text || "🙂", align: "center", baseline: "middle" }, styles: { color: "#000", size: s.size || 28, family: "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif", weight: 400, backgroundColor: "transparent", borderSize: 0, paddingLeft: 0, paddingRight: 0, paddingTop: 0, paddingBottom: 0 } }]; }, { needDefaultXAxisFigure: false, needDefaultYAxisFigure: false });
   function rangeFig(kind) {
     return ({ coordinates: c, overlay: o }) => {
       if (c.length < 2) return [];
@@ -278,21 +534,95 @@
     candles: '<path d="M6 3v14M14 5v12"/><rect x="4" y="6" width="4" height="7" fill="currentColor"/><rect x="12" y="8" width="4" height="6"/>',
     candlesH: '<path d="M6 3v14M14 5v12"/><rect x="4" y="6" width="4" height="7"/><rect x="12" y="8" width="4" height="6"/>',
     bars: '<path d="M6 3v14M3 6h3M6 13h3M14 5v12M11 8h3M14 14h3"/>', area: '<path d="M2 15l5-6 4 3 7-8v14H2z" fill="currentColor" fill-opacity=".18"/><path d="M2 15l5-6 4 3 7-8"/>',
-    x: '<path d="M5 5l10 10M15 5L5 15"/>', dup: '<rect x="6" y="6" width="11" height="11" rx="2"/><path d="M3 13V3h10"/>'
+    x: '<path d="M5 5l10 10M15 5L5 15"/>', dup: '<rect x="6" y="6" width="11" height="11" rx="2"/><path d="M3 13V3h10"/>',
+    cursorDot: '<circle cx="10" cy="10" r="2.6" fill="currentColor"/>',
+    cursorArrow: '<path d="M5.5 2.8v12.6l3.1-2.9 2.2 4.8 2.1-1-2.2-4.7h4.3z"/>',
+    cursorCross: '<path d="M10 2v16M2 10h16"/>',
+    eraser: '<path d="M3 13.5l7.5-7.5 5 5L10 16.5H6z"/><path d="M8 8.5l5 5M10 16.5h7"/>',
+    tkInfoLine: '<path d="M3.5 15.5l9-9"/><circle cx="3" cy="16" r="1.7" fill="var(--card,#fff)"/><circle cx="13" cy="6" r="1.7" fill="var(--card,#fff)"/><path d="M13 13h5v4h-5z"/>',
+    tkAngle: '<path d="M3 16L15 5M3 16h14"/><path d="M8.5 16a5.5 5.5 0 00-1.3-3.6"/><circle cx="3" cy="16" r="1.7" fill="var(--card,#fff)"/>',
+    tkRegression: '<path d="M2 14L18 6"/><path d="M2 10.5L18 2.5M2 17.5L18 9.5" stroke-dasharray="1.6 1.8"/>',
+    tkFlatTB: '<path d="M2 15l16-8M2 4h16"/><path d="M2 15V4" stroke-dasharray="1.6 1.8"/>',
+    tkDisjoint: '<path d="M2 15L18 9M2 5l16 4"/>',
+    tkPitchfork: '<path d="M2 10h16M6 4.5h12M6 15.5h12M6 4.5v11"/><circle cx="2" cy="10" r="1.7" fill="var(--card,#fff)"/>',
+    tkSchiff: '<path d="M2 12l16-3M7 5l11-1.5M7 15.5L18 14M7 5v10.5"/><circle cx="2" cy="12" r="1.7" fill="var(--card,#fff)"/>',
+    tkSchiffMod: '<path d="M3 13l15-4M8 5l10-1.5M8 15.5L18 14M8 5v10.5"/><circle cx="3" cy="13" r="1.7" fill="var(--card,#fff)"/>',
+    tkInsidePf: '<path d="M2 10h16M6 4.5h12M6 15.5h12M6 4.5v11"/><path d="M8 7.2h10M8 12.8h10" stroke-dasharray="1.6 1.8"/>',
+    tkFibChannel: '<path d="M2 15L14 3M5 18L17 6"/><path d="M3.5 16.5L15.5 4.5" stroke-dasharray="1.6 1.8"/>',
+    tkFibTime: '<path d="M3 3v14M6 3v14M9 3v14M13 3v14M18 3v14"/>',
+    tkFibTrendTime: '<path d="M2 15l4-8 3 5"/><path d="M11 3v14M14 3v14M18 3v14" stroke-dasharray="1.6 1.8"/>',
+    tkFibFan: '<path d="M3 17L18 3M3 17L18 8M3 17L18 12.5M3 17h15"/><circle cx="3" cy="17" r="1.7" fill="var(--card,#fff)"/>',
+    tkFibCircles: '<circle cx="10" cy="10" r="3"/><circle cx="10" cy="10" r="5.5"/><circle cx="10" cy="10" r="8"/>',
+    tkFibArcs: '<path d="M3 16a13 13 0 0113-13M7 16a9 9 0 019-9M11 16a5 5 0 015-5"/><circle cx="16" cy="16" r="1.7" fill="var(--card,#fff)"/>',
+    tkFibWedge: '<path d="M3 17L17 4M3 17h15"/><path d="M9 17a6 6 0 00-1.8-4.3M14 17a11 11 0 00-3.3-7.8"/>',
+    tkPitchfan: '<path d="M3 17L17 3M3 17L18 8M3 17L18 13M17 3l1 10"/><circle cx="3" cy="17" r="1.7" fill="var(--card,#fff)"/>',
+    tkGannBox: '<rect x="3" y="3" width="14" height="14"/><path d="M8 3v14M12 3v14M3 8h14M3 12h14"/>',
+    tkGannSq: '<rect x="3" y="3" width="14" height="14"/><path d="M3 3l14 14M17 3L3 17"/>',
+    tkGannFan: '<path d="M3 17l15-15M3 17L18 9M3 17L10 2M3 17h15M3 17V2"/><circle cx="3" cy="17" r="1.7" fill="var(--card,#fff)"/>',
+    tkXABCD: '<path d="M2 15L6 4l4 7 4-5 4 10"/><path d="M2 15l8-4" stroke-dasharray="1.6 1.8"/>',
+    tkCypher: '<path d="M2 14L6 5l4 6 4-8 4 12"/>',
+    tkHS: '<path d="M1 15l3-6 3 3 3-9 3 9 3-3 3 6"/><path d="M4 12h12" stroke-dasharray="1.6 1.8"/>',
+    tkABCD: '<path d="M3 15l5-10 4 6 5-8"/>',
+    tkTriPat: '<path d="M2 4l4 12 4-9 4 6 4-3"/><path d="M2 4l16 5M6 16l12-7" stroke-dasharray="1.6 1.8"/>',
+    tkThreeDrives: '<path d="M1 16l3-5 2 2 4-6 2 2 4-6 3 2"/>',
+    tkEw5: '<path d="M2 16l3-6 2 3 4-9 2 4 5-6"/>',
+    tkEwABC: '<path d="M3 4l5 10 4-5 5 8"/>',
+    tkEwTri: '<path d="M2 3l3 12 3-9 3 7 3-5 3 4"/>',
+    tkEwWXY: '<path d="M3 4l5 8 4-4 5 9"/>',
+    tkEwWXYXZ: '<path d="M1 4l3 7 3-3 3 6 3-3 3 4 3-2"/>',
+    tkCyclic: '<path d="M3 3v14M8 3v14M13 3v14M18 3v14"/>',
+    tkTimeCycles: '<path d="M2 15a4 4 0 018 0 4 4 0 018 0"/>',
+    tkSine: '<path d="M1 10c2-6 4-6 6 0s4 6 6 0 4-6 6 0"/>',
+    tkForecast: '<path d="M3 15l4-4" /><path d="M7 11l9-6" stroke-dasharray="1.6 1.8"/><circle cx="16" cy="5" r="2" fill="currentColor"/>',
+    tkAvwap: '<path d="M2 14c3 0 4-6 7-6s4 4 9 2"/><circle cx="2" cy="14" r="1.7" fill="var(--card,#fff)"/><path d="M6 4v3M14 5v3"/>',
+    tkBrush: '<path d="M3 15c3-1 2-5 5-6s3 3 5 2 3-5 4-7"/>',
+    tkHighlighter: '<path d="M3 15c3-1 2-5 5-6s3 3 5 2 3-5 4-7" stroke-width="4" stroke-opacity=".35"/>',
+    tkArrowMarker: '<path d="M3 13l8-8V8h6v4h-6v3z" transform="rotate(0)" fill="currentColor" fill-opacity=".2"/>',
+    tkArrowUp: '<path d="M10 3l6 6h-3.5v8h-5V9H4z"/>',
+    tkArrowDown: '<path d="M10 17l6-6h-3.5V3h-5v8H4z"/>',
+    tkRotRect: '<path d="M5 3l12 5-4 9L1 12z"/>',
+    tkPath: '<path d="M3 16l4-8 5 4 5-8"/><path d="M14 4h3v3"/>',
+    tkEllipse: '<ellipse cx="10" cy="10" rx="8" ry="5"/>',
+    tkPolyline: '<path d="M3 15L6 5l6 4 5-5-1 12z"/><circle cx="3" cy="15" r="1.7" fill="var(--card,#fff)"/><circle cx="6" cy="5" r="1.7" fill="var(--card,#fff)"/><circle cx="12" cy="9" r="1.7" fill="var(--card,#fff)"/>',
+    tkArc: '<path d="M2 16C5 4 15 4 18 16"/>',
+    tkCurve: '<path d="M2 16C4 6 9 4 18 4"/><circle cx="2" cy="16" r="1.7" fill="var(--card,#fff)"/><circle cx="18" cy="4" r="1.7" fill="var(--card,#fff)"/>',
+    tkDoubleCurve: '<path d="M2 14c3-10 6-10 8-4s5 6 8-4"/>',
+    tkNote: '<path d="M4 3h12v10l-4 4H4z"/><path d="M12 17v-4h4M7 7h6M7 10h4"/>',
+    tkPriceNote: '<path d="M2 15l6-6"/><path d="M8 5h10v7H8z"/><circle cx="2" cy="15" r="1.7" fill="var(--card,#fff)"/>',
+    tkSignpost: '<path d="M10 18V7"/><path d="M4 2h11l2 2.5L15 7H4z"/>',
+    tkComment: '<path d="M3 4h14v9h-7l-4 4v-4H3z"/>',
+    tkFlag: '<path d="M5 18V2"/><path d="M5 3h11l-3 4 3 4H5"/>',
+    tkEmoji: '<circle cx="10" cy="10" r="7.5"/><path d="M6.8 12a4 4 0 006.4 0"/><circle cx="7.5" cy="8" r=".9" fill="currentColor"/><circle cx="12.5" cy="8" r=".9" fill="currentColor"/>',
+    zoom: '<circle cx="8.5" cy="8.5" r="5.5"/><path d="M12.5 12.5L18 18M8.5 6v5M6 8.5h5"/>',
+    stay: '<path d="M4 16l1-4 8-8 3 3-8 8z"/><path d="M14 13v4M12 15h4"/>',
+    tree: '<path d="M4 4h5M4 10h5M4 16h5"/><rect x="11" y="2.5" width="6" height="3" rx="1"/><rect x="11" y="8.5" width="6" height="3" rx="1"/><rect x="11" y="14.5" width="6" height="3" rx="1"/>',
+    star: '<path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z"/>',
+    starOn: '<path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z" fill="currentColor"/>',
+    grip: '<circle cx="7" cy="5" r="1.1" fill="currentColor"/><circle cx="13" cy="5" r="1.1" fill="currentColor"/><circle cx="7" cy="10" r="1.1" fill="currentColor"/><circle cx="13" cy="10" r="1.1" fill="currentColor"/><circle cx="7" cy="15" r="1.1" fill="currentColor"/><circle cx="13" cy="15" r="1.1" fill="currentColor"/>',
+    eyeOff: '<path d="M2 10s3-6 8-6c2 0 3.6.9 4.9 2M18 10s-3 6-8 6c-2 0-3.6-.9-4.9-2M3 17L17 3"/>'
   };
   const icon = (n, s) => `<svg width="${s || 20}" height="${s || 20}" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || ""}</svg>`;
   const GROUPS = [
-    ["cursor", "Cursor", [["cursor", "Cursor"]]],
-    ["lines", "Líneas", [["segment", "Línea de tendencia"], ["rayLine", "Rayo"], ["straightLine", "Línea extendida"], ["horizontalStraightLine", "Línea horizontal"], ["horizontalRayLine", "Rayo horizontal"], ["verticalStraightLine", "Línea vertical"], ["tkCross", "Cruz"], ["priceLine", "Línea de precio"]]],
-    ["channels", "Canales", [["parallelStraightLine", "Canal paralelo"], ["priceChannelLine", "Canal de precio"]]],
-    ["fib", "Fibonacci", [["fibonacciLine", "Retroceso de Fibonacci"], ["tkFibExt", "Extensión de Fibonacci"]]],
-    ["shapes", "Formas", [["tkRect", "Rectángulo"], ["tkCircle", "Círculo"], ["tkTriangle", "Triángulo"], ["tkArrow", "Flecha"]]],
-    ["text", "Texto y notas", [["tkText", "Texto"], ["tkCallout", "Nota con flecha"], ["tkPriceLabel", "Etiqueta de precio"]]],
-    ["measure", "Posición y medición", [["tkLong", "Posición larga"], ["tkShort", "Posición corta"], ["tkPriceRange", "Rango de precios"], ["tkDateRange", "Rango de fechas"], ["tkMeasure", "Rango de fecha y precio"]]]
+    ["cursor", "Cursores", [["cursor", "Cruz"], ["cursorDot", "Punto"], ["cursorArrow", "Flecha"], ["eraser", "Borrador"]]],
+    ["lines", "Líneas de tendencia", [["#", "Líneas"], ["segment", "Línea de tendencia"], ["rayLine", "Rayo"], ["tkInfoLine", "Línea de información"], ["straightLine", "Línea extendida"], ["tkAngle", "Ángulo de tendencia"], ["horizontalStraightLine", "Línea horizontal"], ["horizontalRayLine", "Rayo horizontal"], ["verticalStraightLine", "Línea vertical"], ["tkCross", "Línea cruzada"], ["priceLine", "Línea de precio"],
+      ["#", "Canales"], ["parallelStraightLine", "Canal paralelo"], ["tkRegression", "Tendencia de regresión"], ["tkFlatTB", "Techo o suelo plano"], ["tkDisjoint", "Canal disjunto"], ["priceChannelLine", "Canal de precio"],
+      ["#", "Horquillas"], ["tkPitchfork", "Horquilla"], ["tkSchiff", "Horquilla de Schiff"], ["tkSchiffMod", "Horquilla de Schiff modificada"], ["tkInsidePf", "Horquilla interior"]]],
+    ["fib", "Fibonacci y Gann", [["#", "Fibonacci"], ["fibonacciLine", "Retroceso de Fibonacci"], ["tkFibExt", "Extensión de Fibonacci basada en tendencia"], ["tkFibChannel", "Canal de Fibonacci"], ["tkFibTime", "Zonas de tiempo de Fibonacci"], ["tkFibFan", "Abanico de velocidad y resistencia"], ["tkFibTrendTime", "Tiempo de Fibonacci basado en tendencia"], ["tkFibCircles", "Círculos de Fibonacci"], ["tkFibArcs", "Arcos de velocidad y resistencia"], ["tkFibWedge", "Cuña de Fibonacci"], ["tkPitchfan", "Abanico de horquilla"],
+      ["#", "Gann"], ["tkGannBox", "Caja de Gann"], ["tkGannSq", "Cuadrado de Gann fijo"], ["tkGannFan", "Abanico de Gann"]]],
+    ["patterns", "Patrones", [["#", "Patrones"], ["tkXABCD", "Patrón XABCD"], ["tkCypher", "Patrón Cypher"], ["tkHS", "Hombro-cabeza-hombro"], ["tkABCD", "Patrón ABCD"], ["tkTriPat", "Patrón de triángulo"], ["tkThreeDrives", "Patrón de tres impulsos"],
+      ["#", "Ondas de Elliott"], ["tkEw5", "Onda de impulso (12345)"], ["tkEwABC", "Onda de corrección (ABC)"], ["tkEwTri", "Triángulo (ABCDE)"], ["tkEwWXY", "Combinación doble (WXY)"], ["tkEwWXYXZ", "Combinación triple (WXYXZ)"],
+      ["#", "Ciclos"], ["tkCyclic", "Líneas cíclicas"], ["tkTimeCycles", "Ciclos de tiempo"], ["tkSine", "Línea sinusoidal"]]],
+    ["measure", "Previsión y medición", [["#", "Previsión"], ["tkLong", "Posición larga"], ["tkShort", "Posición corta"], ["tkForecast", "Previsión"], ["#", "Volumen"], ["tkAvwap", "VWAP anclado"], ["#", "Medición"], ["tkPriceRange", "Rango de precios"], ["tkDateRange", "Rango de fechas"], ["tkMeasure", "Rango de fecha y precio"]]],
+    ["shapes", "Formas geométricas", [["#", "Pinceles"], ["tkBrush", "Pincel"], ["tkHighlighter", "Rotulador"], ["#", "Flechas"], ["tkArrowMarker", "Marcador de flecha"], ["tkArrow", "Flecha"], ["tkArrowUp", "Flecha hacia arriba"], ["tkArrowDown", "Flecha hacia abajo"],
+      ["#", "Formas"], ["tkRect", "Rectángulo"], ["tkRotRect", "Rectángulo girado"], ["tkPath", "Trayecto"], ["tkCircle", "Círculo"], ["tkEllipse", "Elipse"], ["tkPolyline", "Polilínea"], ["tkTriangle", "Triángulo"], ["tkArc", "Arco"], ["tkCurve", "Curva"], ["tkDoubleCurve", "Curva doble"]]],
+    ["text", "Anotaciones", [["tkText", "Texto"], ["tkNote", "Nota"], ["tkPriceNote", "Nota de precio"], ["tkSignpost", "Señal"], ["tkCallout", "Globo con flecha"], ["tkComment", "Comentario"], ["tkPriceLabel", "Etiqueta de precio"], ["tkFlag", "Bandera"]]],
+    ["emoji", "Emojis", [["tkEmoji", "Emojis y pegatinas"]]]
   ];
-  const TOOL_NAME = Object.fromEntries(GROUPS.flatMap(g => g[2]));
-  const TEXTABLE = ["tkRect", "tkCircle", "tkText", "tkCallout", "tkPriceLabel"];
-  const FILLABLE = ["tkRect", "tkCircle", "tkTriangle"];
+  const TOOL_NAME = Object.fromEntries(GROUPS.flatMap(g => g[2]).filter(x => x[0] !== "#"));
+  const CURSORS = ["cursor", "cursorDot", "cursorArrow", "eraser"], FREE = ["tkBrush", "tkHighlighter", "tkPath", "tkPolyline"];
+  const EMOJIS = "😀 😂 😍 🤔 😎 😴 😡 😱 🥳 🤑 👍 👎 👀 🙏 💪 🔥 🚀 💰 💸 📈 📉 ⚠️ ✅ ❌ ⭐ 🎯 ⏰ 🧠 💡 🔔 🏁 🛑 ⬆️ ⬇️ ➡️ ⬅️ 🐂 🐻 💎 🌙".split(" ");
+  const TEXTABLE = ["tkRect", "tkCircle", "tkText", "tkCallout", "tkPriceLabel", "tkNote", "tkPriceNote", "tkSignpost", "tkComment", "tkFlag", "tkArrowUp", "tkArrowDown", "tkEmoji"];
+  const FILLABLE = ["tkRect", "tkCircle", "tkTriangle", "tkRotRect", "tkEllipse", "tkPolyline"];
   const BUILTIN = ["segment", "rayLine", "straightLine", "horizontalStraightLine", "horizontalRayLine", "verticalStraightLine", "priceLine", "parallelStraightLine", "priceChannelLine", "fibonacciLine"];
 
   /* ---------- fuentes de precios ---------- */
@@ -350,12 +680,14 @@
     let MODE = MODES[KEY] || "live";
     let me = null;
     DARK = !!opts.dark;
-    const st = { sym: opts.sym, tf: ls.get(TFK, opts.tf || "5m"), tool: "cursor", magnet: ls.get("tk-magnet", false), hidden: false, locked: false, sel: null, prov: null, unsub: null, quiet: false, price: null,
+    const st = { sym: opts.sym, tf: ls.get(TFK, opts.tf || "5m"), tool: "cursor", magnet: ls.get("tk-magnet", false), stay: ls.get("tk-stay", false), favShow: ls.get("tk-favshow", true), fav: ls.get("tk-fav", ["segment", "horizontalStraightLine", "fibonacciLine", "tkRect", "tkLong", "tkShort", "tkText"]), baseCur: ls.get("tk-cur", "cursor"), emoji: "🚀", hidden: false, locked: false, sel: null, prov: null, unsub: null, quiet: false, price: null,
       color: ls.get("tk-color", null), last: ls.get("tk-lasttool", {}), hist: [], fut: [] };
     if (!TF_MS[st.tf]) st.tf = "5m";
     CUR_TF = st.tf;
+    const magMode = () => st.magnet === "strong" ? "strong_magnet" : st.magnet ? "weak_magnet" : "normal";
+    const magTitle = () => st.magnet === "strong" ? "Imán fuerte: pega los puntos al precio exacto de la vela" : st.magnet ? "Imán débil: pega los puntos cuando estás cerca de la vela" : "Imán apagado";
     const R = { on: false, all: [], idx: 0, timer: null, speed: ls.get("tk-speed", 2), cb: null, pos: null, trades: [], picking: false };
-    const groupBtn = g => { const cur = st.last[g[0]] && TOOL_NAME[st.last[g[0]]] ? st.last[g[0]] : g[2][0][0]; return `<div class="gx-grp" data-grp="${g[0]}"><button type="button" class="gx-tool" data-tool="${cur}" aria-pressed="${cur === "cursor"}" aria-label="${esc(TOOL_NAME[cur])}" title="${esc(TOOL_NAME[cur])}">${icon(cur)}</button>${g[2].length > 1 ? `<button type="button" class="gx-more" data-more="${g[0]}" aria-label="Más herramientas: ${esc(g[1])}" title="${esc(g[1])}"><svg width="6" height="6" viewBox="0 0 6 6" aria-hidden="true"><path d="M0 6L6 6 6 0z" fill="currentColor"/></svg></button>` : ""}</div>`; };
+    const groupBtn = g => { const cur = st.last[g[0]] && TOOL_NAME[st.last[g[0]]] ? st.last[g[0]] : g[2].find(x => x[0] !== "#")[0]; return `<div class="gx-grp" data-grp="${g[0]}"><button type="button" class="gx-tool" data-tool="${cur}" aria-pressed="${cur === "cursor"}" aria-label="${esc(TOOL_NAME[cur])}" title="${esc(TOOL_NAME[cur])}">${icon(cur)}</button>${g[2].length > 1 ? `<button type="button" class="gx-more" data-more="${g[0]}" aria-label="Más herramientas: ${esc(g[1])}" title="${esc(g[1])}"><svg width="6" height="6" viewBox="0 0 6 6" aria-hidden="true"><path d="M0 6L6 6 6 0z" fill="currentColor"/></svg></button>` : ""}</div>`; };
     el.innerHTML = `<div class="gx">
       <div class="gx-top" role="toolbar" aria-label="Barra del gráfico">
         <div class="gx-mode" role="group" aria-label="Modo del gráfico"><button type="button" data-mode="live" aria-pressed="true" title="Gráfico en vivo para analizar">${icon("candles", 16)}<span>Analizar</span></button><button type="button" data-mode="bt" aria-pressed="false" title="Vuelve atrás en el tiempo y practica vela a vela">${icon("replay", 15)}<span>Backtesting</span></button></div>
@@ -380,12 +712,17 @@
         <div class="gx-tools" role="toolbar" aria-label="Herramientas de dibujo">
           ${GROUPS.map(groupBtn).join("")}
           <span class="gx-tsep"></span>
-          <button type="button" class="gx-tool" data-act="magnet" aria-pressed="${st.magnet}" aria-label="Imán" title="Imán: pega los puntos a las velas">${icon("magnet")}</button>
+          <button type="button" class="gx-tool" data-act="zoom" aria-label="Acercar" title="Acercar (Mayús + clic para alejar)">${icon("zoom")}</button>
+          <button type="button" class="gx-tool gx-mag" data-act="magnet" aria-pressed="${!!st.magnet}" data-strong="${st.magnet === "strong"}" aria-label="Imán" title="${magTitle()}">${icon("magnet")}</button>
+          <button type="button" class="gx-tool" data-act="stay" aria-pressed="${st.stay}" aria-label="Seguir dibujando" title="Seguir en modo dibujo: la herramienta no se suelta al terminar">${icon("stay")}</button>
           <button type="button" class="gx-tool" data-act="lockall" aria-pressed="false" aria-label="Bloquear todos los dibujos" title="Bloquear todos los dibujos">${icon("lock")}</button>
           <button type="button" class="gx-tool" data-act="hide" aria-pressed="false" aria-label="Ocultar todos los dibujos" title="Ocultar todos los dibujos">${icon("eye")}</button>
           <button type="button" class="gx-tool" data-act="clear" aria-label="Borrar todos los dibujos de este mercado" title="Borrar todos los dibujos de este mercado">${icon("trash")}</button>
+          <span class="gx-tsep"></span>
+          <button type="button" class="gx-tool" data-act="tree" aria-label="Lista de dibujos" title="Lista de dibujos">${icon("tree")}</button>
+          <button type="button" class="gx-tool" data-act="favbar" aria-pressed="${st.favShow}" aria-label="Barra de favoritos" title="Barra de favoritos (marca herramientas con la estrella)">${icon(st.favShow ? "starOn" : "star")}</button>
         </div>
-        <div class="gx-canvas"><div class="gx-chart"></div><div class="gx-btbadge" hidden>Backtesting · <span></span></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
+        <div class="gx-canvas"><div class="gx-chart"></div><svg class="gx-free" hidden aria-hidden="true"></svg><div class="gx-favbar" hidden role="toolbar" aria-label="Herramientas favoritas"><span class="gx-fgrip" title="Arrastra para mover">${icon("grip", 16)}</span><div class="gx-favs"></div></div><div class="gx-btbadge" hidden>Backtesting · <span></span></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
           <div class="gx-float" hidden role="toolbar" aria-label="Dibujo elegido">
             <div class="gx-sw">${PALETTE.map(c => `<button type="button" class="gx-c" data-color="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join("")}<label class="gx-cc" title="Otro color"><input type="color" data-f="color" aria-label="Otro color"></label></div>
             <span class="gx-vs"></span>
@@ -519,11 +856,11 @@
 
     /* ---------- dibujos ---------- */
     const evs = () => ({
-      onDrawEnd: e => { afterDraw(e.overlay); save(); setTool("cursor"); showFloat(e.overlay.id, TEXTABLE.includes(e.overlay.name)); },
+      onDrawEnd: e => { const k = st.tool; afterDraw(e.overlay); save(); doneTool(k); if (!st.stay) showFloat(e.overlay.id, TEXTABLE.includes(e.overlay.name) && e.overlay.name !== "tkEmoji"); },
       onPressedMoveEnd: e => { afterDraw(e.overlay); save(); },
       onRemoved: () => { if (!st.quiet) save(); },
       onRightClick: e => { removeSel(e.overlay.id); return true; },
-      onSelected: e => showFloat(e.overlay.id, false),
+      onSelected: e => { if (st.tool === "eraser") { removeSel(e.overlay.id); return; } showFloat(e.overlay.id, false); },
       onDeselected: () => hideFloat()
     });
     function afterDraw(o) {
@@ -542,7 +879,7 @@
     }
     function build(list) {
       st.quiet = true; ch.removeOverlay({ groupId: "draw" }); st.quiet = false;
-      (list || []).forEach(d => { if (d && d.name && d.points) ch.createOverlay(Object.assign({ name: d.name, groupId: "draw", points: d.points, extendData: d.extendData, styles: d.styles, lock: !!d.lock || st.locked, visible: !st.hidden, mode: st.magnet ? "weak_magnet" : "normal" }, evs())); });
+      (list || []).forEach(d => { if (d && d.name && d.points) ch.createOverlay(Object.assign({ name: d.name, groupId: "draw", points: d.points, extendData: d.extendData, styles: d.styles, lock: !!d.lock || st.locked, visible: !st.hidden, mode: magMode() }, evs())); });
     }
     async function restore() {
       let list = ls.get("tk-draw-" + st.sym, null);
@@ -555,18 +892,111 @@
       const ed = { color: curColor(), width: 1.5, dash: "solid" };
       if (name === "tkText") { ed.text = "Texto"; ed.size = 16; }
       if (name === "tkCallout") { ed.text = "Nota"; ed.size = 13; }
+      if (name === "tkNote") { ed.text = "Nota"; ed.size = 13; }
+      if (name === "tkSignpost") { ed.text = "Señal"; ed.size = 12; }
+      if (name === "tkComment") { ed.text = "Comentario"; ed.size = 13; }
+      if (name === "tkPriceNote" || name === "tkFlag" || name === "tkArrowUp" || name === "tkArrowDown") { ed.text = ""; ed.size = 12; }
+      if (name === "tkEmoji") { ed.text = st.emoji || "🙂"; ed.size = 28; }
       return ed;
     }
+    function applyCursor() {
+      const c = st.baseCur, g = el.querySelector(".gx"); g.dataset.cur = c === "cursorDot" ? "dot" : c === "cursorArrow" ? "arrow" : c === "eraser" ? "eraser" : "";
+      try { const show = c === "cursor" || c === "eraser"; ch.setStyles({ crosshair: { horizontal: { line: { show } }, vertical: { line: { show } } } }); } catch (e) { /* estilo no disponible */ }
+    }
     function setTool(k) {
+      if (FR && FR.k !== k) endFree(false);
+      if (k === "cursor") k = st.baseCur || "cursor";
       st.tool = k;
       $$("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === k)));
-      if (k === "cursor") return;
+      if (CURSORS.includes(k)) { st.baseCur = k; ls.set("tk-cur", k); applyCursor(); if (k === "eraser") hint("Borrador: toca un dibujo para borrarlo."), setTimeout(() => hint(""), 2500); return; }
       hideFloat();
+      if (FREE.includes(k)) { startFree(k); return; }
       const name = k === "tkLong" || k === "tkShort" ? "tkPos" : k;
       const ed = k === "tkLong" ? { side: "buy" } : k === "tkShort" ? { side: "sell" } : newStyle(name);
-      const o = { name, groupId: "draw", extendData: ed, mode: st.magnet ? "weak_magnet" : "normal" };
+      const o = { name, groupId: "draw", extendData: ed, mode: magMode() };
       if (BUILTIN.includes(name)) o.styles = { line: lineSt(sty({ extendData: ed })), text: { color: ed.color } };
       ch.createOverlay(Object.assign(o, evs()));
+    }
+    const doneTool = k => setTool(st.stay && k && !CURSORS.includes(k) ? k : "cursor");
+    /* favoritos */
+    function toggleFav(k) { const i = st.fav.indexOf(k); if (i >= 0) st.fav.splice(i, 1); else st.fav.push(k); ls.set("tk-fav", st.fav); renderFav(); return i < 0; }
+    function renderFav() {
+      const bar = $(".gx-favbar"), box2 = $(".gx-favs");
+      box2.innerHTML = st.fav.filter(k => TOOL_NAME[k]).map(k => `<button type="button" class="gx-tool" data-tool="${k}" aria-pressed="${st.tool === k}" aria-label="${esc(TOOL_NAME[k])}" title="${esc(TOOL_NAME[k])}">${icon(k)}</button>`).join("");
+      bar.hidden = !st.favShow || !st.fav.length;
+      const p = ls.get("tk-favpos", null); if (p) { bar.style.left = p.x + "px"; bar.style.top = p.y + "px"; bar.style.transform = "none"; }
+      const fb = $('[data-act="favbar"]'); if (fb) { fb.setAttribute("aria-pressed", String(st.favShow)); fb.innerHTML = icon(st.favShow ? "starOn" : "star"); }
+    }
+    (() => {
+      const grip = $(".gx-fgrip"), bar = $(".gx-favbar"); let d = null;
+      grip.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); const r = bar.getBoundingClientRect(), pr = bar.parentNode.getBoundingClientRect(); d = { dx: e.clientX - r.left, dy: e.clientY - r.top, pr }; grip.setPointerCapture(e.pointerId); });
+      grip.addEventListener("pointermove", e => { if (!d) return; const x = Math.max(0, Math.min(d.pr.width - bar.offsetWidth, e.clientX - d.pr.left - d.dx)), y = Math.max(0, Math.min(d.pr.height - bar.offsetHeight, e.clientY - d.pr.top - d.dy)); bar.style.left = x + "px"; bar.style.top = y + "px"; bar.style.transform = "none"; });
+      grip.addEventListener("pointerup", () => { if (!d) return; d = null; ls.set("tk-favpos", { x: parseFloat(bar.style.left) || 0, y: parseFloat(bar.style.top) || 0 }); });
+    })();
+    function menuEmoji(btn) {
+      openPop(btn, `<div class="gx-mh">Emojis</div><div class="gx-emojis">${EMOJIS.map(e => `<button type="button" class="gx-emo" data-pick="${e}" aria-label="${e}">${e}</button>`).join("")}</div>
+        <div class="gx-mrow"><span class="gx-muted" style="padding:6px 8px">Elige uno y toca el gráfico</span><button type="button" class="gx-star" data-fav="tkEmoji" aria-pressed="${st.fav.includes("tkEmoji")}" aria-label="Favoritos" title="Favoritos">${icon(st.fav.includes("tkEmoji") ? "starOn" : "star", 15)}</button></div>`, k => { st.emoji = k; setTool("tkEmoji"); });
+    }
+    /* trazos libres */
+    const SVGF = $(".gx-free"); let FR = null;
+    function startFree(k) { FR = { k, px: [], down: false, hover: null }; SVGF.hidden = false; SVGF.innerHTML = ""; el.querySelector(".gx").classList.add("free"); hint(k === "tkBrush" || k === "tkHighlighter" ? "Arrastra sobre el gráfico para dibujar." : "Haz clic para añadir puntos. Doble clic o Intro para terminar" + (k === "tkPolyline" ? ", o toca el primer punto para cerrarla" : "") + ". Esc cancela."); }
+    function drawFree() {
+      if (!FR) return; const pts = FR.px.concat(FR.down || !FR.hover ? [] : [FR.hover]), col = curColor();
+      SVGF.innerHTML = pts.length ? `<polyline points="${pts.map(p => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-opacity="${FR.k === "tkHighlighter" ? .35 : 1}" stroke-width="${FR.k === "tkHighlighter" ? 10 : 2}" stroke-linecap="round" stroke-linejoin="round"/>` + (FR.k === "tkPath" || FR.k === "tkPolyline" ? FR.px.map(p => `<circle cx="${p.x}" cy="${p.y}" r="3" fill="${col}"/>`).join("") : "") : "";
+    }
+    function pxToPts(px) {
+      let r = ch.convertFromPixel(px.map(p => ({ x: p.x, y: p.y })), { paneId: "candle_pane" }); r = Array.isArray(r) ? r : [r];
+      const L = ch.getDataList(), last = L[L.length - 1];
+      return r.map(q => { let ts = q.timestamp; if (ts == null && q.dataIndex != null) ts = L[q.dataIndex] ? L[q.dataIndex].timestamp : last.timestamp + (q.dataIndex - (L.length - 1)) * TF_MS[st.tf]; return { timestamp: ts, value: q.value }; }).filter(q => q.timestamp != null && q.value != null);
+    }
+    function endFree(commit) {
+      if (!FR) return; const f = FR; FR = null; SVGF.hidden = true; SVGF.innerHTML = ""; el.querySelector(".gx").classList.remove("free"); hint("");
+      if (commit && f.px.length >= 2) {
+        try {
+          const pts = pxToPts(f.px); if (pts.length >= 2) {
+            const p0 = pts[0], ed = Object.assign(newStyle(f.k), { pts: pts.map(q => [q.timestamp - p0.timestamp, q.value - p0.value]), closed: !!f.closed });
+            if (f.k === "tkHighlighter") ed.color = st.color || "#e9b949";
+            ch.createOverlay(Object.assign({ name: f.k, groupId: "draw", points: [p0, pts[pts.length - 1]], extendData: ed }, evs())); save();
+          }
+        } catch (e) { hint("No se pudo dibujar ahí."); setTimeout(() => hint(""), 2000); }
+      }
+      if (commit) doneTool(f.k); else setTool("cursor");
+    }
+    (() => {
+      const pos = e => { const r = box.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+      const block = e => { if (!FR) return; e.stopPropagation(); if (e.cancelable) e.preventDefault(); };
+      ["mousedown", "mousemove", "mouseup", "touchstart", "touchmove", "touchend", "click"].forEach(t => box.addEventListener(t, block, { capture: true, passive: false }));
+      box.addEventListener("pointerdown", e => {
+        if (!FR) return; e.stopPropagation(); e.preventDefault(); const p = pos(e);
+        if (FR.k === "tkBrush" || FR.k === "tkHighlighter") { FR.down = true; FR.px = [p]; try { box.setPointerCapture(e.pointerId); } catch (x) { /* sin captura */ } }
+        else { if (FR.k === "tkPolyline" && FR.px.length > 2 && Math.hypot(p.x - FR.px[0].x, p.y - FR.px[0].y) < 9) { FR.closed = true; endFree(true); return; } FR.px.push(p); }
+        drawFree();
+      }, true);
+      box.addEventListener("pointermove", e => { if (!FR) return; e.stopPropagation(); const p = pos(e); if (FR.down) { const l = FR.px[FR.px.length - 1]; if (Math.hypot(p.x - l.x, p.y - l.y) > 2.5) FR.px.push(p); } else FR.hover = p; drawFree(); }, true);
+      box.addEventListener("pointerup", e => { if (!FR) return; e.stopPropagation(); if (FR.down) { FR.down = false; endFree(true); } }, true);
+      box.addEventListener("dblclick", e => { if (!FR) return; e.stopPropagation(); e.preventDefault(); if (!FR.down) { const a = FR.px[FR.px.length - 1], b = FR.px[FR.px.length - 2]; if (a && b && Math.hypot(a.x - b.x, a.y - b.y) < 4) FR.px.pop(); endFree(true); } }, true);
+    })();
+    /* lista de dibujos */
+    function modalTree() {
+      const nameOf = o => o.name === "tkPos" ? ((o.extendData || {}).side === "sell" ? "Posición corta" : "Posición larga") : TOOL_NAME[o.name] || ({ segment: "Línea de tendencia" })[o.name] || o.name;
+      const paint = () => {
+        const list = ch.getOverlays({ groupId: "draw" });
+        DLG.querySelector(".gx-tree").innerHTML = list.length ? list.map(o => `<div class="gx-trow"><span class="gx-tic">${icon(o.name === "tkPos" ? ((o.extendData || {}).side === "sell" ? "tkShort" : "tkLong") : o.name, 18)}</span><span class="gx-tname">${esc(nameOf(o))}${(o.extendData || {}).text ? " · " + esc(String(o.extendData.text).slice(0, 24)) : ""}</span>
+          <button type="button" class="gx-tb gx-ic" data-tv="${o.id}" aria-label="${o.visible === false ? "Mostrar" : "Ocultar"}" title="${o.visible === false ? "Mostrar" : "Ocultar"}">${icon(o.visible === false ? "eyeOff" : "eye", 16)}</button>
+          <button type="button" class="gx-tb gx-ic" data-tl="${o.id}" aria-pressed="${!!o.lock}" aria-label="Bloquear" title="Bloquear">${icon("lock", 16)}</button>
+          <button type="button" class="gx-tb gx-ic" data-td="${o.id}" aria-label="Borrar" title="Borrar">${icon("trash", 16)}</button></div>`).join("") : `<div class="gx-muted" style="padding:16px">Aún no hay dibujos en ${esc(st.sym)}.</div>`;
+      };
+      openModal(`<div class="gx-dh"><h3>Dibujos de ${esc(st.sym)}</h3><button type="button" class="gx-tb gx-ic" data-close aria-label="Cerrar">${icon("x", 18)}</button></div><div class="gx-tree"></div>`, () => {
+        paint();
+        DLG.onclick = e => {
+          const b = e.target.closest("button"); if (!b) return;
+          if (b.hasAttribute("data-close")) { closeModal(); return; }
+          if (b.dataset.tv) { const o = getOv(b.dataset.tv); ch.overrideOverlay({ id: o.id, visible: o.visible === false }); }
+          if (b.dataset.tl) { const o = getOv(b.dataset.tl); ch.overrideOverlay({ id: o.id, lock: !o.lock }); }
+          if (b.dataset.td) { ch.removeOverlay({ id: b.dataset.td }); hideFloat(); }
+          save(); paint();
+        };
+      });
     }
     /* barra flotante del dibujo elegido */
     const F = $(".gx-float");
@@ -601,7 +1031,7 @@
     function dupSel() {
       const o = st.sel && getOv(st.sel); if (!o) return;
       const dt = (TF_MS[st.tf] || 3e5) * 5;
-      ch.createOverlay(Object.assign({ name: o.name, groupId: "draw", points: o.points.map(p => ({ timestamp: p.timestamp + dt, value: p.value })), extendData: Object.assign({}, o.extendData), styles: o.styles, mode: st.magnet ? "weak_magnet" : "normal" }, evs()));
+      ch.createOverlay(Object.assign({ name: o.name, groupId: "draw", points: o.points.map(p => ({ timestamp: p.timestamp + dt, value: p.value })), extendData: Object.assign({}, o.extendData), styles: o.styles, mode: magMode() }, evs()));
       save();
     }
 
@@ -613,7 +1043,7 @@
       const left = Math.min(a.left - r.left, r.width - 260), top = a.bottom - r.top + 4;
       if (anchor.closest(".gx-tools") && window.innerWidth >= 1024) { POP.style.left = (a.right - r.left + 4) + "px"; POP.style.top = (a.top - r.top) + "px"; }
       else { POP.style.left = Math.max(4, left) + "px"; POP.style.top = top + "px"; }
-      POP.onclick = e => { const b = e.target.closest("[data-pick]"); if (b) { onPick(b.dataset.pick); closePop(); } };
+      POP.onclick = e => { const fv = e.target.closest("[data-fav]"); if (fv) { const on = toggleFav(fv.dataset.fav); fv.setAttribute("aria-pressed", String(on)); fv.innerHTML = icon(on ? "starOn" : "star", 15); return; } const b = e.target.closest("[data-pick]"); if (b) { onPick(b.dataset.pick); closePop(); } };
     }
     function closePop() { POP.hidden = true; POP.innerHTML = ""; }
     function openModal(html, bind) { DLG.onclick = null; DLG.onchange = null; DLG.innerHTML = html; MOD.hidden = false; bind && bind(); const f = DLG.querySelector("input,button"); f && f.focus(); }
@@ -628,7 +1058,7 @@
     }
     function menuGroup(btn, gid) {
       const g = GROUPS.find(x => x[0] === gid);
-      openPop(btn, `<div class="gx-mh">${esc(g[1])}</div>` + g[2].map(([k, l]) => `<button type="button" class="gx-mi" data-pick="${k}" aria-pressed="${k === st.tool}">${icon(k, 18)}<span>${esc(l)}</span></button>`).join(""), k => {
+      openPop(btn, `<div class="gx-mh">${esc(g[1])}</div>` + g[2].map(([k, l]) => k === "#" ? `<div class="gx-msub">${esc(l)}</div>` : `<div class="gx-mrow"><button type="button" class="gx-mi" data-pick="${k}" aria-pressed="${k === st.tool}">${icon(k, 18)}<span>${esc(l)}</span></button>${CURSORS.includes(k) ? "" : `<button type="button" class="gx-star" data-fav="${k}" aria-pressed="${st.fav.includes(k)}" aria-label="${st.fav.includes(k) ? "Quitar de" : "Añadir a"} favoritos: ${esc(l)}" title="Favoritos">${icon(st.fav.includes(k) ? "starOn" : "star", 15)}</button>`}</div>`).join(""), k => {
         st.last[gid] = k; ls.set("tk-lasttool", st.last);
         const main = el.querySelector(`[data-grp="${gid}"] .gx-tool`); main.dataset.tool = k; main.innerHTML = icon(k); main.title = TOOL_NAME[k]; main.setAttribute("aria-label", TOOL_NAME[k]);
         setTool(k);
@@ -869,6 +1299,7 @@
       if (t.dataset.menu === "tf") { POP.hidden ? menuTf(t) : closePop(); return; }
       if (t.dataset.menu === "type") { POP.hidden ? menuType(t) : closePop(); return; }
       if (t.dataset.more) { menuGroup(t, t.dataset.more); return; }
+      if (t.dataset.tool === "tkEmoji") { menuEmoji(t); return; }
       if (t.dataset.tool) { const g = t.closest("[data-grp]"); if (g && st.tool === t.dataset.tool && t.dataset.tool !== "cursor" && el.querySelector(`[data-more="${g.dataset.grp}"]`)) { menuGroup(t, g.dataset.grp); return; } setTool(t.dataset.tool); return; }
       if (t.dataset.color) { patchSel({ color: t.dataset.color }); return; }
       if (t.dataset.fa === "del") { removeSel(); return; }
@@ -885,7 +1316,11 @@
       if (a === "redo") { redo(); return; }
       if (t.dataset.mode) { if (t.dataset.mode === "bt") enterReplay(); else if (R.on) exitReplay(); return; }
       if (a === "full") { const card = el.closest(".tvcard") || el; const on = !card.classList.contains("full"); card.classList.toggle("full", on); document.body.style.overflow = on ? "hidden" : ""; t.title = on ? "Salir de pantalla completa" : "Pantalla completa"; setTimeout(() => ch.resize(), 30); return; }
-      if (a === "magnet") { st.magnet = !st.magnet; ls.set("tk-magnet", st.magnet); t.setAttribute("aria-pressed", String(st.magnet)); return; }
+      if (a === "magnet") { st.magnet = !st.magnet ? "weak" : st.magnet === "weak" || st.magnet === true ? "strong" : false; ls.set("tk-magnet", st.magnet); t.setAttribute("aria-pressed", String(!!st.magnet)); t.dataset.strong = String(st.magnet === "strong"); t.title = magTitle(); hint(magTitle()); setTimeout(() => hint(""), 1800); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, mode: magMode() })); return; }
+      if (a === "stay") { st.stay = !st.stay; ls.set("tk-stay", st.stay); t.setAttribute("aria-pressed", String(st.stay)); hint(st.stay ? "Seguir dibujando: activado" : "Seguir dibujando: desactivado"); setTimeout(() => hint(""), 1500); return; }
+      if (a === "zoom") { try { ch.zoomAtCoordinate(e.shiftKey ? 0.75 : 1.35, undefined, 160); } catch (x) { /* sin zoom */ } return; }
+      if (a === "tree") { modalTree(); return; }
+      if (a === "favbar") { st.favShow = !st.favShow; ls.set("tk-favshow", st.favShow); renderFav(); if (st.favShow && !st.fav.length) { hint("Marca herramientas con la estrella en sus menús para verlas aquí."); setTimeout(() => hint(""), 3000); } return; }
       if (a === "lockall") { st.locked = !st.locked; t.setAttribute("aria-pressed", String(st.locked)); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, lock: st.locked })); return; }
       if (a === "hide") { st.hidden = !st.hidden; t.setAttribute("aria-pressed", String(st.hidden)); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, visible: !st.hidden })); return; }
       if (a === "clear") { if (ch.getOverlays({ groupId: "draw" }).length && window.confirm("¿Borrar todos los dibujos de " + st.sym + "? Puedes deshacerlo con la flecha de deshacer.")) { ch.removeOverlay({ groupId: "draw" }); F.hidden = true; } return; }
@@ -913,6 +1348,7 @@
     const onKey = e => {
       if (!document.body.contains(el) || (me && inst !== me)) return;
       const typing = e.target.matches && e.target.matches("input,textarea,select");
+      if (FR && (e.key === "Enter" || e.key === "Escape")) { e.preventDefault(); endFree(e.key === "Enter"); return; }
       if (e.key === "Escape") { if (!MOD.hidden) closeModal(); else if (!POP.hidden) closePop(); else if (R.cut) cutMode(false); return; }
       if (typing) return;
       if (R.on && !R.picking && MOD.hidden) {
@@ -935,12 +1371,13 @@
       el, ch, ro, onKey, key: KEY, activate,
       get sym() { return st.sym; }, get tf() { return st.tf; },
       setSymbol(sym) { if (sym === st.sym) return; const was = R.on; if (R.on) exitReplay(); st.sym = sym; F.hidden = true; load(); restore(); if (was) enterReplay(); },
-      setTheme(dark) { DARK = !!dark; ch.setStyles(styles()); applyInd(); paintBg(); },
+      setTheme(dark) { DARK = !!dark; ch.setStyles(styles()); applyInd(); paintBg(); applyCursor(); },
       price: () => st.price,
       stop() { pause(); if (st.unsub) { st.unsub(); st.unsub = null; } }
     };
     ALL.add(me); ALL.forEach(x => x.el.classList.toggle("tk-act", x === me));
-    load(); applyInd(); restore();
+    load(); applyInd(); restore(); renderFav(); applyCursor();
+    if (st.baseCur !== "cursor") $$("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === st.baseCur)));
     return me;
   }
   function destroyOne(x) {
