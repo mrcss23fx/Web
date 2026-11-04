@@ -100,7 +100,36 @@ h3{font-family:var(--head);letter-spacing:-.015em}
 .acsel-t small{font-size:11px;color:var(--suave)}
 .acsel-t b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acsel>svg{color:var(--suave);flex:none}
-.acsel select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:16px}
+button.acsel{font:inherit;text-align:left;width:100%}
+.acsel:focus-visible{outline:2px solid var(--cobalto);outline-offset:2px}
+.acsw{position:relative}
+@media (min-width:1024px){.side{z-index:50}}
+.acsw.mini{margin-left:auto;min-width:0}
+.acsw.open .acsel{border-color:color-mix(in srgb,var(--cobalto) 60%,transparent);background:var(--cobaltoC)}
+.acsw.open .acsel>svg{transform:rotate(180deg)}
+.acsel>svg{transition:transform .18s ease}
+.acmenu{position:absolute;top:calc(100% + 6px);left:0;z-index:80;width:272px;max-height:min(70vh,520px);overflow:auto;padding:6px;background:var(--card);border:1px solid var(--borde);border-radius:14px;box-shadow:0 22px 48px -16px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.18);
+  opacity:0;transform:translateY(-4px) scale(.98);transform-origin:top left;transition:opacity .14s ease,transform .14s ease}
+.acmenu.in{opacity:1;transform:none}
+.acsw.mini .acmenu{left:auto;right:0;transform-origin:top right;width:min(300px,calc(100vw - 24px))}
+.acm-h{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--suave);padding:8px 10px 6px}
+.acm-sep{height:1px;background:var(--linea);margin:6px 4px}
+.acm-o{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;border-radius:10px;background:transparent;color:var(--tinta);font:inherit;text-align:left;cursor:pointer}
+.acm-o:hover,.acm-o:focus-visible{background:var(--sub);outline:none}
+.acm-o:focus-visible{box-shadow:inset 0 0 0 2px var(--cobalto)}
+.acm-o[aria-selected="true"]{background:var(--cobaltoC)}
+.acm-o .aic{width:34px;height:34px;border-radius:10px;flex:none}
+.acm-t{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.3}
+.acm-t b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acm-t small{font-size:12px;color:var(--suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acm-dot{width:8px;height:8px;border-radius:50%;background:var(--borde);flex:none}
+.acm-dot.on{background:var(--verde)}
+.acm-ck{width:18px;display:flex;color:var(--cobalto2);opacity:0;flex:none}
+:root:not([data-theme="dark"]) .acm-ck{color:var(--cobalto)}
+.acm-o[aria-selected="true"] .acm-ck{opacity:1}
+.acm-m{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;color:var(--cobalto2);font-size:13.5px;font-weight:600;text-decoration:none}
+:root:not([data-theme="dark"]) .acm-m{color:var(--cobalto)}
+.acm-m:hover,.acm-m:focus-visible{background:var(--sub);outline:none}
 .acsel.mini{margin:0 0 0 auto;padding:4px 8px;gap:8px;max-width:min(190px,calc(100vw - 225px));min-width:0;height:38px}
 .acsel.mini .aic{width:26px;height:26px;border-radius:8px}
 .acsel.mini .acsel-t small{display:none}
@@ -327,7 +356,7 @@ textarea.input{height:auto;padding:9px 11px;resize:vertical;line-height:1.5}
   .side-auto .main{border-left:1px solid var(--linea)}
   .side-auto .side{position:fixed;left:0;top:0;bottom:0;z-index:60;width:232px;border-right:1px solid var(--linea);
     clip-path:inset(0 160px 0 0);will-change:clip-path;transition:clip-path .26s cubic-bezier(.22,.8,.24,1) .12s,box-shadow .26s ease .12s}
-  .side-auto .side:hover,.side-auto .side:focus-within{clip-path:inset(0 -60px 0 0);box-shadow:20px 0 44px -14px rgba(0,0,0,.55);transition-delay:.05s}
+  .side-auto .side:hover,.side-auto .side:focus-within{clip-path:inset(0 -80px 0 0);box-shadow:20px 0 44px -14px rgba(0,0,0,.55);transition-delay:.05s}
   .side-auto .side .nl,.side-auto .side .brand2 span,.side-auto .side .acsel-t,.side-auto .side .acsel>svg{opacity:0;transition:opacity .18s ease .1s}
   .side-auto .side:hover .nl,.side-auto .side:focus-within .nl,.side-auto .side:hover .brand2 span,.side-auto .side:focus-within .brand2 span,.side-auto .side:hover .acsel-t,.side-auto .side:focus-within .acsel-t,.side-auto .side:hover .acsel>svg,.side-auto .side:focus-within .acsel>svg{opacity:1;transition-delay:.1s}
   .side-auto .navlink,.side-auto .brand2,.side-auto .acsel{white-space:nowrap}
@@ -1028,6 +1057,21 @@ function applyAcct(){
   S.bridge=sel?sel.b:(S.bridges||[])[0]||null;
   S.plan=sel?planWith(sel.a):Object.assign({},S.basePlan,{acct:null});
 }
+function bindAcctMenus(){
+  document.querySelectorAll(".acsw").forEach(w=>{
+    const btn=w.querySelector("[data-acct-open]"),menu=w.querySelector(".acmenu"),opts=()=>Array.from(menu.querySelectorAll("[data-acct-opt],[data-acct-manage]"));
+    const close=(focus)=>{if(menu.hidden)return;menu.classList.remove("in");btn.setAttribute("aria-expanded","false");w.classList.remove("open");setTimeout(()=>{if(!w.classList.contains("open"))menu.hidden=true},140);if(focus)btn.focus()};
+    const open=()=>{document.querySelectorAll(".acsw.open").forEach(o=>{if(o!==w)o.querySelector("[data-acct-open]").click()});menu.hidden=false;w.classList.add("open");btn.setAttribute("aria-expanded","true");requestAnimationFrame(()=>menu.classList.add("in"));const cur=menu.querySelector('[aria-selected="true"]')||opts()[0];cur&&cur.focus({preventScroll:true})};
+    btn.onclick=e=>{e.stopPropagation();menu.hidden?open():close()};
+    menu.onclick=e=>{const o=e.target.closest("[data-acct-opt]");if(o){e.preventDefault();close();if(o.dataset.acctOpt!==(S.acctSel||""))setAcct(o.dataset.acctOpt)}else if(e.target.closest("[data-acct-manage]"))close()};
+    menu.onkeydown=e=>{const l=opts(),i=l.indexOf(document.activeElement);
+      if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();const n=l[(i+(e.key==="ArrowDown"?1:-1)+l.length)%l.length];n&&n.focus()}
+      else if(e.key==="Home"||e.key==="End"){e.preventDefault();(e.key==="Home"?l[0]:l[l.length-1]).focus()}
+      else if(e.key==="Escape"||e.key==="Tab"){if(e.key==="Escape")e.preventDefault();close(e.key==="Escape")}};
+    btn.onkeydown=e=>{if((e.key==="ArrowDown"||e.key==="Enter"||e.key===" ")&&menu.hidden){e.preventDefault();open()}};
+  });
+  if(!bindAcctMenus.doc){bindAcctMenus.doc=true;document.addEventListener("click",e=>{document.querySelectorAll(".acsw.open").forEach(w=>{if(!w.contains(e.target))w.querySelector("[data-acct-open]").click()})})}
+}
 function setAcct(v){
   S.acctSel=v||"";try{localStorage.setItem("tk-acct",S.acctSel)}catch(e){}
   if(window.TkChart&&TkChart.current){TkChart.destroy();document.body.style.overflow=""}
@@ -1035,11 +1079,24 @@ function setAcct(v){
   const sel=selAcct();toast(sel?"Viendo "+acctName(sel.a)+(sel.a.type?" · "+ATIPO[sel.a.type]:""):"Viendo todas las cuentas");
 }
 function acctNote(){const sel=selAcct();return sel?`<div class="small muted">Solo <b style="color:var(--tinta)">${esc(acctName(sel.a))}</b>${sel.a.type?" · "+ATIPO[sel.a.type]:""} · <button type="button" class="link" data-acct-all style="font-size:inherit">ver todas</button></div>`:`<div class="small muted">Todas tus cuentas juntas</div>`}
+const ICGRID='<rect x="3" y="4" width="6" height="5" rx="1.2"/><rect x="11" y="4" width="6" height="5" rx="1.2"/><rect x="3" y="11" width="6" height="5" rx="1.2"/><rect x="11" y="11" width="6" height="5" rx="1.2"/>';
 function acctSwitch(cls){
-  const l=acctList().filter(x=>x.a.status!=="archivada"),sel=selAcct(),t=sel&&sel.a.type;
-  return `<label class="acsel ${cls||""}" title="Cambia de cuenta: todo se adapta a ella"><span class="aic">${SVG(sel?(ICA[t]||ICA.otra):'<rect x="3" y="4" width="6" height="5" rx="1.2"/><rect x="11" y="4" width="6" height="5" rx="1.2"/><rect x="3" y="11" width="6" height="5" rx="1.2"/><rect x="11" y="11" width="6" height="5" rx="1.2"/>',17)}</span>
-    <span class="acsel-t"><small>Cuenta</small><b>${sel?esc(acctName(sel.a)):"Todas las cuentas"}</b></span>${SVG('<path d="M6 8l4 4 4-4"/>',16,2)}
-    <select data-acct-sel aria-label="Cuenta que estás viendo"><option value="">Todas las cuentas</option>${l.map(x=>`<option value="${esc(acctKey(x))}" ${acctKey(x)===S.acctSel?"selected":""}>${esc(acctName(x.a))}${x.a.type?" · "+ATIPO[x.a.type]:" · sin datos"}</option>`).join("")}<option value="__manage">Gestionar cuentas…</option></select></label>`;
+  const l=acctList().filter(x=>x.a.status!=="archivada"),sel=selAcct(),t=sel&&sel.a.type,uid="acm"+(cls||"s");
+  const opt=(key,icon,name,sub,live)=>`<button type="button" class="acm-o" role="option" data-acct-opt="${esc(key)}" aria-selected="${(S.acctSel||"")===key}" tabindex="-1">
+      <span class="aic">${SVG(icon,17)}</span><span class="acm-t"><b>${esc(name)}</b><small>${sub}</small></span>
+      ${live==null?"":`<span class="acm-dot ${live?"on":""}" title="${live?"MT5 conectado":"Sin MT5"}"></span>`}<span class="acm-ck">${SVG('<path d="M4.5 10.5l3.5 3.5 7.5-8"/>',16,2.2)}</span></button>`;
+  return `<div class="acsw ${cls||""}">
+    <button type="button" class="acsel ${cls||""}" data-acct-open aria-haspopup="listbox" aria-expanded="false" aria-controls="${uid}" title="Cambia de cuenta: todo se adapta a ella">
+      <span class="aic">${SVG(sel?(ICA[t]||ICA.otra):ICGRID)}</span><span class="acsel-t"><small>Cuenta</small><b>${sel?esc(acctName(sel.a)):"Todas las cuentas"}</b></span>${SVG('<path d="M6 8l4 4 4-4"/>',16,2)}
+    </button>
+    <div class="acmenu" id="${uid}" role="listbox" aria-label="Cuenta que estás viendo" hidden>
+      <div class="acm-h">Ver la app con</div>
+      ${opt("",ICGRID,"Todas las cuentas",l.length+" cuenta"+(l.length===1?"":"s")+" juntas",null)}
+      ${l.length?`<div class="acm-sep"></div>`:""}
+      ${l.map(x=>opt(acctKey(x),ICA[x.a.type]||ICA.otra,acctName(x.a),esc([x.a.type?ATIPO[x.a.type]+(x.a.type==="fondeo"&&x.a.phase?" · "+AFASE[x.a.phase]:""):"Sin datos",x.a.number?"#"+x.a.number:""].filter(Boolean).join(" · ")),isLive(x.b))).join("")}
+      <div class="acm-sep"></div>
+      <a class="acm-m" href="#cuentas" data-acct-manage>${SVG('<path d="M10 4v12M4 10h12"/>',16,2)}<span>Añadir o gestionar cuentas</span></a>
+    </div></div>`;
 }
 function acctCard({a,b}){
   const x=acctStats(a), on=isLive(b), hide=inSession(S.plan), i=(b&&b.last_info)||{};
@@ -1659,7 +1716,7 @@ function render(){
   $app.innerHTML=shell(r.view==="op"?"hoy":r.view,content);
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{applyTheme(b.dataset.themeSet);document.querySelectorAll("[data-theme-set]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.themeSet===b.dataset.themeSet)));refreshWidgets()});
   document.querySelectorAll("[data-theme-toggle]").forEach(b=>b.onclick=()=>{applyTheme(isDark()?"light":"dark");refreshWidgets()});
-  document.querySelectorAll("[data-acct-sel]").forEach(x=>x.onchange=()=>{if(x.value==="__manage"){x.value=S.acctSel;location.hash="#cuentas";return}setAcct(x.value)});
+  bindAcctMenus();
   document.querySelectorAll("[data-acct-all]").forEach(b=>b.onclick=()=>setAcct(""));
   document.querySelectorAll("[data-ause]").forEach(b=>b.onclick=()=>setAcct(b.dataset.ause));
   bindView(r);
