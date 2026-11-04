@@ -15,7 +15,7 @@
 //| sale la captura. El programa NO abre ni cierra operaciones.      |
 //+------------------------------------------------------------------+
 #property copyright   "Tickora"
-#property version     "1.30"
+#property version     "1.31"
 #property description "Apunta solas tus operaciones en Tickora, con la captura del gráfico al entrar y al salir. No abre ni cierra operaciones."
 
 input string Clave           = "";    // Clave (opcional: si la dejas vacía, te enseña un código para vincular)
@@ -27,7 +27,7 @@ input bool   RehacerFoto     = true;  // Si no hubo foto en el momento, rehacerl
 #define BT_URL      "https://xsvezicjksfrklwjskfv.supabase.co"
 #define BT_RPC      "/rest/v1/rpc/bridge_ingest"
 #define BT_APIKEY   "sb_publishable_qLIhdI4CuQuisOstwl0fWg_dhW61xcm"
-#define BT_VERSION  "1.3"
+#define BT_VERSION  "1.31"
 #define BT_KEYFILE  "bitacora_clave.txt"
 #define BT_STATE    "bitacora_estado.csv"
 #define BT_CAPFILE  "bitacora_captura.png"
@@ -244,9 +244,11 @@ ENUM_TIMEFRAMES TfOf(const string tf)
    if(tf == "1m") return(PERIOD_M1);
    if(tf == "5m") return(PERIOD_M5);
    if(tf == "15m") return(PERIOD_M15);
+   if(tf == "30m") return(PERIOD_M30);
    if(tf == "1h") return(PERIOD_H1);
    if(tf == "4h") return(PERIOD_H4);
    if(tf == "1d") return(PERIOD_D1);
+   if(tf == "1w") return(PERIOD_W1);
    return(PERIOD_CURRENT);
   }
 
