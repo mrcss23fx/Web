@@ -121,7 +121,7 @@ h3{font-family:var(--head);letter-spacing:-.015em}
 .spk{display:block}
 .flame{width:42px;height:42px;border-radius:50%;background:var(--ambarB);color:var(--ambar);display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 0 18px -4px var(--ambar)}
 .h2b{font-family:var(--head);font-size:19px;font-weight:700}
-.pills{display:flex;gap:6px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
 .pills button{height:34px;padding:0 16px;border-radius:999px;border:1px solid var(--linea);background:transparent;color:var(--tinta2);font-size:13px}
 .pills button[aria-pressed="true"]{background:var(--cobaltoC);border-color:color-mix(in srgb,var(--cobalto) 55%,transparent);color:var(--tinta);font-weight:600}
 .arow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.2fr) auto;gap:14px;align-items:center;background:var(--card);border:1px solid var(--linea);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
@@ -168,6 +168,39 @@ h3{font-family:var(--head);letter-spacing:-.015em}
 .hleg{display:flex;gap:12px;font-size:11.5px;color:var(--suave);flex-wrap:wrap}
 .hleg span{display:inline-flex;align-items:center;gap:6px}
 .hleg i{width:9px;height:9px;border-radius:50%;box-shadow:none}
+/* cuentas */
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;background:var(--cobaltoC);color:var(--cobalto2);font-size:11.5px;font-weight:600;white-space:nowrap;text-decoration:none}
+:root:not([data-theme="dark"]) .tag{color:var(--cobalto)}
+.tag.warn{background:var(--ambarB);color:var(--ambarT)}
+.tag.muted{background:var(--sub);color:var(--suave)}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;align-items:start}
+@media (max-width:420px){.agrid{grid-template-columns:1fr}}
+.aic{width:42px;height:42px;border-radius:12px;background:var(--cobaltoC);color:var(--cobalto2);display:flex;align-items:center;justify-content:center;flex:none}
+:root:not([data-theme="dark"]) .aic{color:var(--cobalto)}
+.anums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:12px;border-radius:12px;background:var(--sub)}
+.anums span{display:block;font-size:11.5px;color:var(--suave)}
+.anums b{font-family:var(--head);font-size:16px;font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.anums small{font-family:var(--sans);font-size:11px;font-weight:400;color:var(--suave)}
+@media (max-width:420px){.anums{grid-template-columns:1fr 1fr}}
+.pbar{display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.pbar b{font-weight:700}
+.pbt{height:8px;border-radius:999px;background:var(--linea);overflow:hidden}
+.pbt i{display:block;height:100%;border-radius:999px;background:var(--btn)}
+.pbt.warn i{background:var(--ambar)}
+.pbh{font-size:12px;color:var(--suave)}
+.tipos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.tipos{grid-template-columns:1fr 1fr}}
+.tipo input{position:absolute;opacity:0;pointer-events:none}
+.tipo span{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:12px;border:1px solid var(--borde);font-size:14px;font-weight:600;color:var(--tinta2);cursor:pointer}
+.tipo input:checked+span{background:var(--cobaltoC);border-color:var(--cobalto);color:var(--tinta)}
+.tipo input:focus-visible+span{outline:2px solid var(--cobalto);outline-offset:2px}
+.fgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.fgrid{grid-template-columns:1fr 1fr}}
+@media (max-width:420px){.fgrid{grid-template-columns:1fr}}
+.fset{border:1px solid var(--linea);border-radius:14px;padding:14px 16px 16px;margin:0;display:flex;flex-direction:column;gap:12px}
+.fset legend{padding:0 6px;font-weight:700;font-size:14px}
+.aform:not([data-tipo="fondeo"]) .only-fondeo{display:none}
+.aform[data-tipo="fondeo"] .not-fondeo{display:none}
 /* Progreso y Mi plan con el mismo diseño */
 .ptop{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .pseg{display:flex;gap:6px}
@@ -470,6 +503,7 @@ const ICON={
  grupo:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
  aprender:'<path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3zM21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/>',
  plan:'<path d="M6 3h12v18l-6-4-6 4z"/>',
+ cuentas:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 3.5h10M16 14.5h2"/>',
  analizar:'<path d="M7 3v4M7 15v6M17 3v6M17 15v6"/><rect x="5" y="7" width="4" height="8" rx="1"/><rect x="15" y="9" width="4" height="6" rx="1"/>',
  back:'<path d="M15 5l-7 7 7 7"/>',
  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
@@ -481,7 +515,7 @@ const ICON={
 const ico=(n,s=20,w=1.8,c="currentColor")=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
 const NAV=[["hoy","Hoy"],["progreso","Progreso"],["grupo","Grupo"],["aprender","Aprender"],["plan","Mi plan"]];
 const OSDEF=(/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent)?"mac":"win");
-const NAV_SIDE=[["hoy","Hoy"],["analizar","Analizar"],["progreso","Progreso"],["grupo","Grupo"],["aprender","Aprender"],["plan","Mi plan"]];
+const NAV_SIDE=[["hoy","Hoy"],["analizar","Analizar"],["progreso","Progreso"],["cuentas","Cuentas"],["grupo","Grupo"],["aprender","Aprender"],["plan","Mi plan"]];
 
 /* ---------- plan (los cambios valen desde mañana) ---------- */
 function effectivePlan(){
@@ -526,16 +560,17 @@ function evaluate(t){
 /* ---------- datos ---------- */
 async function loadAll(){
   const uid=S.user.id;
-  const [plan,cons,trades,keys]=await Promise.all([
+  const [plan,cons,trades,keys,accts]=await Promise.all([
     sb.from("docs").select("data").eq("col","v1").eq("id","plan").maybeSingle(),
     sb.from("consents").select("kind,version,granted,created_at"),
     sb.from("trades").select("*").order("open_time",{ascending:false}).limit(500),
-    sb.from("bridge_keys").select("key_hash,created_at,last_seen,last_info").order("last_seen",{ascending:false,nullsFirst:false})
+    sb.from("bridge_keys").select("key_hash,created_at,last_seen,last_info").order("last_seen",{ascending:false,nullsFirst:false}),
+    sb.from("docs").select("id,data,updated_at").eq("col","acct")
   ]);
   if(trades.error&&/relation|does not exist|schema cache/i.test(trades.error.message)){S.dbMissing=true}
   S.planDoc=plan.data?plan.data.data:null;S.plan=effectivePlan();
   S.consents={};(cons.data||[]).forEach(c=>{if(c.version===LEGAL_VERSION)S.consents[c.kind]=c.granted});
-  S.trades=trades.data||[];S.bridges=keys.data||[];S.bridge=S.bridges[0]||null;S.loaded=true;
+  S.trades=trades.data||[];S.bridges=keys.data||[];S.bridge=S.bridges[0]||null;S.accts=(accts&&accts.data||[]).map(d=>Object.assign({id:d.id},d.data)).sort((a,b)=>(a.created||0)-(b.created||0));S.loaded=true;
   drainInbox();
 }
 async function drainInbox(){
@@ -759,17 +794,92 @@ function horarioCard(p){
     <div class="hbar" role="img" aria-label="Llevas el ${Math.round(frac*100)} % de tu horario"><i style="width:${(frac*100).toFixed(1)}%"></i><b style="left:${(frac*100).toFixed(1)}%"></b></div>
     <div class="between small" style="color:var(--suave)"><span>${esc(p.start)}</span><span>${esc(p.end)}</span></div></div>`;
 }
+/* ---------- cuentas: demo, fondeo, capital propio ---------- */
+const ATIPO={fondeo:"Fondeo",propia:"Capital propio",demo:"Demo",otra:"Otra"}, AFASE={f1:"Fase 1",f2:"Fase 2",fin:"Financiada"}, AEST={activa:"Activa",superada:"Superada",perdida:"Perdida",archivada:"Archivada"};
+const ICA={fondeo:'<path d="M6 3h8v4a4 4 0 01-8 0zM6 5H3a3 3 0 003 3M14 5h3a3 3 0 01-3 3M10 11v3M7 17h6"/>',propia:'<rect x="3" y="5" width="14" height="11" rx="2"/><path d="M13 10.5h4"/>',demo:'<path d="M7 3h6M8 3v5l-4.5 7.5A1.5 1.5 0 004.8 18h10.4a1.5 1.5 0 001.3-2.5L12 8V3"/><path d="M6 13h8"/>',otra:'<circle cx="10" cy="10" r="7"/><path d="M7 10h6"/>'};
+const nOr=v=>{const x=parseFloat(String(v==null?"":v).replace(",","."));return isFinite(x)?x:null};
+const isLive=b=>b&&b.last_seen&&(Date.now()-new Date(b.last_seen))<15*60*1000;
+function bridgeOf(num){return num?(S.bridges||[]).find(b=>String((b.last_info||{}).account||"")===String(num))||null:null}
+function acctList(){
+  const reg=(S.accts||[]).map(a=>({a,b:bridgeOf(a.number)}));
+  const known=new Set(reg.map(x=>String(x.a.number||"")));
+  const loose=(S.bridges||[]).filter(b=>(b.last_info||{}).account&&!known.has(String(b.last_info.account))).map(b=>({a:{id:null,type:null,number:String(b.last_info.account),broker:b.last_info.broker||"",currency:b.last_info.currency},b}));
+  return reg.concat(loose);
+}
+function acctStats(num){
+  const L=S.trades.filter(t=>num&&String(t.account||"")===String(num)&&t.status==="closed"&&t.r!=null), tk=todayKey();
+  const st=tradeStats(L), today=L.filter(t=>dayKey(t.open_time)===tk).reduce((a,t)=>a+t.r,0), days=new Set(L.map(t=>dayKey(t.open_time))).size;
+  return {st,today,days,sum:L.reduce((a,t)=>a+t.r,0)};
+}
+function propBars(a,x){
+  const rp=S.plan.riskPct||1, tgt=nOr(a.target), dd=nOr(a.dailyDD), mx=nOr(a.maxDD), out=[];
+  const bar=(label,val,frac,warn,hint)=>`<div class="pbar"><div class="between"><span>${label}</span><b>${val}</b></div><div class="pbt ${warn?"warn":""}"><i style="width:${(Math.max(0,Math.min(1,frac))*100).toFixed(1)}%"></i></div>${hint?`<div class="pbh">${hint}</div>`:""}</div>`;
+  if(tgt){const need=tgt/rp;out.push(bar("Objetivo",`${fmtR(x.sum)} de +${num(need,1)} R`,x.sum/need,false,`${fmtPct(tgt)} de la cuenta = ${num(need,1)} R con tu riesgo de ${fmtPct(rp)}`))}
+  if(dd){const lim=dd/rp,left=Math.max(0,lim+Math.min(0,x.today));out.push(bar("Te queda hoy",`${num(left,1)} R`,left/lim,left/lim<.35,`Pérdida diaria máx. ${fmtPct(dd)} ≈ ${num(lim,1)} R`+(S.plan.dayLimitR>lim?` · <b>tu plan permite ${num(S.plan.dayLimitR,1)} R: bájalo</b>`:"")))}
+  if(mx){const lim=mx/rp,left=Math.max(0,lim+Math.min(0,x.sum));out.push(bar("Te queda en total",`${num(left,1)} R`,left/lim,left/lim<.35,`Pérdida total máx. ${fmtPct(mx)} ≈ ${num(lim,1)} R`))}
+  const md=nOr(a.minDays);if(md)out.push(bar("Días operados",`${x.days} de ${md}`,x.days/md,false,""));
+  return out.length?`<div class="stack" style="gap:12px">${out.join("")}<div class="small muted">Calculado en R con tus operaciones de esta cuenta. Es orientativo: manda lo que diga tu empresa.</div></div>`:"";
+}
+function acctCard({a,b}){
+  const x=acctStats(a.number), on=isLive(b), hide=inSession(S.plan), i=(b&&b.last_info)||{};
+  const head=`<div class="between" style="align-items:flex-start;gap:10px"><div class="row" style="gap:12px;min-width:0"><span class="aic">${SVG(ICA[a.type]||ICA.otra,20)}</span><div style="min-width:0"><b class="anum" style="font-size:17px">${esc(a.name||(a.number?"#"+a.number:"Cuenta"))}</b><div class="abro">${esc(a.broker||"Sin bróker")}${a.number?" · #"+esc(a.number):""}</div></div></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">${a.type?`<span class="tag">${ATIPO[a.type]}</span>`:`<span class="tag warn">Sin datos</span>`}${a.type==="fondeo"&&a.phase?`<span class="tag">${AFASE[a.phase]}</span>`:""}${a.status&&a.status!=="activa"?`<span class="tag muted">${AEST[a.status]}</span>`:""}</div></div>`;
+  const conn=`<div class="ast ${on?"on":""}" style="font-size:13.5px"><span class="dot" style="${b?"":"background:var(--borde)"}"></span>${b?(on?"Conectada a MT5":"MT5 sin señal"):"Sin conectar a MT5"}</div>`;
+  const nums=`<div class="anums"><div><span>Operaciones</span><b>${x.st.n}</b></div><div><span>Acierto</span><b>${x.st.win==null?"—":num(x.st.win,0)+"%"}</b></div><div><span>Resultado</span><b>${x.st.n?fmtR(x.sum):"—"}</b></div><div><span>Saldo</span><b>${hide?SVG(IC2.lock,14)+" Oculto":i.balance!=null?esc(money(i.balance,i.currency)):nOr(a.size)?esc(money(a.size,a.currency))+"<small> inicial</small>":"—"}</b></div></div>`;
+  const acts=a.id?`<div class="row" style="gap:8px"><button type="button" class="btn2" data-aedit="${esc(a.id)}" style="height:36px">Editar</button>${a.number?`<a class="btn2" href="#progreso" data-aprog="${esc(a.number)}" style="height:36px">Ver progreso</a>`:""}</div>`:`<button type="button" class="btn" data-anew="${esc(a.number)}" style="height:38px">Añadir sus datos</button>`;
+  return `<article class="card stack acc2" style="gap:14px">${head}${conn}${nums}${a.type==="fondeo"?propBars(a,x):""}${acts}</article>`;
+}
+function acctForm(){
+  const e=S.acctEdit, a=e==="new"?{type:"fondeo",status:"activa",currency:"USD",phase:"f1"}:typeof e==="object"?e:(S.accts||[]).find(x=>x.id===e)||{};
+  const v=k=>esc(a[k]==null?"":String(a[k])), opt=(m,cur)=>Object.entries(m).map(([k,l])=>`<option value="${k}" ${cur===k?"selected":""}>${l}</option>`).join("");
+  return `<form class="card stack aform" id="acctForm" data-tipo="${a.type||"fondeo"}" style="gap:16px">
+    <div class="between"><h2 class="h2b">${a.id?"Editar cuenta":"Añadir cuenta"}</h2><button type="button" class="link" id="acctCancel">Cancelar</button></div>
+    <div class="field"><span>Tipo de cuenta</span><div class="tipos" role="radiogroup" aria-label="Tipo de cuenta">${Object.entries(ATIPO).map(([k,l])=>`<label class="tipo"><input type="radio" name="type" value="${k}" ${ (a.type||"fondeo")===k?"checked":""}><span>${SVG(ICA[k],18)}${l}</span></label>`).join("")}</div></div>
+    <div class="fgrid">
+      <label class="field"><span>Nombre</span><input class="input" name="name" value="${v("name")}" placeholder="p. ej. Reto 100k" maxlength="40"></label>
+      <label class="field"><span><span class="only-fondeo">Empresa de fondeo</span><span class="not-fondeo">Bróker</span></span><input class="input" name="broker" value="${v("broker")}" maxlength="40"></label>
+      <label class="field"><span>Número de cuenta</span><input class="input" name="number" value="${v("number")}" inputmode="numeric" maxlength="20" placeholder="el de MetaTrader"></label>
+      <label class="field"><span><span class="only-fondeo">Tamaño de la cuenta</span><span class="not-fondeo">Saldo inicial</span></span><input class="input" name="size" value="${v("size")}" inputmode="decimal" placeholder="10000"></label>
+      <label class="field"><span>Divisa</span><select class="input" name="currency">${["USD","EUR","GBP","CHF"].map(c=>`<option ${a.currency===c?"selected":""}>${c}</option>`).join("")}</select></label>
+      <label class="field"><span>Estado</span><select class="input" name="status">${opt(AEST,a.status||"activa")}</select></label>
+    </div>
+    <fieldset class="only-fondeo fset"><legend>Reglas del reto</legend>
+      <div class="fgrid">
+        <label class="field"><span>Fase</span><select class="input" name="phase">${opt(AFASE,a.phase||"f1")}</select></label>
+        <label class="field"><span>Objetivo de beneficio (%)</span><input class="input" name="target" value="${v("target")}" inputmode="decimal" placeholder="10"></label>
+        <label class="field"><span>Pérdida diaria máx. (%)</span><input class="input" name="dailyDD" value="${v("dailyDD")}" inputmode="decimal" placeholder="5"></label>
+        <label class="field"><span>Pérdida total máx. (%)</span><input class="input" name="maxDD" value="${v("maxDD")}" inputmode="decimal" placeholder="10"></label>
+        <label class="field"><span>Días mínimos</span><input class="input" name="minDays" value="${v("minDays")}" inputmode="numeric" placeholder="4"></label>
+        <label class="field"><span>Fecha de inicio</span><input class="input" type="date" name="start" value="${v("start")}"></label>
+      </div>
+      <div class="small muted">Cópialas de las condiciones de tu empresa. Tickora te las enseña en R para que no tengas que pensar en dinero mientras operas.</div>
+    </fieldset>
+    <label class="field"><span>Nota</span><input class="input" name="note" value="${v("note")}" maxlength="120" placeholder="opcional"></label>
+    <div class="row" style="gap:10px;flex-wrap:wrap"><button type="submit" class="btn" style="flex:1;min-width:180px">Guardar cuenta</button>${a.id?`<button type="button" class="btn2" id="acctDel" style="height:48px">Borrar</button>`:""}</div>
+  </form>`;
+}
+function viewCuentas(){
+  const all=acctList(), f=S.acctT||"todas", show=all.filter(x=>f==="todas"?(x.a.status!=="archivada"):f==="archivadas"?x.a.status==="archivada":x.a.type===f&&x.a.status!=="archivada");
+  const cnt=k=>all.filter(x=>x.a.type===k&&x.a.status!=="archivada").length;
+  return `<div class="stack" style="gap:18px">
+    <div class="ptop"><div class="stack" style="gap:4px"><h1>Cuentas</h1><div class="small muted">Demo, fondeo y capital propio, cada una con sus números</div></div>${S.acctEdit?"":`<button type="button" class="btn" id="acctAdd" style="height:42px">+ Añadir cuenta</button>`}</div>
+    ${S.acctEdit?acctForm():""}
+    <div class="pills" role="group" aria-label="Filtrar por tipo">${[["todas","Todas ("+all.filter(x=>x.a.status!=="archivada").length+")"],["fondeo","Fondeo ("+cnt("fondeo")+")"],["propia","Capital propio ("+cnt("propia")+")"],["demo","Demo ("+cnt("demo")+")"],["archivadas","Archivadas"]].map(([k,l])=>`<button type="button" data-acctt="${k}" aria-pressed="${f===k}">${l}</button>`).join("")}</div>
+    ${show.length?`<div class="agrid">${show.map(acctCard).join("")}</div>`:`<div class="card stack" style="gap:8px;align-items:flex-start"><b>${all.length?"No hay cuentas en este filtro.":"Aún no tienes cuentas."}</b><span class="small muted">Añade tu cuenta demo, tu reto de fondeo o tu cuenta propia. Si pones el número de MetaTrader, sus operaciones se unen solas.</span></div>`}
+    <div class="small muted">Si una cuenta está conectada con el programa de MT5, sus operaciones aparecen solas. Para conectar otra cuenta, ve a <a href="#plan">Mi plan → Conectar MetaTrader 5</a> y repite el código en esa cuenta.</div>
+  </div>`;
+}
 function acctRows(){
-  const list=S.bridges||[];
-  const p=S.plan,hide=inSession(p),tk=todayKey(),f=S.acctF||"todas",live=b=>b.last_seen&&(Date.now()-new Date(b.last_seen))<15*60*1000;
-  const rows=list.filter(b=>f==="todas"||(f==="activas"?live(b):!live(b))).map(b=>{const i=b.last_info||{},acc=i.account||"—",on=live(b);
-    const r=S.trades.filter(t=>t.account===acc&&t.open_time&&dayKey(t.open_time)===tk&&t.status==="closed").reduce((a,t)=>a+(t.r||0),0);
-    return `<div class="arow"><div><div class="row" style="gap:6px"><b class="anum">#${esc(acc)}</b><span title="Versión del programa: ${esc(i.version||"—")}" style="color:var(--suave);display:inline-flex">${SVG(IC2.info,15)}</span></div><div class="abro">${esc(i.broker||"Bróker")}</div></div>
-      <div class="ast ${on?"on":""}"><span class="dot"></span>${on?"Conectada":"Sin señal"}</div>
-      <div class="abal2"><div>Saldo: <b>${hide?"———":i.balance!=null?esc(money(i.balance,i.currency)):"—"}</b></div><div>Hoy: <b class="acc">${fmtR(r)}</b></div></div>
-      <a class="amore" href="#plan" aria-label="Ajustes de la cuenta ${esc(acc)}">${SVG(IC2.dots,18)}</a></div>`}).join("");
-  return `<section class="stack" style="gap:12px"><div class="row" style="gap:14px;flex-wrap:wrap"><h2 class="h2b">Tus cuentas</h2><div class="pills" role="group" aria-label="Filtrar cuentas">${["todas","activas","inactivas"].map(k=>`<button type="button" data-acctf="${k}" aria-pressed="${f===k}">${k[0].toUpperCase()+k.slice(1)}</button>`).join("")}</div></div>
-    ${list.length?(rows||`<div class="card small muted">No hay cuentas en este filtro.</div>`):`<a class="card arow" href="#plan" style="text-decoration:none"><div><b class="anum">Conecta tu MetaTrader 5</b><div class="abro">Con un código de 6 cifras, sin contraseñas</div></div><span class="btn" style="height:38px">Conectar</span></a>`}</section>`;
+  const all=acctList().filter(x=>x.a.status!=="archivada"), p=S.plan, hide=inSession(p), f=S.acctF||"todas";
+  const show=all.filter(x=>f==="todas"||x.a.type===f);
+  const rows=show.map(({a,b})=>{const i=(b&&b.last_info)||{},on=isLive(b),x=acctStats(a.number);
+    return `<div class="arow"><div style="min-width:0"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="anum">${esc(a.name||"#"+(a.number||"—"))}</b>${a.type?`<span class="tag">${ATIPO[a.type]}${a.type==="fondeo"&&a.phase?" · "+AFASE[a.phase]:""}</span>`:`<a class="tag warn" href="#cuentas">Añadir datos</a>`}</div><div class="abro">${esc(a.broker||i.broker||"Bróker")}${a.name&&a.number?" · #"+esc(a.number):""}</div></div>
+      <div class="ast ${on?"on":""}"><span class="dot" style="${b?"":"background:var(--borde)"}"></span>${b?(on?"Conectada":"Sin señal"):"Sin MT5"}</div>
+      <div class="abal2"><div>Saldo: <b>${hide?"———":i.balance!=null?esc(money(i.balance,i.currency)):nOr(a.size)?esc(money(a.size,a.currency)):"—"}</b></div><div>Hoy: <b class="acc">${fmtR(x.today)}</b></div></div>
+      <a class="amore" href="#cuentas" aria-label="Ver la cuenta">${SVG(IC2.dots,18)}</a></div>`}).join("");
+  const types=["fondeo","propia","demo"].filter(k=>all.some(x=>x.a.type===k));
+  return `<section class="stack" style="gap:12px"><div class="row" style="gap:14px;flex-wrap:wrap"><h2 class="h2b">Tus cuentas</h2>${types.length>1?`<div class="pills" role="group" aria-label="Filtrar cuentas">${["todas"].concat(types).map(k=>`<button type="button" data-acctf="${k}" aria-pressed="${f===k}">${k==="todas"?"Todas":ATIPO[k]}</button>`).join("")}</div>`:""}<a class="link" href="#cuentas" style="margin-left:auto;font-size:14px">+ Añadir cuenta</a></div>
+    ${all.length?(rows||`<div class="card small muted">No hay cuentas en este filtro.</div>`):`<a class="card arow" href="#cuentas" style="text-decoration:none"><div><b class="anum">Añade tus cuentas</b><div class="abro">Demo, fondeo o capital propio</div></div><span class="btn" style="height:38px">Añadir</span></a>`}</section>`;
 }
 function viewHoy(){
   const p=S.plan, tk=todayKey(), now=new Date();
@@ -861,7 +971,8 @@ function curveSvg(c){
   const pts=c.map((v,i)=>X(i).toFixed(1)+","+Y(v).toFixed(1)).join(" ");
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:130px;display:block" role="img" aria-label="Curva de resultados en R: ${fmtR(c[c.length-1])}"><line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--linea)" stroke-dasharray="4 4"/><polygon points="0,${Y(0)} ${pts} ${W},${Y(0)}" fill="var(--cobaltoA)"/><polyline points="${pts}" fill="none" stroke="var(--cobalto)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
 }
-function viewProgreso(){
+function viewProgreso(){const all=S.trades;if(S.progA)S.trades=all.filter(t=>String(t.account||"")===S.progA);try{return viewProgreso0()}finally{S.trades=all}}
+function viewProgreso0(){
   const now=new Date(), y=now.getFullYear(), mo=now.getMonth();
   const month=S.trades.filter(t=>{const d=new Date(t.open_time);return d.getFullYear()===y&&d.getMonth()===mo&&t.status==="closed"}).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time));
   const evs=month.map(t=>({t,ev:evaluate(t)}));
@@ -888,7 +999,7 @@ function viewProgreso(){
   const ring=v=>{const a=Math.max(0,Math.min(100,v||0))/100,C=2*Math.PI*20;return `<svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="20" fill="none" stroke="var(--linea)" stroke-width="6"/><circle cx="27" cy="27" r="20" fill="none" stroke="var(--cobalto)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C*a).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 27 27)" style="filter:drop-shadow(0 0 4px var(--cobalto))"/></svg>`};
   const fpf=v=>v==null?"—":v===Infinity?"∞":num(v,2);
   return `<div class="stack">
-    <div class="ptop"><h1>Progreso</h1><div class="pseg" role="group" aria-label="Periodo">${["6M","3M","1M"].map(k=>`<button type="button" data-per="${k}" aria-pressed="${P===k}">${k}</button>`).join("")}</div></div>
+    <div class="ptop"><div class="row" style="gap:14px;flex-wrap:wrap"><h1>Progreso</h1>${(()=>{const l=acctList().filter(x=>x.a.number);return l.length>1||S.progA?`<select class="input" id="progA" aria-label="Cuenta" style="height:36px;width:auto;border-radius:999px;font-size:13px"><option value="">Todas las cuentas</option>${l.map(({a})=>`<option value="${esc(a.number)}" ${S.progA===String(a.number)?"selected":""}>${esc((a.name||"#"+a.number)+(a.type?" · "+ATIPO[a.type]:""))}</option>`).join("")}</select>`:""})()}</div><div class="pseg" role="group" aria-label="Periodo">${["6M","3M","1M"].map(k=>`<button type="button" data-per="${k}" aria-pressed="${P===k}">${k}</button>`).join("")}</div></div>
     <div class="pk"><div class="pkc"><b>${pst.n?fmtR(pst.tot):"0,0 R"}</b><span>Resultado total</span><div class="k3v">${spark(pcum,110,46)}</div></div><div class="pkc"><b>${pst.win==null?"—":num(pst.win,0)+"%"}</b><span>Acierto</span><div class="k3v">${ring(pst.win)}</div></div></div>
     <div class="card"><div class="mbars" role="img" aria-label="Resultado por mes en R">${months.map(m=>`<div title="${m.l}: ${fmtR(m.r)}"><i class="${m.r<0?"neg":""}" style="height:${Math.max(4,Math.abs(m.r)/mx*110).toFixed(0)}px"></i><small>${m.l}</small></div>`).join("")}</div></div>
     <h2 class="h2b">Resumen</h2>
@@ -1213,7 +1324,7 @@ function render(){
   if(key==="analizar"&&S.lastView==="analizar"&&document.getElementById("tkchart")){paintAnalizar();return} // no recargar el gráfico
   S.lastView=key;
   if(r.view!=="analizar"&&window.TkChart&&TkChart.current){TkChart.destroy();document.body.style.overflow=""}
-  const content=r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():
+  const content=r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():r.view==="cuentas"?viewCuentas():
     r.view==="grupo"?viewSoon("Grupo","Los grupos nuevos, donde solo se comparte disciplina y nunca dinero, llegan en el último paso de esta versión. Mientras tanto, tus grupos siguen en la versión anterior."):
     r.view==="aprender"?viewSoon("Aprender","Las lecciones llegarán cuando termines el bootcamp. Tus apuntes siguen en la versión anterior."):viewHoy();
   $app.innerHTML=shell(r.view==="op"?"hoy":r.view,content);
@@ -1256,6 +1367,41 @@ function bindConsent(){
   };
 }
 function bindView(r){
+  document.querySelectorAll("[data-aprog]").forEach(b=>b.onclick=()=>{S.progA=b.dataset.aprog});
+  if(r.view==="cuentas"){
+    document.querySelectorAll("[data-acctt]").forEach(b=>b.onclick=()=>{S.acctT=b.dataset.acctt;S.lastView=null;render()});
+    const open=v=>{S.acctEdit=v;S.lastView=null;render();window.scrollTo({top:0,behavior:"smooth"})};
+    const add=document.getElementById("acctAdd");if(add)add.onclick=()=>open("new");
+    document.querySelectorAll("[data-aedit]").forEach(b=>b.onclick=()=>open(b.dataset.aedit));
+    document.querySelectorAll("[data-anew]").forEach(b=>b.onclick=()=>{const br=bridgeOf(b.dataset.anew),i=(br&&br.last_info)||{};open({type:"fondeo",status:"activa",phase:"f1",number:b.dataset.anew,broker:i.broker||"",currency:i.currency||"USD",size:i.balance!=null?String(Math.round(i.balance)):""})});
+    const f=document.getElementById("acctForm");
+    if(f){
+      f.querySelectorAll("input[name=type]").forEach(x=>x.onchange=()=>f.dataset.tipo=x.value);
+      document.getElementById("acctCancel").onclick=()=>{S.acctEdit=null;S.lastView=null;render()};
+      f.onsubmit=async e=>{e.preventDefault();
+        const fd=new FormData(f),d={};for(const [k,v] of fd.entries())d[k]=String(v).trim();
+        const prev=typeof S.acctEdit==="string"&&S.acctEdit!=="new"?(S.accts||[]).find(x=>x.id===S.acctEdit):null;
+        if(d.type!=="fondeo"){["phase","target","dailyDD","maxDD","minDays","start"].forEach(k=>delete d[k])}
+        for(const k of ["size","target","dailyDD","maxDD","minDays"]){if(d[k]&&nOr(d[k])==null){toast("Revisa el campo numérico: «"+d[k]+"»");return}}
+        if(d.number&&(S.accts||[]).some(x=>x.id!==(prev&&prev.id)&&String(x.number)===d.number)){toast("Ya tienes una cuenta con ese número");return}
+        const id=prev?prev.id:"a"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+        d.created=prev&&prev.created||Date.now();
+        const btn=f.querySelector("button[type=submit]");btn.disabled=true;
+        const {error}=await sb.from("docs").upsert({user_id:S.user.id,col:"acct",id,data:d,updated_at:new Date().toISOString()});
+        btn.disabled=false;
+        if(error){toast("No se pudo guardar: "+error.message);return}
+        S.accts=(S.accts||[]).filter(x=>x.id!==id).concat([Object.assign({id},d)]).sort((a,b)=>(a.created||0)-(b.created||0));
+        S.acctEdit=null;S.lastView=null;toast("Cuenta guardada");render();
+      };
+      const del=document.getElementById("acctDel");
+      if(del)del.onclick=async()=>{
+        if(del.dataset.sure!=="1"){del.dataset.sure="1";del.textContent="Pulsa otra vez para borrar";return}
+        const id=S.acctEdit;const {error}=await sb.from("docs").delete().eq("col","acct").eq("id",id);
+        if(error){toast("No se pudo borrar");return}
+        S.accts=(S.accts||[]).filter(x=>x.id!==id);S.acctEdit=null;S.lastView=null;toast("Cuenta borrada. Sus operaciones siguen en tu bitácora.");render();
+      };
+    }
+  }
   if(r.view==="analizar"){
     const a=S.an;
     const prefill=()=>{const info=symbolsInfo().find(x=>x.s===a.sym);if(info&&info.p&&!a.entry){a.entry=String(info.p);const el=document.getElementById("anEntry");if(el)el.value=a.entry}};
@@ -1268,7 +1414,7 @@ function bindView(r){
     document.onkeydown=e=>{if(e.key==="Escape"&&card.classList.contains("full")){const fb=card.querySelector('[data-act="full"]');if(fb)fb.click()}};
     mountTicker();mountChart();paintAnalizar();
   }
-  if(r.view==="progreso"){document.querySelectorAll("[data-per]").forEach(b=>b.onclick=()=>{S.progP=b.dataset.per;S.lastView=null;render()})}
+  if(r.view==="progreso"){const pa=document.getElementById("progA");if(pa)pa.onchange=()=>{S.progA=pa.value;S.lastView=null;render()};document.querySelectorAll("[data-per]").forEach(b=>b.onclick=()=>{S.progP=b.dataset.per;S.lastView=null;render()})}
   if(r.view==="hoy"){document.querySelectorAll(".heat").forEach(h=>h.scrollLeft=h.scrollWidth);document.querySelectorAll("[data-acctf]").forEach(b=>b.onclick=()=>{S.acctF=b.dataset.acctf;S.lastView=null;render()})}
   if(r.view==="op"){
     const t=S.trades.find(x=>x.id===r.id);if(!t)return;
