@@ -354,6 +354,59 @@ textarea.input{height:auto;padding:9px 11px;resize:vertical;line-height:1.5}
 .tvcard.full{position:fixed;inset:0;z-index:40;border-radius:0;height:100vh;min-height:0;border:0}
 /* ---------- gráfico propio ---------- */
 .tkwrap{height:100%}
+.anlay{display:flex;height:100%;min-height:0}
+.tkgrid{flex:1;min-width:0;display:grid;gap:3px;background:var(--linea);grid-template:1fr/1fr}
+.tkgrid[data-k="2v"]{grid-template:1fr/1fr 1fr}
+.tkgrid[data-k="2h"]{grid-template:1fr 1fr/1fr}
+.tkgrid[data-k="4"]{grid-template:1fr 1fr/1fr 1fr}
+.tkpane{min-width:0;min-height:0;background:var(--card);position:relative}
+.tkgrid:not([data-k="1"]) .tkpane.tk-act::after{content:"";position:absolute;inset:0;border:2px solid var(--cobalto);pointer-events:none;z-index:6}
+.tkgrid:not([data-k="1"]) .tkpane:not(.tk-act) .gx-tools{display:none}
+.tkgrid:not([data-k="1"]) .gx-top .gx-tb span:not(.gx-typeic),.tkgrid:not([data-k="1"]) .gx-mode span,.tkgrid[data-k="4"] .gx-src{display:none}
+.tkgrid[data-k="4"] .gx-top [data-act="settings"],.tkgrid[data-k="4"] .gx-top [data-act="shot"],.gx-top [data-act="full"]{display:none}
+.rail{width:46px;flex:none;border-left:1px solid var(--linea);display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;background:var(--card)}
+.rail button{width:34px;height:34px;border-radius:9px;border:0;background:transparent;color:var(--suave);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rail button:hover{background:var(--sub);color:var(--tinta)}
+.rail button[aria-pressed="true"],.rail button[aria-expanded="true"]{background:var(--cobaltoC);color:var(--cobalto2)}
+.rail-lay{position:relative}
+.laymenu{position:absolute;right:42px;top:0;z-index:30;background:var(--card);border:1px solid var(--borde);border-radius:12px;padding:6px;box-shadow:0 18px 40px -12px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:2px;min-width:180px}
+.laymenu button{width:auto;height:36px;justify-content:flex-start;gap:10px;padding:0 10px;font:inherit;font-size:13.5px;color:var(--tinta2)}
+.laymenu button[aria-checked="true"]{background:var(--cobaltoC);color:var(--tinta)}
+.wl{width:290px;flex:none;border-left:1px solid var(--linea);display:flex;flex-direction:column;background:var(--card);min-height:0}
+.wl[hidden]{display:none}
+.wl-h{display:flex;align-items:center;gap:6px;padding:12px 10px 8px 14px}
+.wl-h b{flex:1;font-size:14px}
+.wl-ib{width:30px;height:30px;border-radius:8px;border:0;background:transparent;color:var(--suave);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.wl-ib:hover{background:var(--sub);color:var(--tinta)}
+.wl-add{padding:0 10px 8px;display:flex;flex-direction:column;gap:6px}
+.wl-add .input{height:36px;font-size:13.5px}
+.wl-res{display:flex;flex-wrap:wrap;gap:5px;max-height:150px;overflow:auto}
+.wl-res button{height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--borde);background:transparent;color:var(--tinta2);font-size:12px;font-weight:600;cursor:pointer}
+.wl-res button:hover{border-color:var(--cobalto);color:var(--tinta)}
+.wl-cols,.wl-pick{display:grid;grid-template-columns:1fr 92px 64px;gap:6px;align-items:center}
+.wl-cols{padding:6px 34px 6px 14px;font-size:11px;color:var(--suave);border-bottom:1px solid var(--linea)}
+.wl-cols span:not(:first-child),.wl-pick span{text-align:right}
+.wl-list{flex:1;overflow:auto;min-height:0}
+.wl-row{display:flex;align-items:center;border-bottom:1px solid var(--linea2)}
+.wl-pick{flex:1;min-width:0;height:40px;padding:0 4px 0 14px;border:0;background:transparent;color:var(--tinta);font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.wl-pick:hover{background:var(--sub)}
+.wl-pick[aria-current="true"]{background:var(--cobaltoC)}
+.wl-pick b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wl-p{font-variant-numeric:tabular-nums;color:var(--tinta2)}
+.wl-c{font-size:12px;font-variant-numeric:tabular-nums;color:var(--suave)}
+.wl-c.up{color:var(--cobalto2)}
+:root:not([data-theme="dark"]) .wl-c.up{color:var(--cobalto)}
+.wl-del{width:30px;height:40px;border:0;background:transparent;color:var(--gris);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0}
+.wl-row:hover .wl-del,.wl-del:focus-visible{opacity:1}
+.wl-del:hover{color:var(--tinta)}
+.wl-f{padding:10px 14px;border-top:1px solid var(--linea)}
+@media (max-width:1023px){
+  .anlay{flex-direction:column;height:auto}
+  .rail{width:auto;flex-direction:row;border-left:0;border-top:1px solid var(--linea);padding:6px 8px;order:3}
+  .rail-lay{display:none}
+  .wl{width:auto;border-left:0;border-top:1px solid var(--linea);max-height:55vh;order:2}
+  .wl-del{opacity:1}
+}
 .gx{position:relative;display:flex;flex-direction:column;height:100%;background:var(--card)}
 .gx-top{display:flex;align-items:center;gap:2px;padding:4px 6px;border-bottom:1px solid var(--linea);overflow-x:auto;white-space:nowrap;scrollbar-width:none;min-height:44px}
 .gx-top::-webkit-scrollbar{display:none}
@@ -443,6 +496,10 @@ button.gx-row:hover{background:var(--sub)}
 .gx-rtitle{font-size:14px;margin-right:4px}
 .gx-play{display:flex;flex-direction:column;gap:8px}
 .gx-pb.gx-w{width:auto;padding:0 10px;font-weight:700;font-size:12.5px}
+.gx-cutb{display:inline-flex;align-items:center;gap:6px}
+.gx-cutb[aria-pressed="true"]{background:#e9b949;border-color:#e9b949;color:#1b1503}
+.gx.cut .gx-chart{cursor:crosshair}
+@media (max-width:560px){.gx-cutb span{display:none}}
 .gx-scrub{flex-wrap:nowrap}
 .gx-s0,.gx-s1{font-size:11.5px;color:var(--suave);white-space:nowrap}
 .gx-range{flex:1;min-width:80px;height:22px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
@@ -484,7 +541,7 @@ body.bt-mode .live-only{display:none!important}
   .gx-canvas{flex:none;height:max(360px,calc(100vh - 330px))}
   .main.an{padding:10px 8px 100px}
   .main.an .mtop{margin:0 4px 8px}
-  .main.an .gx-canvas{height:max(320px,calc(100dvh - 236px))}
+  .main.an .gx-canvas{height:max(320px,calc(100dvh - 282px))}
   body.bt-mode .main.an .gx-canvas{height:max(280px,calc(100dvh - 430px))}
   .gx-mode button{padding:0 10px;font-size:12.5px}
   .tvcard.full{height:100vh!important}
@@ -516,7 +573,7 @@ body.bt-mode .live-only{display:none!important}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/klinecharts@10.1.0/dist/umd/klinecharts.min.js"></script>
-<script src="grafico.js?v=6"></script>
+<script src="grafico.js?v=7"></script>
 </head>
 <body>
 <div id="app" aria-live="polite"></div>
@@ -539,7 +596,7 @@ function isDark(){const t=document.documentElement.dataset.theme;return t?t==="d
 const tvTheme=()=>isDark()?"dark":"light";
 applyTheme(getThemePref());
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(getThemePref()==="system")refreshWidgets()});
-function refreshWidgets(){const t=document.getElementById("ticker");if(t)t.dataset.theme="";if(location.hash.startsWith("#analizar")){mountTicker();if(window.TkChart&&TkChart.current)TkChart.current.setTheme(isDark())}}
+function refreshWidgets(){const t=document.getElementById("ticker");if(t)t.dataset.theme="";if(location.hash.startsWith("#analizar")){mountTicker();if(window.TkChart)TkChart.all.forEach(x=>x.setTheme(isDark()))}}
 
 /* ---------- utilidades ---------- */
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1185,6 +1242,87 @@ function tvSymbol(s){
   return b;
 }
 const MARKETS=[["Divisas",["EURUSD","GBPUSD","USDJPY","AUDUSD","USDCAD","USDCHF","EURJPY","GBPJPY"]],["Índices",["NAS100","US500","US30","GER40","UK100"]],["Materias primas",["XAUUSD","XAGUSD","USOIL"]],["Cripto",["BTCUSD","ETHUSD","SOLUSD"]]];
+/* ---------- varios gráficos y lista de seguimiento ---------- */
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}, lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const LAYS=[["1","1 gráfico",'<rect x="3" y="4" width="14" height="12" rx="1.5"/>'],["2v","2 en columnas",'<rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M10 4v12"/>'],["2h","2 en filas",'<rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M3 10h14"/>'],["4","4 gráficos",'<rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M10 4v12M3 10h14"/>']];
+function layState(){if(!S.lay)S.lay=Object.assign({k:"1",syms:["EURUSD","XAUUSD","NAS100","BTCUSD"]},lsGet("tk-lay",{}));return S.lay}
+function watchState(){if(!S.watch){const mine=symbolsInfo().map(x=>x.s).slice(0,4);S.watch=Object.assign({open:false,list:Array.from(new Set(mine.concat(["EURUSD","GBPUSD","XAUUSD","NAS100","US500","BTCUSD"])))},lsGet("tk-watch",{}))}return S.watch}
+const isNarrow=()=>window.matchMedia("(max-width:1023px)").matches;
+function paneCount(){const k=isNarrow()?"1":layState().k;return k==="4"?4:k.startsWith("2")?2:1}
+function wlRows(){const w=watchState(),cur=window.TkChart&&TkChart.current?TkChart.current.sym:S.an&&S.an.sym;
+  return w.list.map(sym=>{const q=(S.quotes||{})[sym];return `<div class="wl-row" role="listitem"><button type="button" class="wl-pick" data-wl="${esc(sym)}" aria-current="${sym===cur}"><b>${esc(sym)}</b><span class="wl-p">${q&&q.last!=null?esc(fmtQ(sym,q.last)):"—"}</span><span class="wl-c ${q&&q.chg!=null?(q.chg>=0?"up":"dn"):""}">${q&&q.chg!=null?(q.chg>=0?"+":"−")+num(Math.abs(q.chg),2)+" %":""}</span></button><button type="button" class="wl-del" data-wl-del="${esc(sym)}" aria-label="Quitar ${esc(sym)} de la lista">${SVG('<path d="M5 5l10 10M15 5L5 15"/>',14,2)}</button></div>`}).join("")||`<div class="small muted" style="padding:14px">Tu lista está vacía. Pulsa + para añadir mercados.</div>`}
+function fmtQ(sym,v){const i=symbolsInfo().find(x=>x.s===sym),d=i&&i.d!=null?i.d:/JPY/.test(sym)?3:/^(XAU|NAS|US|GER|UK|BTC|ETH)/.test(sym)?2:5;return Number(v).toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d})}
+function anLayout(){
+  const L=layState(),w=watchState(),n=paneCount(),k=isNarrow()?"1":L.k;
+  const panes=Array.from({length:n},(_,i)=>`<div class="tkpane" id="${i?"tkchart"+i:"tkchart"}" data-i="${i}"></div>`).join("");
+  return `<div class="anlay"><div class="tkgrid" data-k="${k}">${panes}</div>
+    <aside class="wl" id="wl" ${w.open?"":"hidden"} aria-label="Lista de seguimiento">
+      <div class="wl-h"><b>Lista de seguimiento</b><button type="button" class="wl-ib" id="wlAddBtn" aria-label="Añadir mercado" title="Añadir mercado">${SVG('<path d="M10 4v12M4 10h12"/>',16,2)}</button><button type="button" class="wl-ib" data-wl-toggle aria-label="Cerrar la lista">${SVG('<path d="M5 5l10 10M15 5L5 15"/>',15,2)}</button></div>
+      <div class="wl-add" id="wlAdd" hidden><input class="input" id="wlQ" placeholder="Buscar mercado…" aria-label="Buscar mercado para añadir" autocomplete="off"><div class="wl-res" id="wlRes"></div></div>
+      <div class="wl-cols"><span>Mercado</span><span>Último</span><span>Cambio</span></div>
+      <div class="wl-list" id="wlList" role="list">${wlRows()}</div>
+      <div class="wl-f small muted">Toca un mercado para verlo en el gráfico${n>1?" activo":""}.</div>
+    </aside>
+    <nav class="rail" aria-label="Herramientas del espacio de trabajo">
+      <button type="button" data-wl-toggle aria-pressed="${w.open}" title="Lista de seguimiento" aria-label="Lista de seguimiento">${SVG('<path d="M4 5h12M4 10h12M4 15h8"/><circle cx="16" cy="15" r="1.4" fill="currentColor"/>',18)}</button>
+      <div class="rail-lay"><button type="button" id="layBtn" aria-haspopup="true" aria-expanded="false" title="Varios gráficos" aria-label="Varios gráficos">${SVG((LAYS.find(x=>x[0]===L.k)||LAYS[0])[2],18)}</button>
+        <div class="laymenu" id="layMenu" hidden role="menu">${LAYS.map(([key,l,ic])=>`<button type="button" role="menuitemradio" data-lay="${key}" aria-checked="${L.k===key}">${SVG(ic,18)}<span>${l}</span></button>`).join("")}</div></div>
+      <button type="button" id="fullBtn" aria-pressed="false" title="Pantalla completa" aria-label="Pantalla completa">${SVG('<path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5"/>',18)}</button>
+    </nav></div>`;
+}
+async function refreshQuotes(force){
+  const w=watchState();if(!w.open||!document.getElementById("wlList")||document.hidden)return;
+  S.quotes=S.quotes||{};const now=Date.now();
+  for(const sym of w.list){
+    const q=S.quotes[sym];if(!force&&q&&now-q.t<60000)continue;
+    const mi=symbolsInfo().find(x=>x.s===sym);
+    try{
+      if(mt5Live(sym)&&mi&&mi.p){S.quotes[sym]={last:+mi.p,chg:q&&q.chg!=null?q.chg:null,t:now}}
+      else{const r=await TkChart.quote(sym,{invoke:(n,b)=>sb.functions.invoke(n,{body:b}),digits:mi&&mi.d!=null?mi.d:undefined});if(r)S.quotes[sym]=Object.assign(r,{t:now})}
+    }catch(e){/* sin precio ahora */}
+    const el=document.getElementById("wlList");if(el)el.innerHTML=wlRows();else return;
+  }
+  bindWatch();
+}
+function setPaneSym(inst,sym){
+  if(!inst)return;
+  if(inst.key==="main"){const a=S.an;a.sym=sym;a.entry="";a.stop="";a.tp="";inst.setSymbol(sym);syncBoleto()}
+  else{const L=layState(),i=+inst.key.slice(1);L.syms[i]=sym;lsSet("tk-lay",{k:L.k,syms:L.syms});inst.setSymbol(sym)}
+  const el=document.getElementById("wlList");if(el){el.innerHTML=wlRows();bindWatch()}
+}
+function syncBoleto(){
+  const a=S.an,sel=document.getElementById("anSym");if(!sel)return;
+  const mine=symbolsInfo().map(x=>x.s);sel.innerHTML=Array.from(new Set(mine.concat([a.sym]))).map(s=>`<option ${s===a.sym?"selected":""}>${esc(s)}</option>`).join("");
+  ["anEntry","anStop","anTp"].forEach(id=>{const x=document.getElementById(id);if(x)x.value=""});
+  const info=symbolsInfo().find(x=>x.s===a.sym);if(info&&info.p){a.entry=String(info.p);const x=document.getElementById("anEntry");if(x)x.value=a.entry}
+  paintAnalizar();
+}
+function bindWatch(){
+  document.querySelectorAll("[data-wl]").forEach(b=>b.onclick=()=>setPaneSym(TkChart.current,b.dataset.wl));
+  document.querySelectorAll("[data-wl-del]").forEach(b=>b.onclick=()=>{const w=watchState();w.list=w.list.filter(x=>x!==b.dataset.wlDel);lsSet("tk-watch",{open:w.open,list:w.list});document.getElementById("wlList").innerHTML=wlRows();bindWatch()});
+}
+function bindLayout(){
+  const w=watchState(),wl=document.getElementById("wl");if(!wl)return;
+  document.querySelectorAll("[data-wl-toggle]").forEach(b=>b.onclick=()=>{w.open=!w.open;lsSet("tk-watch",{open:w.open,list:w.list});wl.hidden=!w.open;document.querySelectorAll(".rail [data-wl-toggle]").forEach(x=>x.setAttribute("aria-pressed",String(w.open)));if(w.open)refreshQuotes();setTimeout(()=>TkChart.all.forEach(x=>x.ch.resize()),30)});
+  const addB=document.getElementById("wlAddBtn"),add=document.getElementById("wlAdd"),q=document.getElementById("wlQ"),res=document.getElementById("wlRes");
+  const all=()=>{const mine=symbolsInfo().map(x=>x.s);return Array.from(new Set(mine.concat(MARKETS.flatMap(g=>g[1]))))};
+  const paint=()=>{const v=q.value.trim().toUpperCase(),l=all().filter(x=>!w.list.includes(x)&&(!v||x.includes(v))).slice(0,30);if(v&&/^[A-Z0-9.]{2,15}$/.test(v)&&!l.includes(v)&&!w.list.includes(v))l.unshift(v);
+    res.innerHTML=l.map(x=>`<button type="button" data-wl-add="${esc(x)}">${esc(x)}</button>`).join("")||`<div class="small muted" style="padding:8px">Ya tienes todos.</div>`;
+    res.querySelectorAll("[data-wl-add]").forEach(b=>b.onclick=()=>{w.list.push(b.dataset.wlAdd);lsSet("tk-watch",{open:w.open,list:w.list});document.getElementById("wlList").innerHTML=wlRows();bindWatch();paint();refreshQuotes()})};
+  addB.onclick=()=>{add.hidden=!add.hidden;if(!add.hidden){q.value="";paint();q.focus()}};
+  q.oninput=paint;q.onkeydown=e=>{if(e.key==="Enter"){const b=res.querySelector("[data-wl-add]");if(b)b.click()}if(e.key==="Escape"){add.hidden=true}};
+  bindWatch();
+  const lb=document.getElementById("layBtn"),lm=document.getElementById("layMenu");
+  lb.onclick=e=>{e.stopPropagation();lm.hidden=!lm.hidden;lb.setAttribute("aria-expanded",String(!lm.hidden))};
+  document.addEventListener("click",function close(e){if(!lm.isConnected){document.removeEventListener("click",close);return}if(!e.target.closest(".rail-lay")){lm.hidden=true;lb.setAttribute("aria-expanded","false")}});
+  lm.querySelectorAll("[data-lay]").forEach(b=>b.onclick=()=>{const L=layState();L.k=b.dataset.lay;lsSet("tk-lay",{k:L.k,syms:L.syms});if(window.TkChart)TkChart.destroy();S.lastView=null;render();if(isNarrow()&&L.k!=="1")toast("En el móvil se ve un gráfico; los demás aparecen en el ordenador")});
+  const card=document.getElementById("tvcard"),fb=document.getElementById("fullBtn");
+  const full=on=>{card.classList.toggle("full",on);document.body.style.overflow=on?"hidden":"";fb.setAttribute("aria-pressed",String(on));fb.title=on?"Salir de pantalla completa (Esc)":"Pantalla completa";setTimeout(()=>TkChart.all.forEach(x=>x.ch.resize()),40)};
+  fb.onclick=()=>full(!card.classList.contains("full"));
+  document.onkeydown=e=>{if(e.key==="Escape"&&card.classList.contains("full")&&!document.querySelector(".gx-modal:not([hidden]),.gx-pop:not([hidden])"))full(false)};
+  if(w.open)refreshQuotes();
+  clearInterval(S.qTimer);S.qTimer=setInterval(()=>{if(location.hash.startsWith("#analizar"))refreshQuotes()},90000);
+}
 function symbolsInfo(){return ((S.bridge&&S.bridge.last_info&&S.bridge.last_info.symbols)||[]).filter(x=>x&&x.s)}
 function viewAnalizar(){
   const syms=symbolsInfo(), last=S.trades[0], p=S.plan;
@@ -1198,7 +1336,7 @@ function viewAnalizar(){
   const info=syms.find(x=>x.s===sel);
   return `<div class="stack">
     <div class="card tvcard" id="tvcard" style="padding:0;overflow:hidden;position:relative">
-      ${window.TkChart?`<div id="tkchart" class="tkwrap"></div>`:`<div class="stack" style="padding:20px;gap:8px"><b>No se pudo cargar el gráfico.</b><span class="small muted">Revisa tu conexión y recarga la página.</span></div>`}
+      ${window.TkChart?anLayout():`<div class="stack" style="padding:20px;gap:8px"><b>No se pudo cargar el gráfico.</b><span class="small muted">Revisa tu conexión y recarga la página.</span></div>`}
     </div>
       <form class="card ticket obar live-only" id="anForm" onsubmit="return false" aria-label="Boleto de orden">
         <label class="field"><span>Mercado</span><select class="input" id="anSym">${opts}</select></label>
@@ -1313,27 +1451,35 @@ function mt5Provider(sym){
     }
   };
 }
+function chartOpts(i){
+  const L=layState(),main=i===0;
+  return {
+    key:main?"main":"p"+i, sym:main?S.an.sym:(L.syms[i]||"EURUSD"), dark:isDark(),
+    onMode:main?m=>document.body.classList.toggle("bt-mode",m==="bt"):null,
+    onActive:inst=>{const el=document.getElementById("wlList");if(el){el.innerHTML=wlRows();bindWatch()}},
+    digits:sym=>{const x=symbolsInfo().find(y=>y.s===sym);return x&&x.d!=null?x.d:null},
+    invoke:(name,body)=>sb.functions.invoke(name,{body}),
+    mt5:{has:mt5Live,provider:mt5Provider},
+    symbols:()=>{const mine=symbolsInfo().map(x=>x.s);return (mine.length?[["Tu MT5",mine]]:[]).concat(MARKETS.map(([g,l])=>[g,l.filter(x=>!mine.includes(x))])).filter(g=>g[1].length)},
+    onSymbol:sym=>{const inst=TkChart.all.find(x=>x.key===(main?"main":"p"+i));setPaneSym(inst,sym)},
+    onPrice:main?(p,sym)=>{if(sym===S.an.sym)livePrice(sym,p)}:null,
+    onPosition:main?pos=>{const a=S.an,f=v=>Number(v).toFixed(pos.digits);a.side=pos.side;a.entry=f(pos.entry);a.stop=f(pos.stop);a.tp=f(pos.tp);
+      [["anEntry","entry"],["anStop","stop"],["anTp","tp"]].forEach(([id,k])=>{const x=document.getElementById(id);if(x)x.value=a[k]});
+      document.querySelectorAll("[data-side]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.side===a.side)));paintAnalizar();toast("Boleto rellenado con tu dibujo")}:null,
+    loadDrawings:async sym=>{const {data,error}=await sb.from("docs").select("data").eq("col","draw").eq("id",sym).maybeSingle();if(error)throw error;return data&&data.data&&data.data.list||null},
+    saveDrawings:async(sym,list)=>{await sb.from("docs").upsert({user_id:S.user.id,col:"draw",id:sym,data:{list}})},
+    saveSim:async rec=>{const {error}=await sb.from("sim_trades").insert(Object.assign({user_id:S.user.id},rec));if(error)toast("No se pudo guardar la simulada")}
+  };
+}
 async function mountChart(){
   let el=document.getElementById("tkchart");if(!el||!window.TkChart)return;
   if(TkChart.current&&TkChart.current.el===el)return;
   try{await refreshBridges()}catch(e){/* seguimos con lo que había */}
   el=document.getElementById("tkchart");if(!el||(TkChart.current&&TkChart.current.el===el))return;
-  TkChart.mount(el,{
-    sym:S.an.sym,dark:isDark(),
-    onMode:m=>document.body.classList.toggle("bt-mode",m==="bt"),
-    digits:sym=>{const i=symbolsInfo().find(x=>x.s===sym);return i&&i.d!=null?i.d:null},
-    invoke:(name,body)=>sb.functions.invoke(name,{body}),
-    mt5:{has:mt5Live,provider:mt5Provider},
-    symbols:()=>{const mine=symbolsInfo().map(x=>x.s);return (mine.length?[["Tu MT5",mine]]:[]).concat(MARKETS.map(([g,l])=>[g,l.filter(x=>!mine.includes(x))])).filter(g=>g[1].length)},
-    onSymbol:sym=>{const a=S.an;a.sym=sym;a.entry="";a.stop="";a.tp="";S.lastView=null;render()},
-    onPrice:(p,sym)=>{if(sym===S.an.sym)livePrice(sym,p)},
-    onPosition:pos=>{const a=S.an,f=v=>Number(v).toFixed(pos.digits);a.side=pos.side;a.entry=f(pos.entry);a.stop=f(pos.stop);a.tp=f(pos.tp);
-      [["anEntry","entry"],["anStop","stop"],["anTp","tp"]].forEach(([id,k])=>{const x=document.getElementById(id);if(x)x.value=a[k]});
-      document.querySelectorAll("[data-side]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.side===a.side)));paintAnalizar();toast("Boleto rellenado con tu dibujo")},
-    loadDrawings:async sym=>{const {data,error}=await sb.from("docs").select("data").eq("col","draw").eq("id",sym).maybeSingle();if(error)throw error;return data&&data.data&&data.data.list||null},
-    saveDrawings:async(sym,list)=>{await sb.from("docs").upsert({user_id:S.user.id,col:"draw",id:sym,data:{list}})},
-    saveSim:async rec=>{const {error}=await sb.from("sim_trades").insert(Object.assign({user_id:S.user.id},rec));if(error)toast("No se pudo guardar la simulada")}
-  });
+  const panes=Array.from(document.querySelectorAll(".tkpane"));
+  panes.slice(1).forEach(p=>TkChart.mount(p,chartOpts(+p.dataset.i)));
+  const main=TkChart.mount(el,chartOpts(0));
+  if(panes.length>1)main.activate&&main.activate();
 }
 
 function viewSoon(title,text){
@@ -1549,13 +1695,11 @@ function bindView(r){
     const a=S.an;
     const prefill=()=>{const info=symbolsInfo().find(x=>x.s===a.sym);if(info&&info.p&&!a.entry){a.entry=String(info.p);const el=document.getElementById("anEntry");if(el)el.value=a.entry}};
     prefill();
-    document.getElementById("anSym").onchange=e=>{a.sym=e.target.value;a.entry="";a.stop="";a.tp="";["anEntry","anStop","anTp"].forEach(id=>document.getElementById(id).value="");prefill();if(window.TkChart&&TkChart.current)TkChart.current.setSymbol(a.sym);document.querySelectorAll("[data-mkt]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.mkt===a.sym)));paintAnalizar()};
+    document.getElementById("anSym").onchange=e=>{a.sym=e.target.value;a.entry="";a.stop="";a.tp="";["anEntry","anStop","anTp"].forEach(id=>document.getElementById(id).value="");prefill();if(window.TkChart){const m=TkChart.all.find(x=>x.key==="main");if(m)m.setSymbol(a.sym)}document.querySelectorAll("[data-mkt]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.mkt===a.sym)));paintAnalizar()};
     [["anEntry","entry"],["anStop","stop"],["anTp","tp"]].forEach(([id,k])=>document.getElementById(id).oninput=e=>{a[k]=e.target.value;paintAnalizar()});
     document.querySelectorAll("[data-side]").forEach(b=>b.onclick=()=>{a.side=b.dataset.side;document.querySelectorAll("[data-side]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.side===a.side)));paintAnalizar()});
     document.querySelectorAll("[data-mkt]").forEach(b=>b.onclick=()=>{a.sym=b.dataset.mkt;a.entry="";a.stop="";a.tp="";S.lastView=null;render()});
-    const card=document.getElementById("tvcard");
-    document.onkeydown=e=>{if(e.key==="Escape"&&card.classList.contains("full")){const fb=card.querySelector('[data-act="full"]');if(fb)fb.click()}};
-    mountTicker();mountChart();paintAnalizar();
+    mountChart();paintAnalizar();bindLayout();
   }
   if(r.view==="progreso"){document.querySelectorAll("[data-per]").forEach(b=>b.onclick=()=>{S.progP=b.dataset.per;S.lastView=null;render()})}
   if(r.view==="hoy"){document.querySelectorAll(".heat").forEach(h=>h.scrollLeft=h.scrollWidth);document.querySelectorAll("[data-acctf]").forEach(b=>b.onclick=()=>{S.acctF=b.dataset.acctf;S.lastView=null;render()})}

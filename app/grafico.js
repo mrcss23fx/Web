@@ -117,6 +117,11 @@
     const s = sty(o), v = o.points[0] && o.points[0].value;
     return [{ type: "text", attrs: { x: c[0].x, y: c[0].y, text: s.text || (v != null ? fmtP(v) : ""), align: "left", baseline: "middle" }, styles: labelSt(s) }, { type: "circle", ignoreEvent: true, attrs: { x: c[0].x, y: c[0].y, r: 3 }, styles: { style: "fill", color: s.color } }];
   }, { needDefaultXAxisFigure: false });
+  KC.registerOverlay({ name: "tkFog", totalStep: 2, lock: true, needDefaultPointFigure: false, needDefaultXAxisFigure: false, needDefaultYAxisFigure: false,
+    createPointFigures: ({ coordinates: c, bounding: b }) => { if (!c.length) return []; const x = Math.max(0, c[0].x + 3), P = pal();
+      return [{ type: "rect", ignoreEvent: true, attrs: { x, y: 0, width: Math.max(0, b.width - x), height: b.height }, styles: { style: "fill", color: alpha(P.card, .97) } },
+        { type: "line", ignoreEvent: true, attrs: { coordinates: [{ x, y: 0 }, { x, y: b.height }] }, styles: { color: "#e9b949", size: 2 } },
+        { type: "text", ignoreEvent: true, attrs: { x: x + Math.max(0, b.width - x) / 2, y: b.height / 2, text: "Futuro oculto", align: "center", baseline: "middle" }, styles: { color: P.suave, size: 13, family: NUMF, weight: 600, backgroundColor: "transparent" } }]; } });
   reg("tkCross", 2, ({ coordinates: c, overlay: o, bounding: b }) => {
     const s = sty(o);
     return [{ type: "line", attrs: { coordinates: [{ x: 0, y: c[0].y }, { x: b.width, y: c[0].y }] }, styles: lineSt(s) }, { type: "line", attrs: { coordinates: [{ x: c[0].x, y: 0 }, { x: c[0].x, y: b.height }] }, styles: lineSt(s) }];
@@ -247,26 +252,27 @@
 
   /* ---------- iconos propios ---------- */
   const IC = {
-    cursor: '<path d="M6 3l11 6-5 1.6L10 16z"/>',
-    segment: '<path d="M4 16L16 4"/><circle cx="4" cy="16" r="1.6"/><circle cx="16" cy="4" r="1.6"/>',
-    rayLine: '<path d="M4 16L18 2"/><circle cx="4" cy="16" r="1.6"/><circle cx="10" cy="10" r="1.6"/>',
-    straightLine: '<path d="M1 19L19 1"/><circle cx="7" cy="13" r="1.6"/><circle cx="13" cy="7" r="1.6"/>',
-    horizontalStraightLine: '<path d="M1 10h18"/><circle cx="10" cy="10" r="1.6"/>', horizontalRayLine: '<path d="M6 10h13"/><circle cx="6" cy="10" r="1.6"/>',
-    verticalStraightLine: '<path d="M10 1v18"/><circle cx="10" cy="10" r="1.6"/>', tkCross: '<path d="M1 10h18M10 1v18"/>',
-    priceLine: '<path d="M2 10h10"/><path d="M12 7h6v6h-6z"/>',
-    parallelStraightLine: '<path d="M1 13L13 3M6 18L18 8"/>', priceChannelLine: '<path d="M1 12L11 4M5 17L15 9M3 14.5L13 6.5" stroke-dasharray="2 2"/>',
-    fibonacciLine: '<path d="M2 4h16M2 8h16M2 12h16M2 16h16"/><path d="M3 16L17 4" stroke-dasharray="2 2"/>',
-    tkFibExt: '<path d="M2 15l5-8 4 5"/><path d="M11 4h7M11 8h7M11 12h7" stroke-dasharray="2 2"/>',
-    tkRect: '<rect x="3" y="5" width="14" height="10" rx="1"/>', tkCircle: '<circle cx="10" cy="10" r="7"/>', tkTriangle: '<path d="M10 3l7 13H3z"/>',
-    tkArrow: '<path d="M4 16L16 4M9 4h7v7"/>',
-    tkText: '<path d="M4 5h12M10 5v11M7 16h6"/>', tkCallout: '<path d="M3 4h14v9H9l-4 3v-3H3z"/>', tkPriceLabel: '<path d="M2 10l4-5h12v10H6z"/><circle cx="7" cy="10" r="1"/>',
-    tkLong: '<path d="M4 3h12v8H4z" fill="currentColor" fill-opacity=".22"/><path d="M4 11h12v6H4z"/>', tkShort: '<path d="M4 3h12v6H4z"/><path d="M4 9h12v8H4z" fill="currentColor" fill-opacity=".22"/>',
-    tkPriceRange: '<path d="M10 2v16M6 6l4-4 4 4M6 14l4 4 4-4"/>', tkDateRange: '<path d="M2 10h16M6 6l-4 4 4 4M14 6l4 4-4 4"/>', tkMeasure: '<path d="M3 17L17 3M3 17h5M3 17v-5"/><path d="M12 3h5v5"/>',
-    magnet: '<path d="M5 3v7a5 5 0 0010 0V3M5 6h3M12 6h3"/>', lock: '<rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 016 0v3"/>',
+    cursor: '<path d="M5.5 2.8v12.6l3.1-2.9 2.2 4.8 2.1-1-2.2-4.7h4.3z"/>',
+    segment: '<path d="M5 15L15 5"/><circle cx="4" cy="16" r="1.7" fill="var(--card,#fff)"/><circle cx="16" cy="4" r="1.7" fill="var(--card,#fff)"/>',
+    rayLine: '<path d="M5.2 14.8L18.5 1.5"/><circle cx="4" cy="16" r="1.7" fill="var(--card,#fff)"/><circle cx="10" cy="10" r="1.7" fill="var(--card,#fff)"/>',
+    straightLine: '<path d="M1.5 18.5l17-17"/><circle cx="7" cy="13" r="1.7" fill="var(--card,#fff)"/><circle cx="13" cy="7" r="1.7" fill="var(--card,#fff)"/>',
+    horizontalStraightLine: '<path d="M1.5 10h17"/><circle cx="10" cy="10" r="1.7" fill="var(--card,#fff)"/>', horizontalRayLine: '<path d="M7.7 10h10.8M16 7.5l2.5 2.5-2.5 2.5"/><circle cx="6" cy="10" r="1.7" fill="var(--card,#fff)"/>',
+    verticalStraightLine: '<path d="M10 1.5v17"/><circle cx="10" cy="10" r="1.7" fill="var(--card,#fff)"/>', tkCross: '<path d="M1.5 10h6.8M11.7 10h6.8M10 1.5v6.8M10 11.7v6.8"/><circle cx="10" cy="10" r="1.7" fill="var(--card,#fff)"/>',
+    priceLine: '<path d="M1.5 10h9"/><path d="M11 7.2h5.6l2 2.8-2 2.8H11z"/>',
+    parallelStraightLine: '<path d="M2 12.5L12.5 2M7.5 18L18 7.5"/><path d="M4.8 15.2L15.2 4.8" stroke-dasharray="1.6 2"/><circle cx="2.6" cy="11.9" r="1.7" fill="var(--card,#fff)"/><circle cx="17.4" cy="8.1" r="1.7" fill="var(--card,#fff)"/>', priceChannelLine: '<path d="M2 11l9-6.5h7M2 17l9-6.5h7"/><path d="M2 14l9-6.5h7" stroke-dasharray="1.6 2"/>',
+    fibonacciLine: '<path d="M5 3.5h13M5 7.8h13M5 12.2h13M5 16.5h13"/><path d="M2 3.5h1.2M2 7.8h1.2M2 12.2h1.2M2 16.5h1.2" stroke-width="2"/><path d="M6 16.5L17 3.5" stroke-dasharray="1.6 2"/>',
+    tkFibExt: '<path d="M2 16l4-9 4 6"/><path d="M12 3.5h6.5M12 8h6.5M12 12.5h6.5" stroke-dasharray="1.6 1.8"/><circle cx="2" cy="16" r="1.7" fill="var(--card,#fff)"/><circle cx="6" cy="7" r="1.7" fill="var(--card,#fff)"/><circle cx="10" cy="13" r="1.7" fill="var(--card,#fff)"/>',
+    tkRect: '<rect x="3.5" y="5.5" width="13" height="9" rx=".5"/><circle cx="3.5" cy="5.5" r="1.7" fill="var(--card,#fff)"/><circle cx="16.5" cy="14.5" r="1.7" fill="var(--card,#fff)"/>', tkCircle: '<circle cx="10" cy="10" r="7.2"/><path d="M10 10l5.1-5.1" stroke-dasharray="1.6 1.8"/><circle cx="10" cy="10" r="1.7" fill="var(--card,#fff)"/>', tkTriangle: '<path d="M10 3.5l6.8 12H3.2z"/><circle cx="10" cy="3.5" r="1.7" fill="var(--card,#fff)"/><circle cx="16.8" cy="15.5" r="1.7" fill="var(--card,#fff)"/><circle cx="3.2" cy="15.5" r="1.7" fill="var(--card,#fff)"/>',
+    tkArrow: '<path d="M4 16L15.5 4.5"/><path d="M9.5 4h6.5v6.5"/>',
+    tkText: '<path d="M4.5 5.5V4h11v1.5M10 4v12.5M7.5 16.5h5"/>', tkCallout: '<path d="M3 3.5h14v9.5H9.5L5.5 16.5V13H3z"/><path d="M6 7h8M6 10h5"/>', tkPriceLabel: '<path d="M2.5 10l4-5h11v10h-11z"/><path d="M9 10h6"/>',
+    tkLong: '<path d="M3 3h14v7H3z" fill="currentColor" fill-opacity=".2"/><path d="M3 10h14v7H3z"/><path d="M10 13.5V5.5M7.5 8l2.5-2.5L12.5 8"/>', tkShort: '<path d="M3 3h14v7H3z"/><path d="M3 10h14v7H3z" fill="currentColor" fill-opacity=".2"/><path d="M10 6.5v8M7.5 12l2.5 2.5 2.5-2.5"/>',
+    tkPriceRange: '<path d="M4 2.5h12M4 17.5h12M10 5v10M7.5 7.5L10 5l2.5 2.5M7.5 12.5L10 15l2.5-2.5"/>', tkDateRange: '<path d="M2.5 4v12M17.5 4v12M5 10h10M7.5 7.5L5 10l2.5 2.5M12.5 7.5L15 10l-2.5 2.5"/>', tkMeasure: '<path d="M2.5 14.5l12-12 3 3-12 12z"/><path d="M6 11l1.6 1.6M8.5 8.5l1.6 1.6M11 6l1.6 1.6"/>',
+    magnet: '<path d="M4.5 3h3.5v7a2 2 0 004 0V3h3.5v7a5.5 5.5 0 01-11 0z"/><path d="M4.5 6.5H8M12 6.5h3.5"/>', lock: '<rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 016 0v3"/>',
     eye: '<path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/><circle cx="10" cy="10" r="2.5"/>', trash: '<path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/>',
     undo: '<path d="M7 5L3 9l4 4"/><path d="M3 9h9a5 5 0 010 10H9"/>', redo: '<path d="M13 5l4 4-4 4"/><path d="M17 9H8a5 5 0 000 10h3"/>',
     gear: '<circle cx="10" cy="10" r="3"/><path d="M10 1.5v2.5M10 16v2.5M1.5 10H4M16 10h2.5M4 4l1.8 1.8M14.2 14.2L16 16M4 16l1.8-1.8M14.2 5.8L16 4"/>',
     camera: '<path d="M3 6h3l1.5-2h5L14 6h3v10H3z"/><circle cx="10" cy="11" r="3"/>', full: '<path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5"/>',
+    cut: '<circle cx="5.5" cy="15" r="2.5"/><circle cx="14.5" cy="15" r="2.5"/><path d="M7 13L15 2M13 13L5 2"/>',
     replay: '<path d="M4 10a6 6 0 106-6H6M6 1L3 4l3 3"/>', fx: '<path d="M8 4c-2 0-2 2-2.5 5S4 16 2 16M3 8h6"/><path d="M11 9l6 7M17 9l-6 7"/>',
     search: '<circle cx="9" cy="9" r="5.5"/><path d="M13 13l4.5 4.5"/>', chev: '<path d="M6 8l4 4 4-4"/>',
     candles: '<path d="M6 3v14M14 5v12"/><rect x="4" y="6" width="4" height="7" fill="currentColor"/><rect x="12" y="8" width="4" height="6"/>',
@@ -337,11 +343,14 @@
 
   /* ---------- el gráfico ---------- */
   let inst = null;
-  let MODE = "live";
+  const ALL = new Set(), MODES = {};
   function mount(el, opts) {
-    if (inst) destroy();
+    for (const x of Array.from(ALL)) if (x.el === el || !document.body.contains(x.el)) destroyOne(x);
+    const KEY = opts.key || "main", TFK = KEY === "main" ? "tk-tf" : "tk-tf-" + KEY;
+    let MODE = MODES[KEY] || "live";
+    let me = null;
     DARK = !!opts.dark;
-    const st = { sym: opts.sym, tf: ls.get("tk-tf", "5m"), tool: "cursor", magnet: ls.get("tk-magnet", false), hidden: false, locked: false, sel: null, prov: null, unsub: null, quiet: false, price: null,
+    const st = { sym: opts.sym, tf: ls.get(TFK, opts.tf || "5m"), tool: "cursor", magnet: ls.get("tk-magnet", false), hidden: false, locked: false, sel: null, prov: null, unsub: null, quiet: false, price: null,
       color: ls.get("tk-color", null), last: ls.get("tk-lasttool", {}), hist: [], fut: [] };
     if (!TF_MS[st.tf]) st.tf = "5m";
     CUR_TF = st.tf;
@@ -408,6 +417,7 @@
             <button type="button" class="gx-pb gx-main" data-act="play" aria-label="Reproducir" title="Reproducir / pausa (espacio)">▶︎</button>
             <button type="button" class="gx-pb" data-act="next" aria-label="Avanzar una vela" title="Avanzar una vela (→)">▶︎▏</button>
             <button type="button" class="gx-pb gx-w" data-act="fwd10" aria-label="Avanzar 10 velas" title="Avanzar 10 velas (Mayús + →)">+10</button>
+            <button type="button" class="gx-pb gx-w gx-cutb" data-act="cut" aria-pressed="false" title="Elegir punto: toca cualquier vela, atrás o adelante, y sigue desde ahí (C)">${icon("cut", 16)}<span>Elegir punto</span></button>
             <label class="gx-spd"><span class="sr">Velocidad</span><select class="gx-in" data-act="speed">${[1, 2, 5, 10, 20].map(v => `<option value="${v}" ${v === R.speed ? "selected" : ""}>${v} velas/s</option>`).join("")}</select></label>
             <span class="gx-when"></span>
             <span class="gx-sp"></span>
@@ -427,6 +437,18 @@
     paintBg();
     let lastCross = null;
     ch.subscribeAction("onCrosshairChange", d => { lastCross = d; });
+    function crossBar() {
+      if (!lastCross) return null;
+      if (lastCross.kLineData) return lastCross.kLineData;
+      if (lastCross.x == null) return null;
+      try {
+        let r = ch.convertFromPixel([{ x: lastCross.x, y: lastCross.y }], { paneId: lastCross.paneId || "candle_pane" }); r = Array.isArray(r) ? r[0] : r;
+        const list = ch.getDataList(); if (!r || !list.length) return null;
+        if (r.dataIndex != null) return list[Math.max(0, Math.min(list.length - 1, r.dataIndex))] || null;
+        if (r.timestamp != null) { let best = null; for (const b of list) { if (b.timestamp <= r.timestamp) best = b; else break; } return best; }
+      } catch (e) { /* fuera del gráfico */ }
+      return null;
+    }
 
     const msg = t => { const m = $(".gx-msg"); m.hidden = !t; m.textContent = t || ""; };
     const hint = t => { const m = $(".gx-hint"); m.hidden = !t; m.textContent = t || ""; };
@@ -615,7 +637,7 @@
     function setTf(k) {
       const was = R.on, keep = R.on && !R.picking && bar() ? bar().timestamp : null, hadPos = !!R.pos;
       if (R.on) exitReplay();
-      st.tf = k; CUR_TF = k; ls.set("tk-tf", k); $(".gx-tfname").textContent = TF_SHORT[k];
+      st.tf = k; CUR_TF = k; ls.set(TFK, k); opts.onTf && opts.onTf(k); $(".gx-tfname").textContent = TF_SHORT[k];
       st.prov = pickProv(); setSrc(); ch.setPeriod(TFS.find(x => x[0] === k)[2]);
       if (was) { enterReplay(); if (keep) whenLoaded(() => { startAt(keep); if (hadPos) { hint("La simulada abierta se ha cerrado al cambiar de marco."); setTimeout(() => hint(""), 3000); } }); }
     }
@@ -706,7 +728,7 @@
       if (rg && R.all.length) { rg.max = R.all.length - 1; rg.value = R.idx; $(".gx-s0").textContent = fmtWhen(R.all[0].timestamp); rg.style.setProperty("--p", ((R.idx - 1) / Math.max(1, R.all.length - 2) * 100).toFixed(1) + "%"); }
     }
     function syncMode() {
-      MODE = R.on ? "bt" : "live";
+      MODE = R.on ? "bt" : "live"; MODES[KEY] = MODE;
       $$("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === MODE)));
       el.querySelector(".gx").classList.toggle("bt", R.on);
       $(".gx-btbadge").hidden = !R.on || R.picking;
@@ -746,10 +768,12 @@
       stats(); setTimeout(() => hint(""), 4000);
     }
     function step() {
+      if (R.cut) cutMode(false);
       if (R.idx >= R.all.length - 1) { pause(); hint("Has llegado al presente."); setTimeout(() => hint(""), 2500); return false; }
       R.idx++; const b = bar(); R.cb && R.cb(b); checkSim(b); stats(); return true;
     }
     function back() {
+      if (R.cut) cutMode(false);
       if (R.idx <= 1) return; pause(); R.idx--;
       if (R.pos && R.idx < R.pos.entryIdx) { ch.removeOverlay({ id: R.pos.id }); R.pos = null; hint("Simulada anulada: has vuelto a antes de la entrada."); setTimeout(() => hint(""), 2500); }
       ch.resetData(); stats();
@@ -757,14 +781,37 @@
     function play() { if (R.timer) { pause(); return; } $('[data-act="play"]').textContent = "❚❚"; $('[data-act="play"]').setAttribute("aria-label", "Pausa"); R.timer = setInterval(() => { if (!step()) pause(); }, 1000 / R.speed); }
     function pause() { if (R.timer) clearInterval(R.timer); R.timer = null; const b = $('[data-act="play"]'); if (b) { b.textContent = "▶︎"; b.setAttribute("aria-label", "Reproducir"); } }
     function exitReplay() {
-      pause(); if (R.pos) { ch.removeOverlay({ id: R.pos.id }); R.pos = null; }
+      pause(); if (R.cut) { R.cut = false; ch.removeOverlay({ id: "tkfog" }); el.querySelector(".gx").classList.remove("cut"); $('[data-act="cut"]').setAttribute("aria-pressed", "false"); } if (R.pos) { ch.removeOverlay({ id: R.pos.id }); R.pos = null; }
       ch.removeOverlay({ groupId: "sim" });
       R.on = false; R.picking = false; hint("");
       $(".gx-replay").hidden = true; syncMode();
       ch.setDataLoader(live); ch.resetData(); setSrc(); setTimeout(() => ch.resize(), 0);
     }
+    const fullLoader = { getBars: ({ type, callback }) => { if (type === "init") callback(R.all.slice(), { backward: false, forward: false }); else callback([], false); }, subscribeBar: () => {}, unsubscribeBar: () => {} };
+    function cutMode(on) {
+      if (!R.on || R.picking || !R.all.length) return;
+      pause(); R.cut = on;
+      $('[data-act="cut"]').setAttribute("aria-pressed", String(on)); el.querySelector(".gx").classList.toggle("cut", on);
+      ch.removeOverlay({ id: "tkfog" });
+      if (on) {
+        ch.setDataLoader(fullLoader); ch.resetData();
+        setTimeout(() => {
+          try { const bs = ch.getBarSpace(), sp = (bs && (bs.bar || bs)) || 8, w = box.clientWidth || 800, ahead = Math.max(5, Math.floor(w / sp * 0.35)); ch.scrollToDataIndex(Math.min(R.all.length - 1, R.idx + ahead), 0); } catch (e) { /* sin desplazar */ }
+          try { ch.createOverlay({ id: "tkfog", name: "tkFog", groupId: "fog", lock: true, points: [{ timestamp: bar().timestamp, value: bar().close }] }); } catch (e) { /* sin niebla */ }
+        }, 60);
+        hint("Toca la vela desde la que quieres seguir: a la izquierda vuelves atrás, en la zona oculta avanzas. Esc para cancelar.");
+      } else { ch.setDataLoader(replayLoader); ch.resetData(); hint(""); stats(); }
+    }
+    function cutAt(ts) {
+      const i = R.all.findIndex(b => b.timestamp === ts); if (i < 1) return;
+      ch.removeOverlay({ id: "tkfog" }); R.cut = false; $('[data-act="cut"]').setAttribute("aria-pressed", "false"); el.querySelector(".gx").classList.remove("cut");
+      ch.setDataLoader(replayLoader);
+      const old = R.idx; R.idx = old; jumpTo(i); if (i === old) { ch.resetData(); stats(); }
+      hint(""); 
+    }
     function jumpTo(i) {
       if (!R.all.length) return;
+      if (R.cut) { R.cut = false; ch.removeOverlay({ id: "tkfog" }); el.querySelector(".gx").classList.remove("cut"); $('[data-act="cut"]').setAttribute("aria-pressed", "false"); ch.setDataLoader(replayLoader); }
       i = Math.max(1, Math.min(i, R.all.length - 1)); if (i === R.idx) return; pause();
       if (i > R.idx) { for (let k = R.idx + 1; k <= i; k++) { R.idx = k; checkSim(R.all[k]); } }
       else { R.idx = i; if (R.pos && R.idx < R.pos.entryIdx) { ch.removeOverlay({ id: R.pos.id }); R.pos = null; hint("Simulada anulada: has vuelto a antes de la entrada."); setTimeout(() => hint(""), 2500); } }
@@ -813,7 +860,9 @@
       if (e.target === MOD) { closeModal(); return; }
       const t = e.target.closest("button,input,select,label");
       if (!t) {
-        if (R.on && R.picking && e.target.closest(".gx-chart") && lastCross && lastCross.kLineData) { const list = ch.getDataList(); const i = list.findIndex(b => b.timestamp === lastCross.kLineData.timestamp); if (i > 0) begin(list.slice(), i); }
+        const kb = (R.on && (R.cut || R.picking) && e.target.closest(".gx-chart")) ? crossBar() : null;
+        if (kb && R.cut) { cutAt(kb.timestamp); return; }
+        if (kb && R.picking) { const list = ch.getDataList(); const i = list.findIndex(b => b.timestamp === kb.timestamp); if (i > 0) begin(list.slice(), i); }
         return;
       }
       if (t.closest(".gx-dlg") || t.closest(".gx-pop")) { if (t.dataset.sym) { closeModal(); opts.onSymbol ? opts.onSymbol(t.dataset.sym) : inst.setSymbol(t.dataset.sym); } else if (t.hasAttribute("data-close")) closeModal(); return; }
@@ -845,7 +894,8 @@
       if (a === "play") { play(); return; }
       if (a === "next") { pause(); step(); return; }
       if (a === "prev") { back(); return; }
-      if (a === "back10") { jumpTo(R.idx - 10); return; }
+      if (a === "cut") { cutMode(!R.cut); return; }
+      if (a === "back10") { if (R.cut) cutMode(false); jumpTo(R.idx - 10); return; }
       if (a === "fwd10") { jumpTo(R.idx + 10); return; }
       if (a === "closesim") { if (R.pos) closeSim(bar().close, bar()); return; }
       if (a === "godate") { const v = $(".gx-date input").value; if (v) startAt(new Date(v).getTime()); return; }
@@ -861,14 +911,15 @@
       if (t.dataset.act === "speed") { R.speed = +t.value; ls.set("tk-speed", R.speed); if (R.timer) { pause(); play(); } }
     });
     const onKey = e => {
-      if (!document.body.contains(el)) return;
+      if (!document.body.contains(el) || (me && inst !== me)) return;
       const typing = e.target.matches && e.target.matches("input,textarea,select");
-      if (e.key === "Escape") { if (!MOD.hidden) closeModal(); else if (!POP.hidden) closePop(); return; }
+      if (e.key === "Escape") { if (!MOD.hidden) closeModal(); else if (!POP.hidden) closePop(); else if (R.cut) cutMode(false); return; }
       if (typing) return;
       if (R.on && !R.picking && MOD.hidden) {
         if (e.key === "ArrowRight") { e.preventDefault(); e.shiftKey ? jumpTo(R.idx + 10) : (pause(), step()); return; }
         if (e.key === "ArrowLeft") { e.preventDefault(); e.shiftKey ? jumpTo(R.idx - 10) : back(); return; }
         if (e.key === " " && !(e.target.closest && e.target.closest("button"))) { e.preventDefault(); play(); return; }
+        if ((e.key === "c" || e.key === "C") && !e.metaKey && !e.ctrlKey) { e.preventDefault(); cutMode(!R.cut); return; }
       }
       const mod = e.metaKey || e.ctrlKey;
       if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
@@ -878,20 +929,33 @@
     if (MODE === "bt") whenLoaded(() => enterReplay()); else if (opts.onMode) opts.onMode("live");
     const ro = new ResizeObserver(() => ch.resize()); ro.observe(box);
 
-    inst = {
-      el, ch, ro, onKey,
+    const activate = () => { if (inst === me) return; inst = me; CUR_TF = st.tf; CUR_DIGITS = digits(); ALL.forEach(x => x.el.classList.toggle("tk-act", x === me)); opts.onActive && opts.onActive(me); };
+    el.addEventListener("pointerdown", activate, true);
+    me = inst = {
+      el, ch, ro, onKey, key: KEY, activate,
+      get sym() { return st.sym; }, get tf() { return st.tf; },
       setSymbol(sym) { if (sym === st.sym) return; const was = R.on; if (R.on) exitReplay(); st.sym = sym; F.hidden = true; load(); restore(); if (was) enterReplay(); },
       setTheme(dark) { DARK = !!dark; ch.setStyles(styles()); applyInd(); paintBg(); },
       price: () => st.price,
       stop() { pause(); if (st.unsub) { st.unsub(); st.unsub = null; } }
     };
+    ALL.add(me); ALL.forEach(x => x.el.classList.toggle("tk-act", x === me));
     load(); applyInd(); restore();
-    return inst;
+    return me;
   }
-  function destroy() {
-    if (!inst) return;
-    try { inst.stop(); inst.ro.disconnect(); document.removeEventListener("keydown", inst.onKey); KC.dispose(inst.el.querySelector(".gx-chart")); } catch (e) { /* ya no existe */ }
-    inst = null;
+  function destroyOne(x) {
+    try { x.stop(); x.ro.disconnect(); document.removeEventListener("keydown", x.onKey); KC.dispose(x.el.querySelector(".gx-chart")); } catch (e) { /* ya no existe */ }
+    ALL.delete(x); if (inst === x) inst = Array.from(ALL)[0] || null;
   }
-  window.TkChart = { mount, destroy, sources: { binance, publico }, get current() { return inst; } };
+  function destroy(x) { if (x) { destroyOne(x); return; } Array.from(ALL).forEach(destroyOne); inst = null; }
+  /* precio y cambio del día para la lista de seguimiento */
+  async function quote(sym, o) {
+    o = o || {};
+    const prov = binSym(sym) ? binance() : publico(o.invoke, o.digits != null ? o.digits : guessDigits(sym));
+    const r = await prov.bars(sym, "1d", null), b = r.bars;
+    if (!b.length) return null;
+    const last = b[b.length - 1], prev = b.length > 1 ? b[b.length - 2].close : last.open;
+    return { last: last.close, chg: prev ? (last.close - prev) / prev * 100 : null };
+  }
+  window.TkChart = { mount, destroy, quote, sources: { binance, publico }, get current() { return inst; }, get all() { return Array.from(ALL); } };
 })();
