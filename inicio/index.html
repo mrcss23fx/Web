@@ -6,14 +6,14 @@
 <title>Tickora · El diario de trading que te ayuda a cumplir tu plan</title>
 <meta name="description" content="Tus operaciones de MetaTrader 5 se apuntan solas, con la foto del gráfico. Tickora revisa cada una contra tu plan, te frena a tiempo y mide tu disciplina en R.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300..800&family=JetBrains+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500..800&family=Inter:wght@300..700&family=JetBrains+Mono:wght@400..700&display=swap">
 <script>
 /* tema: ?tema=claro|oscuro, o lo último que eligió esta persona */
 (function(){try{var q=new URLSearchParams(location.search).get("tema");var t=q==="claro"?"light":q==="oscuro"?"dark":localStorage.getItem("tk-landing-tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}})();
 </script>
 <style>
 :root{
-  --sans:'Sora',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;--head:'Inter Tight','Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
   --maxw:1180px;--r:18px;
 }
 :root[data-theme="light"]{
@@ -37,8 +37,8 @@ img,svg{display:block}
 .mono{font-family:var(--mono)}
 .hl{background:var(--hl);padding:0 .08em;color:var(--hlText)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);font-weight:600}
-h1,h2,h3{margin:0;letter-spacing:-.025em;line-height:1.05}
+.eyebrow{font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:600}
+h1,h2,h3,.logo,.amt-t{margin:0;letter-spacing:-.025em;line-height:1.05;font-family:var(--head)}
 h2{font-size:clamp(30px,4.2vw,48px);font-weight:800}
 h3{font-size:22px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
 p{margin:0}
@@ -66,7 +66,9 @@ section{position:relative}
 .logo i{width:30px;height:30px;border-radius:9px;background:var(--ink);display:flex;align-items:center;justify-content:center}
 .logo i::after{content:"";width:6px;height:16px;border-radius:2px;background:#fbe27a;box-shadow:0 -4px 0 -2px #fbe27a,0 4px 0 -2px #fbe27a}
 .links{display:flex;gap:4px;margin-left:12px}
-.links a{font-size:14px;color:var(--ink2);text-decoration:none;padding:8px 12px;border-radius:10px}
+.links a{font-size:14px;color:var(--ink2);text-decoration:none;padding:8px 12px;border-radius:10px;white-space:nowrap}
+.btn{white-space:nowrap}
+@media (max-width:1240px){.links a[href="#preguntas"],.links a[href="#como"]{display:none}}
 .links a:hover{background:var(--card2);color:var(--ink)}
 .nav-sp{flex:1}
 .theme{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
@@ -83,7 +85,7 @@ section{position:relative}
 .hero-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,#000 30%,transparent 75%)}
 .hero-in{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px}
 .pill{display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border-radius:999px;border:1px solid var(--line2);background:color-mix(in srgb,var(--card) 60%,transparent);font-size:13px;color:var(--ink2);text-decoration:none}
-.pill b{background:var(--acc);color:var(--onAcc);border-radius:999px;padding:3px 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono)}
+.pill b{background:var(--acc);color:var(--onAcc);border-radius:999px;padding:3px 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .hero h1{font-size:clamp(44px,7.6vw,92px);font-weight:800;letter-spacing:-.045em;max-width:980px}
 .hero h1 .hl{border-radius:4px}
 .hero .lead{text-align:center;max-width:700px;font-size:clamp(16px,1.8vw,20px)}
@@ -158,7 +160,7 @@ section{position:relative}
 /* pasos */
 .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;counter-reset:s}
 .step{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:28px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
-.step .n{font-family:var(--mono);font-size:12px;color:var(--acc);font-weight:700;letter-spacing:.1em}
+.step .n{font-size:12px;color:var(--acc);font-weight:700;letter-spacing:.1em}
 .step p{color:var(--soft);font-size:15px}
 .step .vis{margin-top:auto;padding-top:16px}
 .code{display:flex;gap:6px}
@@ -204,6 +206,22 @@ section{position:relative}
 .kpis small{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--soft);text-transform:uppercase;display:block}
 .kpis b{font-family:var(--mono);font-size:20px}
 
+
+/* catálogo */
+.flt{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--card);border:1px solid var(--line);margin-top:6px;flex-wrap:wrap;justify-content:center}
+.flt button{height:36px;padding:0 14px;border-radius:999px;border:0;background:transparent;color:var(--ink2);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.flt button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.cats{columns:2 420px;column-gap:18px}
+.cat{break-inside:avoid;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 24px 14px;margin:0 0 18px}
+.cat h3{font-size:20px;margin-bottom:10px}
+.cat ul{list-style:none;margin:0;padding:0}
+.it{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.it b{font-size:15px;font-weight:600;grid-column:1;grid-row:1}
+.it>span:last-child{grid-column:1;font-size:13.5px;color:var(--soft)}
+.it .st{grid-column:2;grid-row:1 / span 2;align-self:start;font-size:11px;font-weight:700;letter-spacing:.04em;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.st.ok{background:var(--goodB);color:var(--good)}
+.st.soon{background:var(--card2);color:var(--soft);border:1px solid var(--line2)}
+.cats[data-f="ok"] .it:has(.soon),.cats[data-f="soon"] .it:has(.ok){display:none}
 /* psicología */
 .psy{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .rule{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:10px}
@@ -234,7 +252,7 @@ section{position:relative}
 .pc .amt{font-family:var(--mono);font-size:52px;font-weight:700;letter-spacing:-.03em;line-height:1}
 .pc .amt small{font-size:15px;color:var(--soft);font-weight:400;letter-spacing:0}
 .pc p{color:var(--soft)}
-.tag{align-self:flex-start;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--accC);color:var(--acc);font-weight:700}
+.tag{align-self:flex-start;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--accC);color:var(--acc);font-weight:700}
 
 /* preguntas */
 .faq{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
@@ -251,7 +269,7 @@ details p{color:var(--soft);padding:0 0 20px}
 .final .lead{margin:0 auto 30px;text-align:center}
 footer{padding:70px 0 40px;color:var(--soft);font-size:14px}
 .foot{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:30px}
-.foot h5{margin:0 0 12px;color:var(--ink);font-size:13px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.foot h5{margin:0 0 12px;color:var(--ink);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
 .foot a{display:block;text-decoration:none;padding:4px 0}
 .foot a:hover{color:var(--ink)}
 .risk{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);font-size:12.5px;line-height:1.6}
@@ -297,7 +315,7 @@ footer{padding:70px 0 40px;color:var(--soft);font-size:14px}
 <nav class="nav" aria-label="Principal">
   <div class="nav-in">
     <a class="logo" href="#"><i aria-hidden="true"></i>Tickora</a>
-    <div class="links"><a href="#como">Cómo funciona</a><a href="#herramientas">Herramientas</a><a href="#psicologia">Psicología</a><a href="#precio">Precio</a><a href="#preguntas">Preguntas</a></div>
+    <div class="links"><a href="#como">Cómo funciona</a><a href="#herramientas">Herramientas</a><a href="#todo">Funciones</a><a href="#psicologia">Psicología</a><a href="#precio">Precio</a><a href="#preguntas">Preguntas</a></div>
     <span class="nav-sp"></span>
     <button type="button" class="theme" id="themeBtn" aria-label="Cambiar entre oscuro y claro"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/></svg><span id="themeLbl">Oscuro</span></button>
     <a class="enter" href="../app/">Entrar</a>
@@ -441,6 +459,17 @@ footer{padding:70px 0 40px;color:var(--soft);font-size:14px}
   </div>
 </section>
 
+
+<section class="sec" id="todo" style="padding-top:30px">
+  <div class="wrap">
+    <div class="sec-h reveal"><span class="eyebrow">Todo lo que hace Tickora</span><h2>Un diario, un gráfico y un entrenador. <span class="hl">En una sola app.</span></h2><p class="lead">26 cosas que ya puedes usar hoy y 29 más en camino. Te decimos cuál es cuál, sin letra pequeña.</p>
+      <div class="flt" role="group" aria-label="Filtrar"><button type="button" data-f="all" aria-pressed="true">Todo</button><button type="button" data-f="ok" aria-pressed="false">Ya disponible <span class="mono">26</span></button><button type="button" data-f="soon" aria-pressed="false">Próximamente <span class="mono">29</span></button></div></div>
+    <div class="cats">
+      <div class="cat reveal"><h3>Diario automático</h3><ul><li class="it"><span class="st ok">Ya disponible</span><b>Conexión con MetaTrader 5 en tiempo real</b><span>Con un código de 6 cifras, sin contraseñas.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Cada entrada y salida apuntada sola</b><span>Mercado, horas, tamaño, stop, objetivo, riesgo y resultado en R.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Foto del gráfico al entrar y al salir</b><span>Y si operaste desde el móvil, la rehace con el historial.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Varias cuentas a la vez</b><span>Reales, demo y de fondeo, todas juntas.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Notas en cada operación</b><span>Por qué entraste y cómo te sentías (si das permiso).</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Detecta si moviste el stop en contra</b><span>Queda marcado en la operación.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Importar desde archivo y apuntar a mano</b><span>Para otras plataformas: archivo de historial o a mano.</span></li><li class="it"><span class="st soon">Próximamente</span><b>cTrader y otras plataformas</b><span>Conexión con un botón, solo lectura.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Notas de voz</b><span>Cuenta en 20 segundos qué pasó y se guarda con la operación.</span></li></ul></div><div class="cat reveal"><h3>Análisis y estadísticas</h3><ul><li class="it"><span class="st ok">Ya disponible</span><b>Estadísticas automáticas en R</b><span>Resultado, esperanza, acierto, factor de beneficio, ganancia y pérdida media.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Curva en R con tu peor caída</b><span>Para ver tu racha real sin que el dinero te nuble.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Calendario de días</b><span>Cada día con su resultado y si cumpliste tu plan.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Resultados por mercado</b><span>En qué mercados te va mejor y en cuáles peor.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Pérdidas buenas frente a evitables</b><span>Separa lo que dependía de ti de lo que no.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Informes por horario, día y estrategia</b><span>A qué horas y con qué estrategia rindes mejor.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Nota de disciplina de 0 a 100 %</b><span>Cuánto cumpliste tu lista en cada operación y su evolución.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Fiabilidad de tus números</b><span>Te avisa si tienes pocos datos (10) o una muestra sólida (300+).</span></li></ul></div><div class="cat reveal"><h3>Gráfico, práctica y backtesting</h3><ul><li class="it"><span class="st ok">Ya disponible</span><b>Gráfico profesional de 1 minuto a 1 semana</b><span>Velas, velas huecas, barras o área.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Precios de tu bróker en vivo</b><span>Desde tu MetaTrader 5; cripto en tiempo real.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Todas las herramientas de dibujo</b><span>Líneas, canales, Fibonacci, formas, textos, notas, posición larga y corta, medir.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>32 indicadores con buscador</b><span>Medias, Ichimoku, Supertrend, RSI, MACD, ATR, VWAP y más, con su color.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Volver atrás vela a vela</b><span>Elige una fecha, avanza, retrocede o dale al play.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Operaciones simuladas con resultado en R</b><span>Se guardan aparte: nunca se mezclan con las reales.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Calculadora de tamaño exacto</b><span>Lotes según tu riesgo y el valor real de tu bróker.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Simulador de prueba de fondeo</b><span>Practica con las normas reales de cada empresa antes de pagar la prueba.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Comparar estrategias</b><span>Varias estrategias probadas en las mismas fechas, una al lado de otra.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Biblioteca de setups con imágenes</b><span>Tu estrategia con fotos de cómo es una entrada de libro.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Años de historial de precios</b><span>Para practicar con mucho más pasado en marcos pequeños.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Avisos de precio</b><span>Te avisa cuando el precio llega a tu zona.</span></li></ul></div><div class="cat reveal"><h3>Psicología y disciplina</h3><ul><li class="it"><span class="st ok">Ya disponible</span><b>Repaso automático de cada operación</b><span>Hasta 3 cosas bien y 1 a mejorar, contra tus normas.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Tu plan con normas «si pasa esto → hago esto»</b><span>Riesgo, horario, máximo de operaciones y límite del día.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Los cambios del plan valen desde mañana</b><span>Nada de subir el riesgo en caliente.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Pacto de la mañana en 40 segundos</b><span>Firmas tu plan antes de abrir el gráfico.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Freno por escalones</b><span>Aviso, pausa guiada, revisar el plan y cerrar el día.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Semáforo</b><span>Verde, ámbar o rojo según tu día y, si quieres, cómo duermes.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Lista obligatoria antes de entrar</b><span>No te deja entrar hasta cumplir tu lista.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Detecta la operación por venganza</b><span>Si entras deprisa tras una pérdida, te lo dice.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Cierre del día en 1 minuto</b><span>Tres preguntas y a descansar.</span></li></ul></div><div class="cat reveal"><h3>Empresas de fondeo</h3><ul><li class="it"><span class="st ok">Ya disponible</span><b>Varias cuentas de fondeo juntas</b><span>Todas tus cuentas de MT5 en un solo sitio.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Fichas con las normas de cada empresa</b><span>Límite diario, pérdida máxima, días mínimos…</span></li><li class="it"><span class="st soon">Próximamente</span><b>Vigilancia de las normas en tiempo real</b><span>Te avisa antes de romper una norma de la prueba.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Copiar tu operación en las cuentas que elijas</b><span>Solo donde la empresa lo permite.</span></li></ul></div><div class="cat reveal"><h3>Mentor con IA</h3><ul><li class="it"><span class="st soon">Próximamente</span><b>Pregúntale por tus operaciones</b><span>En tus palabras: «¿por qué pierdo los lunes?».</span></li><li class="it"><span class="st soon">Próximamente</span><b>Resumen semanal que puntúa tu proceso</b><span>No tu dinero: cómo cumpliste tu plan.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Lee las fotos de tus operaciones</b><span>Comenta la entrada mirando el gráfico.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Prueba una estrategia describiéndola</b><span>Le cuentas tu idea y te ayuda a probarla.</span></li></ul></div><div class="cat reveal"><h3>Comunidad y aprender</h3><ul><li class="it"><span class="st soon">Próximamente</span><b>Grupos privados sin dinero</b><span>Con tus compañeros: rachas y lecciones, nunca saldos.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Compartir operaciones para aprender</b><span>Sin euros ni R, solo el proceso.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Retos en grupo</b><span>De disciplina, no de dinero. Sin rankings.</span></li><li class="it"><span class="st soon">Próximamente</span><b>Formación paso a paso</b><span>Del principio a profesional, unida a tus datos.</span></li></ul></div><div class="cat reveal"><h3>Tu cuenta y tus datos</h3><ul><li class="it"><span class="st ok">Ya disponible</span><b>En el ordenador y en el móvil</b><span>La misma app en cualquier pantalla.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Modo claro y oscuro</b><span>El que prefieras.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Descarga o borra tus datos</b><span>Cuando quieras, en un clic.</span></li><li class="it"><span class="st ok">Ya disponible</span><b>Las emociones, solo con tu permiso</b><span>Y puedes quitarlo cuando quieras.</span></li><li class="it"><span class="st soon">Próximamente</span><b>App instalable con avisos</b><span>En la pantalla de inicio del móvil, con aviso cuando toca parar.</span></li></ul></div>
+    </div>
+  </div>
+</section>
+
 <section class="sec" id="psicologia" style="background:var(--bg2)">
   <div class="wrap">
     <div class="sec-h reveal"><span class="eyebrow">Psicología, en el centro</span><h2>Disciplina antes que <span class="hl">dinero</span>.</h2><p class="lead">Tickora está diseñado con lo que sabemos de cómo decidimos bajo presión. Cada pantalla te empuja a cumplir tu plan, no a operar más.</p></div>
@@ -472,7 +501,7 @@ footer{padding:70px 0 40px;color:var(--soft);font-size:14px}
     <div class="sec-h reveal"><span class="eyebrow">Precio</span><h2>Gratis mientras estamos en <span class="hl">beta</span>.</h2><p class="lead">Estamos probando Tickora con un grupo pequeño de traders. Si entras ahora, lo usas gratis y nos ayudas a hacerlo mejor.</p></div>
     <div class="price">
       <div class="pc main reveal"><span class="tag">Beta abierta</span><div class="amt">0 € <small>durante la beta</small></div><p>Todo lo que hay ya en la app: diario automático con MT5, repaso de cada operación, gráfico con volver atrás, progreso en R.</p><ul class="ticks"><li>Sin tarjeta</li><li>Te avisamos antes de que llegue el plan de pago</li></ul><a class="btn btn-p" href="../app/" style="align-self:flex-start;margin-top:auto">Empieza gratis</a></div>
-      <div class="pc reveal"><span class="tag" style="background:var(--card2);color:var(--soft)">Más adelante</span><div class="amt" style="font-size:34px;font-family:var(--sans);letter-spacing:-.02em">Plan completo</div><p>Formación, mentor con inteligencia artificial que lee tus capturas, varias cuentas de fondeo juntas y abrir operaciones desde el gráfico pasando siempre por tu pacto.</p><p style="font-size:13px">El precio lo anunciaremos antes de cobrar nada.</p></div>
+      <div class="pc reveal"><span class="tag" style="background:var(--card2);color:var(--soft)">Más adelante</span><div class="amt amt-t" style="font-size:34px">Plan completo</div><p>Formación, mentor con inteligencia artificial que lee tus capturas, varias cuentas de fondeo juntas y abrir operaciones desde el gráfico pasando siempre por tu pacto.</p><p style="font-size:13px">El precio lo anunciaremos antes de cobrar nada.</p></div>
     </div>
   </div>
 </section>
@@ -486,6 +515,9 @@ footer{padding:70px 0 40px;color:var(--soft);font-size:14px}
       <details class="reveal"><summary>¿Necesitáis la contraseña de mi cuenta?</summary><p>No. Se conecta con un código de 6 cifras que aparece en tu gráfico. Nunca te pediremos la contraseña de tu bróker.</p></details>
       <details class="reveal"><summary>¿Sirve con cuentas de empresas de fondeo?</summary><p>Sí, si usan MetaTrader 5. Puedes conectar varias cuentas a la vez. Las fichas con las normas de cada empresa irán llegando.</p></details>
       <details class="reveal"><summary>¿Qué pasa con mis datos?</summary><p>Son tuyos: puedes descargarlos o borrar tu cuenta cuando quieras. Los datos de cómo te sientes solo se guardan si das permiso, y puedes quitarlo en cualquier momento.</p></details>
+      <details class="reveal"><summary>¿Puedo traer operaciones de otra plataforma?</summary><p>Ahora mismo Tickora se conecta con MetaTrader 5. Importar desde archivo, apuntar a mano y conectar cTrader están en camino.</p></details>
+      <details class="reveal"><summary>¿Tiene inteligencia artificial?</summary><p>Todavía no. El mentor con IA, que responderá preguntas sobre tus operaciones y te hará un resumen semanal de tu proceso, llegará más adelante. Preferimos decírtelo claro.</p></details>
+      <details class="reveal"><summary>¿Puedo practicar sin arriesgar dinero?</summary><p>Sí. El modo «volver atrás» del gráfico te deja viajar a cualquier fecha, avanzar vela a vela y abrir operaciones simuladas con stop y objetivo. Se guardan aparte de tus operaciones reales.</p></details>
       <details class="reveal"><summary>¿Cuánto cuesta?</summary><p>Ahora, nada: es gratis durante la beta. Antes de que llegue el plan de pago te avisaremos con tiempo y el precio.</p></details>
     </div>
   </div>
@@ -504,7 +536,7 @@ footer{padding:70px 0 40px;color:var(--soft);font-size:14px}
   <div class="wrap">
     <div class="foot">
       <div><a class="logo" href="#" style="padding:0;margin-bottom:12px"><i aria-hidden="true"></i>Tickora</a><p>El diario de trading que te ayuda a cumplir tu plan.</p></div>
-      <div><h5>Producto</h5><a href="#como">Cómo funciona</a><a href="#herramientas">Herramientas</a><a href="#precio">Precio</a><a href="../app/">Entrar</a></div>
+      <div><h5>Producto</h5><a href="#como">Cómo funciona</a><a href="#todo">Todo lo que hace</a><a href="#herramientas">Herramientas</a><a href="#precio">Precio</a><a href="../app/">Entrar</a></div>
       <div><h5>Aprende</h5><a href="#psicologia">Psicología</a><a href="#preguntas">Preguntas</a></div>
       <div><h5>Legal</h5><a href="../app/legal.html#riesgo">Aviso de riesgo</a><a href="../app/legal.html#condiciones">Condiciones</a><a href="../app/legal.html#privacidad">Privacidad</a></div>
     </div>
@@ -534,6 +566,9 @@ footer{padding:70px 0 40px;color:var(--soft);font-size:14px}
   tabs.forEach(function(t,i){t.onclick=function(){show(t.getAttribute("aria-controls"))};t.onkeydown=function(e){if(e.key==="ArrowRight"||e.key==="ArrowLeft"){var n=tabs[(i+(e.key==="ArrowRight"?1:tabs.length-1))%tabs.length];n.focus();n.click()}}});
   document.querySelectorAll('.tool[href^="#t-"]').forEach(function(a){a.onclick=function(e){e.preventDefault();show(a.getAttribute("href").slice(1));document.getElementById("b-diario").scrollIntoView({behavior:"smooth",block:"center"})}});
 
+  /* filtro del catálogo */
+  var cats=document.querySelector(".cats");
+  document.querySelectorAll(".flt [data-f]").forEach(function(b){b.onclick=function(){cats.dataset.f=b.dataset.f;document.querySelectorAll(".flt [data-f]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))})}});
   /* velas de la maqueta (mismos datos siempre) */
   function css(v){return getComputedStyle(root).getPropertyValue(v).trim()}
   function candles(n,seed,start){var s=seed,p=start,out=[];function r(){s=(s*9301+49297)%233280;return s/233280}
