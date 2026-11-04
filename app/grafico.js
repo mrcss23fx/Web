@@ -337,6 +337,7 @@
 
   /* ---------- el gráfico ---------- */
   let inst = null;
+  let MODE = "live";
   function mount(el, opts) {
     if (inst) destroy();
     DARK = !!opts.dark;
@@ -348,6 +349,8 @@
     const groupBtn = g => { const cur = st.last[g[0]] && TOOL_NAME[st.last[g[0]]] ? st.last[g[0]] : g[2][0][0]; return `<div class="gx-grp" data-grp="${g[0]}"><button type="button" class="gx-tool" data-tool="${cur}" aria-pressed="${cur === "cursor"}" aria-label="${esc(TOOL_NAME[cur])}" title="${esc(TOOL_NAME[cur])}">${icon(cur)}</button>${g[2].length > 1 ? `<button type="button" class="gx-more" data-more="${g[0]}" aria-label="Más herramientas: ${esc(g[1])}" title="${esc(g[1])}"><svg width="6" height="6" viewBox="0 0 6 6" aria-hidden="true"><path d="M0 6L6 6 6 0z" fill="currentColor"/></svg></button>` : ""}</div>`; };
     el.innerHTML = `<div class="gx">
       <div class="gx-top" role="toolbar" aria-label="Barra del gráfico">
+        <div class="gx-mode" role="group" aria-label="Modo del gráfico"><button type="button" data-mode="live" aria-pressed="true" title="Gráfico en vivo para analizar">${icon("candles", 16)}<span>Analizar</span></button><button type="button" data-mode="bt" aria-pressed="false" title="Vuelve atrás en el tiempo y practica vela a vela">${icon("replay", 15)}<span>Backtesting</span></button></div>
+        <span class="gx-vs"></span>
         <button type="button" class="gx-tb gx-sym" data-act="symbol" title="Buscar mercado">${icon("search", 16)}<b class="gx-symname">${esc(st.sym)}</b></button>
         <span class="gx-vs"></span>
         <button type="button" class="gx-tb" data-menu="tf" title="Marco de tiempo"><b class="gx-tfname">${TF_SHORT[st.tf]}</b>${icon("chev", 14)}</button>
@@ -355,8 +358,6 @@
         <button type="button" class="gx-tb" data-menu="type" title="Tipo de gráfico"><span class="gx-typeic">${icon(typeIcon(CFG.type), 18)}</span>${icon("chev", 14)}</button>
         <span class="gx-vs"></span>
         <button type="button" class="gx-tb" data-act="ind" title="Indicadores">${icon("fx", 18)}<span>Indicadores</span></button>
-        <span class="gx-vs"></span>
-        <button type="button" class="gx-tb gx-rp" data-act="replay" aria-pressed="false" title="Volver atrás y practicar">${icon("replay", 17)}<span>Volver atrás</span></button>
         <span class="gx-vs"></span>
         <button type="button" class="gx-tb gx-ic" data-act="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">${icon("undo", 18)}</button>
         <button type="button" class="gx-tb gx-ic" data-act="redo" title="Rehacer" aria-label="Rehacer">${icon("redo", 18)}</button>
@@ -375,7 +376,7 @@
           <button type="button" class="gx-tool" data-act="hide" aria-pressed="false" aria-label="Ocultar todos los dibujos" title="Ocultar todos los dibujos">${icon("eye")}</button>
           <button type="button" class="gx-tool" data-act="clear" aria-label="Borrar todos los dibujos de este mercado" title="Borrar todos los dibujos de este mercado">${icon("trash")}</button>
         </div>
-        <div class="gx-canvas"><div class="gx-chart"></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
+        <div class="gx-canvas"><div class="gx-chart"></div><div class="gx-btbadge" hidden>Backtesting · <span></span></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
           <div class="gx-float" hidden role="toolbar" aria-label="Dibujo elegido">
             <div class="gx-sw">${PALETTE.map(c => `<button type="button" class="gx-c" data-color="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join("")}<label class="gx-cc" title="Otro color"><input type="color" data-f="color" aria-label="Otro color"></label></div>
             <span class="gx-vs"></span>
@@ -395,23 +396,26 @@
       <div class="gx-modal" hidden><div class="gx-dlg" role="dialog" aria-modal="true"></div></div>
       <div class="gx-replay" hidden>
         <div class="gx-rrow gx-start">
-          <span class="gx-rlbl">Empieza en</span>
-          <button type="button" class="gx-btn" data-back="1">Hace 1 día</button><button type="button" class="gx-btn" data-back="7">1 semana</button><button type="button" class="gx-btn" data-back="30">1 mes</button>
+          <b class="gx-rtitle">¿Desde cuándo quieres practicar?</b>
+          <button type="button" class="gx-btn" data-back="1">Hace 1 día</button><button type="button" class="gx-btn" data-back="7">1 semana</button><button type="button" class="gx-btn" data-back="30">1 mes</button><button type="button" class="gx-btn" data-back="90">3 meses</button>
           <label class="gx-date"><span class="sr">Fecha y hora</span><input type="datetime-local" class="gx-in"></label><button type="button" class="gx-btn" data-act="godate">Ir</button>
           <span class="gx-rhelp">o toca una vela del gráfico</span>
-          <span class="gx-sp"></span><button type="button" class="gx-btn" data-act="exit">Salir</button>
         </div>
-        <div class="gx-rrow gx-play" hidden>
-          <button type="button" class="gx-pb" data-act="prev" aria-label="Retroceder una vela">◀︎</button>
-          <button type="button" class="gx-pb gx-main" data-act="play" aria-label="Reproducir">▶︎</button>
-          <button type="button" class="gx-pb" data-act="next" aria-label="Avanzar una vela">▶︎▏</button>
-          <label class="gx-spd"><span class="sr">Velocidad</span><select class="gx-in" data-act="speed">${[1, 2, 5, 10, 20].map(v => `<option value="${v}" ${v === R.speed ? "selected" : ""}>${v} velas/s</option>`).join("")}</select></label>
-          <span class="gx-when"></span>
-          <span class="gx-sp"></span>
-          <button type="button" class="gx-sb gx-sell" data-sim="sell">Vender</button><button type="button" class="gx-sb gx-buy" data-sim="buy">Comprar</button>
-          <button type="button" class="gx-btn" data-act="closesim" hidden>Cerrar ahora</button>
-          <button type="button" class="gx-btn" data-act="restart">Otra fecha</button>
-          <button type="button" class="gx-btn" data-act="exit">Salir</button>
+        <div class="gx-play" hidden>
+          <div class="gx-rrow">
+            <button type="button" class="gx-pb gx-w" data-act="back10" aria-label="Retroceder 10 velas" title="Retroceder 10 velas (Mayús + ←)">−10</button>
+            <button type="button" class="gx-pb" data-act="prev" aria-label="Retroceder una vela" title="Retroceder una vela (←)">◀︎</button>
+            <button type="button" class="gx-pb gx-main" data-act="play" aria-label="Reproducir" title="Reproducir / pausa (espacio)">▶︎</button>
+            <button type="button" class="gx-pb" data-act="next" aria-label="Avanzar una vela" title="Avanzar una vela (→)">▶︎▏</button>
+            <button type="button" class="gx-pb gx-w" data-act="fwd10" aria-label="Avanzar 10 velas" title="Avanzar 10 velas (Mayús + →)">+10</button>
+            <label class="gx-spd"><span class="sr">Velocidad</span><select class="gx-in" data-act="speed">${[1, 2, 5, 10, 20].map(v => `<option value="${v}" ${v === R.speed ? "selected" : ""}>${v} velas/s</option>`).join("")}</select></label>
+            <span class="gx-when"></span>
+            <span class="gx-sp"></span>
+            <button type="button" class="gx-sb gx-sell" data-sim="sell">Vender</button><button type="button" class="gx-sb gx-buy" data-sim="buy">Comprar</button>
+            <button type="button" class="gx-btn" data-act="closesim" hidden>Cerrar ahora</button>
+            <button type="button" class="gx-btn" data-act="restart">Otra fecha</button>
+          </div>
+          <div class="gx-rrow gx-scrub"><span class="gx-s0"></span><input type="range" class="gx-range" min="1" max="2" value="1" step="1" aria-label="Arrastra para ir a cualquier punto"><span class="gx-s1">Ahora</span></div>
         </div>
         <div class="gx-rrow gx-stats"></div>
       </div>
@@ -609,9 +613,11 @@
       });
     }
     function setTf(k) {
+      const was = R.on, keep = R.on && !R.picking && bar() ? bar().timestamp : null, hadPos = !!R.pos;
       if (R.on) exitReplay();
       st.tf = k; CUR_TF = k; ls.set("tk-tf", k); $(".gx-tfname").textContent = TF_SHORT[k];
       st.prov = pickProv(); setSrc(); ch.setPeriod(TFS.find(x => x[0] === k)[2]);
+      if (was) { enterReplay(); if (keep) whenLoaded(() => { startAt(keep); if (hadPos) { hint("La simulada abierta se ha cerrado al cambiar de marco."); setTimeout(() => hint(""), 3000); } }); }
     }
     function modalSymbol() {
       const groups = (opts.symbols && opts.symbols()) || [];
@@ -695,13 +701,22 @@
         : `<span class="gx-muted">Pulsa Comprar o Vender para abrir una simulada. Mueve el stop y el objetivo arrastrando sus puntos. Se guardan aparte de tus operaciones reales.</span>`;
       $('[data-act="closesim"]').hidden = !R.pos;
       $$("[data-sim]").forEach(b => { b.disabled = !!R.pos; });
-      if (R.on && bar()) $(".gx-when").textContent = fmtWhen(bar().timestamp);
+      if (R.on && bar()) { const w = fmtWhen(bar().timestamp); $(".gx-when").textContent = w; $(".gx-btbadge span").textContent = w; }
+      const rg = $(".gx-range");
+      if (rg && R.all.length) { rg.max = R.all.length - 1; rg.value = R.idx; $(".gx-s0").textContent = fmtWhen(R.all[0].timestamp); rg.style.setProperty("--p", ((R.idx - 1) / Math.max(1, R.all.length - 2) * 100).toFixed(1) + "%"); }
+    }
+    function syncMode() {
+      MODE = R.on ? "bt" : "live";
+      $$("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === MODE)));
+      el.querySelector(".gx").classList.toggle("bt", R.on);
+      $(".gx-btbadge").hidden = !R.on || R.picking;
+      opts.onMode && opts.onMode(MODE);
     }
     function enterReplay() {
       if (R.on) return;
-      R.on = true; R.picking = true; R.trades = [];
+      R.on = true; R.picking = true; R.trades = R.trades || [];
       $(".gx-replay").hidden = false; $(".gx-start").hidden = false; $(".gx-play").hidden = true; $(".gx-stats").innerHTML = "";
-      $('[data-act="replay"]').setAttribute("aria-pressed", "true");
+      syncMode();
       hint("Toca la vela desde la que quieres practicar, o elige una fecha abajo.");
       setSrc(); setTimeout(() => ch.resize(), 0);
     }
@@ -717,14 +732,17 @@
         if (ts < list[0].timestamp) hint("No hay velas tan antiguas en este marco: empiezo en la más antigua que hay. Prueba un marco mayor para ir más atrás.");
       }
       let idx = list.findIndex(b => b.timestamp > ts) - 1;
-      if (idx < 0) idx = ts < list[0].timestamp ? 0 : list.length - 1;
+      if (idx < 0) idx = ts < list[0].timestamp ? Math.min(60, list.length - 2) : list.length - 1;
+      else if (idx < 120 && st.prov) { // un poco de contexto antes del punto de inicio
+        try { const r = await st.prov.bars(st.sym, st.tf, list[0].timestamp); const add = r.bars.filter(b => b.timestamp < list[0].timestamp); list = add.concat(list); idx += add.length; } catch (e) { /* seguimos con lo que hay */ }
+      }
       begin(list, idx);
     }
     function begin(list, idx) {
       R.all = list; R.idx = Math.max(1, Math.min(idx, list.length - 2)); R.picking = false;
       if (!/No hay velas tan antiguas/.test($(".gx-hint").textContent)) hint("");
       $(".gx-start").hidden = true; $(".gx-play").hidden = false;
-      ch.setDataLoader(replayLoader); ch.resetData();
+      ch.setDataLoader(replayLoader); ch.resetData(); syncMode();
       stats(); setTimeout(() => hint(""), 4000);
     }
     function step() {
@@ -742,9 +760,18 @@
       pause(); if (R.pos) { ch.removeOverlay({ id: R.pos.id }); R.pos = null; }
       ch.removeOverlay({ groupId: "sim" });
       R.on = false; R.picking = false; hint("");
-      $(".gx-replay").hidden = true; $('[data-act="replay"]').setAttribute("aria-pressed", "false");
+      $(".gx-replay").hidden = true; syncMode();
       ch.setDataLoader(live); ch.resetData(); setSrc(); setTimeout(() => ch.resize(), 0);
     }
+    function jumpTo(i) {
+      if (!R.all.length) return;
+      i = Math.max(1, Math.min(i, R.all.length - 1)); if (i === R.idx) return; pause();
+      if (i > R.idx) { for (let k = R.idx + 1; k <= i; k++) { R.idx = k; checkSim(R.all[k]); } }
+      else { R.idx = i; if (R.pos && R.idx < R.pos.entryIdx) { ch.removeOverlay({ id: R.pos.id }); R.pos = null; hint("Simulada anulada: has vuelto a antes de la entrada."); setTimeout(() => hint(""), 2500); } }
+      ch.resetData(); stats();
+    }
+    function tfReady() { const l = ch.getDataList(); if (l.length < 3) return false; let m = Infinity; for (let i = Math.max(1, l.length - 20); i < l.length; i++) m = Math.min(m, l[i].timestamp - l[i - 1].timestamp); return m === TF_MS[st.tf]; }
+    async function whenLoaded(fn) { await new Promise(r => setTimeout(r, 200)); for (let i = 0; i < 50; i++) { if (tfReady()) return fn(); await new Promise(r => setTimeout(r, 150)); } if (ch.getDataList().length) fn(); }
     function atr(i) { const n = 14; let a = null; for (let k = Math.max(1, i - 100); k <= i; k++) { const c = R.all[k], pc = R.all[k - 1].close; const tr = Math.max(c.high - c.low, Math.abs(c.high - pc), Math.abs(c.low - pc)); a = a == null ? tr : (a * (n - 1) + tr) / n; } return a; }
     function openSim(side) {
       if (R.pos || !bar()) return;
@@ -807,7 +834,7 @@
       if (a === "shot") { shot(); return; }
       if (a === "undo") { undo(); return; }
       if (a === "redo") { redo(); return; }
-      if (a === "replay") { R.on ? exitReplay() : enterReplay(); return; }
+      if (t.dataset.mode) { if (t.dataset.mode === "bt") enterReplay(); else if (R.on) exitReplay(); return; }
       if (a === "full") { const card = el.closest(".tvcard") || el; const on = !card.classList.contains("full"); card.classList.toggle("full", on); document.body.style.overflow = on ? "hidden" : ""; t.title = on ? "Salir de pantalla completa" : "Pantalla completa"; setTimeout(() => ch.resize(), 30); return; }
       if (a === "magnet") { st.magnet = !st.magnet; ls.set("tk-magnet", st.magnet); t.setAttribute("aria-pressed", String(st.magnet)); return; }
       if (a === "lockall") { st.locked = !st.locked; t.setAttribute("aria-pressed", String(st.locked)); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, lock: st.locked })); return; }
@@ -818,10 +845,12 @@
       if (a === "play") { play(); return; }
       if (a === "next") { pause(); step(); return; }
       if (a === "prev") { back(); return; }
+      if (a === "back10") { jumpTo(R.idx - 10); return; }
+      if (a === "fwd10") { jumpTo(R.idx + 10); return; }
       if (a === "closesim") { if (R.pos) closeSim(bar().close, bar()); return; }
       if (a === "godate") { const v = $(".gx-date input").value; if (v) startAt(new Date(v).getTime()); return; }
     });
-    el.addEventListener("input", e => { const f = e.target.dataset.f; if (f === "text") patchSel({ text: e.target.value }); });
+    el.addEventListener("input", e => { const f = e.target.dataset.f; if (f === "text") patchSel({ text: e.target.value }); if (e.target.classList.contains("gx-range")) jumpTo(+e.target.value); });
     el.addEventListener("change", e => {
       const t = e.target, f = t.dataset.f;
       if (f === "color") patchSel({ color: t.value });
@@ -836,16 +865,22 @@
       const typing = e.target.matches && e.target.matches("input,textarea,select");
       if (e.key === "Escape") { if (!MOD.hidden) closeModal(); else if (!POP.hidden) closePop(); return; }
       if (typing) return;
+      if (R.on && !R.picking && MOD.hidden) {
+        if (e.key === "ArrowRight") { e.preventDefault(); e.shiftKey ? jumpTo(R.idx + 10) : (pause(), step()); return; }
+        if (e.key === "ArrowLeft") { e.preventDefault(); e.shiftKey ? jumpTo(R.idx - 10) : back(); return; }
+        if (e.key === " " && !(e.target.closest && e.target.closest("button"))) { e.preventDefault(); play(); return; }
+      }
       const mod = e.metaKey || e.ctrlKey;
       if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
       if ((e.key === "Delete" || e.key === "Backspace") && st.sel) { e.preventDefault(); removeSel(); }
     };
     document.addEventListener("keydown", onKey);
+    if (MODE === "bt") whenLoaded(() => enterReplay()); else if (opts.onMode) opts.onMode("live");
     const ro = new ResizeObserver(() => ch.resize()); ro.observe(box);
 
     inst = {
       el, ch, ro, onKey,
-      setSymbol(sym) { if (sym === st.sym) return; if (R.on) exitReplay(); st.sym = sym; F.hidden = true; load(); restore(); },
+      setSymbol(sym) { if (sym === st.sym) return; const was = R.on; if (R.on) exitReplay(); st.sym = sym; F.hidden = true; load(); restore(); if (was) enterReplay(); },
       setTheme(dark) { DARK = !!dark; ch.setStyles(styles()); applyInd(); paintBg(); },
       price: () => st.price,
       stop() { pause(); if (st.unsub) { st.unsub(); st.unsub = null; } }

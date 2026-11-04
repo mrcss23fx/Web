@@ -101,7 +101,7 @@ h3{font-family:var(--head);letter-spacing:-.015em}
 .acsel-t b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acsel>svg{color:var(--suave);flex:none}
 .acsel select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:16px}
-.acsel.mini{margin:0 0 0 auto;padding:4px 8px;gap:8px;max-width:190px;height:38px}
+.acsel.mini{margin:0 0 0 auto;padding:4px 8px;gap:8px;max-width:min(190px,calc(100vw - 225px));min-width:0;height:38px}
 .acsel.mini .aic{width:26px;height:26px;border-radius:8px}
 .acsel.mini .acsel-t small{display:none}
 .acsel.mini .acsel-t b{font-size:13px}
@@ -431,6 +431,30 @@ button.gx-row:hover{background:var(--sub)}
 .gx-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:9px;border:1px solid var(--borde);background:var(--card);color:var(--tinta);font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
 .gx-btn:hover{border-color:var(--cobalto)}
 .gx-replay{border-top:1px solid var(--linea);padding:8px 10px;display:flex;flex-direction:column;gap:8px;background:var(--sub)}
+.gx-mode{display:flex;padding:3px;border-radius:10px;background:var(--sub);border:1px solid var(--linea);gap:2px;flex:none}
+.gx-mode button{height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--suave);font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.gx-mode button:hover{color:var(--tinta)}
+.gx-mode button[aria-pressed="true"]{background:var(--btn);color:#fff}
+.gx.bt .gx-mode button[data-mode="bt"][aria-pressed="true"]{background:#e9b949;color:#1b1503}
+.gx.bt .gx-canvas{box-shadow:inset 0 0 0 2px rgba(233,185,73,.55)}
+.gx-btbadge{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(233,185,73,.95);color:#1b1503;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;pointer-events:none;white-space:nowrap}
+.gx-rtitle{font-size:14px;margin-right:4px}
+.gx-play{display:flex;flex-direction:column;gap:8px}
+.gx-pb.gx-w{width:auto;padding:0 10px;font-weight:700;font-size:12.5px}
+.gx-scrub{flex-wrap:nowrap}
+.gx-s0,.gx-s1{font-size:11.5px;color:var(--suave);white-space:nowrap}
+.gx-range{flex:1;min-width:80px;height:22px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+.gx-range::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:linear-gradient(90deg,var(--cobalto) var(--p,0%),var(--linea) var(--p,0%))}
+.gx-range::-moz-range-track{height:6px;border-radius:999px;background:var(--linea)}
+.gx-range::-moz-range-progress{height:6px;border-radius:999px;background:var(--cobalto)}
+.gx-range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-6px;border-radius:50%;background:#fff;border:3px solid var(--cobalto);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.gx-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--cobalto)}
+.gx-range:focus-visible{outline:2px solid var(--cobalto);outline-offset:2px;border-radius:6px}
+.bt-only{display:none}
+body.bt-mode .bt-only{display:block}
+body.bt-mode .live-only{display:none!important}
+.btnote{font-size:13.5px;color:var(--tinta2);line-height:1.55;border-color:rgba(233,185,73,.45)}
+.btnote b{color:var(--tinta)}
 .gx-rrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gx-rlbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--suave)}
 .gx-rhelp,.gx-muted{font-size:12px;color:var(--suave)}
@@ -485,7 +509,7 @@ button.gx-row:hover{background:var(--sub)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/klinecharts@10.1.0/dist/umd/klinecharts.min.js"></script>
-<script src="grafico.js?v=5"></script>
+<script src="grafico.js?v=6"></script>
 </head>
 <body>
 <div id="app" aria-live="polite"></div>
@@ -1172,7 +1196,7 @@ function viewAnalizar(){
     <div class="card tvcard" id="tvcard" style="padding:0;overflow:hidden;position:relative">
       ${window.TkChart?`<div id="tkchart" class="tkwrap"></div>`:`<div class="stack" style="padding:20px;gap:8px"><b>No se pudo cargar el gráfico.</b><span class="small muted">Revisa tu conexión y recarga la página.</span></div>`}
     </div>
-      <form class="card ticket obar" id="anForm" onsubmit="return false" aria-label="Boleto de orden">
+      <form class="card ticket obar live-only" id="anForm" onsubmit="return false" aria-label="Boleto de orden">
         <label class="field"><span>Mercado</span><select class="input" id="anSym">${opts}</select></label>
         <div class="side2">
           <button type="button" class="sb sell" data-side="sell" aria-pressed="${S.an.side==="sell"}"><span class="t">Vender</span><span class="p">${info&&info.p?esc(String(info.p)):""}</span></button>
@@ -1183,8 +1207,9 @@ function viewAnalizar(){
         <label class="field"><span>Objetivo</span><input class="input" id="anTp" inputmode="decimal" value="${esc(S.an.tp)}" placeholder="precio"></label>
         <div id="anResult"></div>
       </form>
-    <div class="small muted" style="margin-top:-6px">La operación la abres tú en MetaTrader con estos datos. Abrirla desde aquí llegará más adelante, siempre pasando por tu pacto.</div>
-    <div class="grid2 even">
+    <div class="small muted live-only" style="margin-top:-6px">La operación la abres tú en MetaTrader con estos datos. Abrirla desde aquí llegará más adelante, siempre pasando por tu pacto.</div>
+    <div class="card bt-only btnote"><b>Estás en backtesting.</b> Elige desde cuándo practicar, avanza y retrocede vela a vela o arrastra la barra para ir a cualquier punto. Pulsa Comprar o Vender para abrir operaciones simuladas: se guardan aparte y no cuentan en tus estadísticas reales. Atajos: ← → una vela, Mayús + ← → diez velas, espacio para reproducir.</div>
+    <div class="grid2 even live-only">
       <div class="card stack" style="gap:8px" id="anPacto"></div>
       <div class="stack">
         ${p.strategy?`<div class="card small" style="color:var(--tinta2)"><span class="lbl" style="display:block;margin-bottom:4px">Tu estrategia</span>${esc(p.strategy)}</div>`:""}
@@ -1291,6 +1316,7 @@ async function mountChart(){
   el=document.getElementById("tkchart");if(!el||(TkChart.current&&TkChart.current.el===el))return;
   TkChart.mount(el,{
     sym:S.an.sym,dark:isDark(),
+    onMode:m=>document.body.classList.toggle("bt-mode",m==="bt"),
     digits:sym=>{const i=symbolsInfo().find(x=>x.s===sym);return i&&i.d!=null?i.d:null},
     invoke:(name,body)=>sb.functions.invoke(name,{body}),
     mt5:{has:mt5Live,provider:mt5Provider},
