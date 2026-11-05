@@ -8,11 +8,51 @@
   if (!KC) { window.TkChart = null; return; }
 
   const NUMF = "Inter, system-ui, -apple-system, sans-serif";
-  const TFS = [["1m", "1 minuto", { type: "minute", span: 1 }], ["5m", "5 minutos", { type: "minute", span: 5 }], ["15m", "15 minutos", { type: "minute", span: 15 }],
-    ["30m", "30 minutos", { type: "minute", span: 30 }], ["1h", "1 hora", { type: "hour", span: 1 }], ["4h", "4 horas", { type: "hour", span: 4 }],
+  const TFS = [["1m", "1 minuto", { type: "minute", span: 1 }], ["3m", "3 minutos", { type: "minute", span: 3 }], ["5m", "5 minutos", { type: "minute", span: 5 }], ["15m", "15 minutos", { type: "minute", span: 15 }],
+    ["30m", "30 minutos", { type: "minute", span: 30 }], ["45m", "45 minutos", { type: "minute", span: 45 }], ["1h", "1 hora", { type: "hour", span: 1 }], ["2h", "2 horas", { type: "hour", span: 2 }], ["4h", "4 horas", { type: "hour", span: 4 }],
     ["1d", "1 día", { type: "day", span: 1 }], ["1w", "1 semana", { type: "week", span: 1 }]];
-  const TF_SHORT = { "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "1h", "4h": "4h", "1d": "1D", "1w": "1S" };
-  const TF_MS = { "1m": 6e4, "5m": 3e5, "15m": 9e5, "30m": 18e5, "1h": 36e5, "4h": 144e5, "1d": 864e5, "1w": 6048e5 };
+  const TF_SHORT = { "1m": "1m", "3m": "3m", "5m": "5m", "15m": "15m", "30m": "30m", "45m": "45m", "1h": "1h", "2h": "2h", "4h": "4h", "1d": "1D", "1w": "1S" };
+  const TF_MS = { "1m": 6e4, "3m": 18e4, "5m": 3e5, "15m": 9e5, "30m": 18e5, "45m": 27e5, "1h": 36e5, "2h": 72e5, "4h": 144e5, "1d": 864e5, "1w": 6048e5 };
+  /* marcos que se construyen juntando velas de uno menor (si la fuente no los da tal cual) */
+  const DERIV = { "3m": ["1m", 3], "45m": ["15m", 3], "2h": ["1h", 2] };
+  const bucketOf = (ts, ms) => { const d = Math.floor(ts / 864e5) * 864e5; return d + Math.floor((ts - d) / ms) * ms; };
+  function aggBars(list, tf) {
+    const ms = TF_MS[tf], out = []; let cur = null;
+    for (const b of list) {
+      const k = bucketOf(b.timestamp, ms);
+      if (!cur || cur.timestamp !== k) { cur = { timestamp: k, open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume || 0 }; out.push(cur); }
+      else { cur.high = Math.max(cur.high, b.high); cur.low = Math.min(cur.low, b.low); cur.close = b.close; cur.volume += b.volume || 0; }
+    }
+    return out;
+  }
+  function withDerived(p) {
+    if (!p || p.__der) return p;
+    const native = p.native || [], seed = {};
+    return Object.assign({}, p, {
+      __der: true,
+      async bars(sym, tf, to) {
+        const d = DERIV[tf]; if (!d || native.includes(tf)) return p.bars(sym, tf, to);
+        const r = await p.bars(sym, d[0], to);
+        for (let g = 0; r.more && r.bars.length && r.bars.length < 350 * d[1] && g < d[1] - 1; g++) { // más velas pequeñas para que salgan suficientes grandes
+          const o = await p.bars(sym, d[0], r.bars[0].timestamp), older = o.bars.filter(b => b.timestamp < r.bars[0].timestamp);
+          if (!older.length) { r.more = false; break; } r.bars = older.concat(r.bars); r.more = o.more;
+        }
+        if (!to) seed[sym + "|" + tf] = r.bars.slice(-d[1] * 2);
+        let out = aggBars(r.bars, tf); if (r.more && out.length > 1) out = out.slice(1); // la primera puede venir a medias
+        return Object.assign({}, r, { bars: out, more: r.more });
+      },
+      subscribe(sym, tf, cb) {
+        const d = DERIV[tf]; if (!d || native.includes(tf)) return p.subscribe(sym, tf, cb);
+        const ms = TF_MS[tf], base = new Map(); (seed[sym + "|" + tf] || []).forEach(b => base.set(b.timestamp, b));
+        return p.subscribe(sym, d[0], b => {
+          base.set(b.timestamp, Object.assign({}, b)); const k = bucketOf(b.timestamp, ms);
+          for (const t of Array.from(base.keys())) if (bucketOf(t, ms) < k) base.delete(t);
+          const parts = Array.from(base.values()).filter(x => bucketOf(x.timestamp, ms) === k).sort((x, y) => x.timestamp - y.timestamp);
+          const a = aggBars(parts, tf)[0]; if (a) cb(a);
+        });
+      }
+    });
+  }
   const CRYPTO = /^(BTC|ETH|SOL|XRP|BNB|ADA|DOGE|LTC|AVAX|DOT|LINK|TRX|TON|MATIC|SHIB)/;
   const PALETTE = ["#2443c7", "#14213a", "#0e9aa7", "#2f8f67", "#e0a33a", "#d9822b", "#c2412f", "#d6336c", "#7b4fd6", "#8a93a8"];
   let CUR_TF = "5m", CUR_DIGITS = 5;
@@ -631,7 +671,7 @@
   function binance() {
     const iv = tf => tf === "1w" ? "1w" : tf;
     return {
-      id: "binance", label: "Binance · en vivo",
+      id: "binance", label: "Binance · en vivo", native: ["3m", "2h"],
       async bars(sym, tf, to) {
         const b = binSym(sym), lim = 1000;
         const r = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${b}&interval=${iv(tf)}&limit=${lim}${to ? "&endTime=" + (to - 1) : ""}`);
@@ -797,9 +837,9 @@
     const digits = () => (opts.digits && opts.digits(st.sym)) || guessDigits(st.sym);
     const curColor = () => st.color || pal().cob;
     function pickProv() {
-      if (opts.mt5 && opts.mt5.has(st.sym)) return opts.mt5.provider(st.sym);
-      if (binSym(st.sym)) return binance();
-      return publico(opts.invoke, digits());
+      if (opts.mt5 && opts.mt5.has(st.sym)) return withDerived(opts.mt5.provider(st.sym));
+      if (binSym(st.sym)) return withDerived(binance());
+      return withDerived(publico(opts.invoke, digits()));
     }
 
     /* datos en vivo (en KLineChart 10, «forward» = velas más antiguas y «backward» = más nuevas) */
