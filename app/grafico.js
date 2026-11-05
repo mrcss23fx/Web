@@ -696,7 +696,8 @@
         <span class="gx-vs"></span>
         <button type="button" class="gx-tb gx-sym" data-act="symbol" title="Buscar mercado">${icon("search", 16)}<b class="gx-symname">${esc(st.sym)}</b></button>
         <span class="gx-vs"></span>
-        <button type="button" class="gx-tb" data-menu="tf" title="Marco de tiempo"><b class="gx-tfname">${TF_SHORT[st.tf]}</b>${icon("chev", 14)}</button>
+        <div class="gx-tfq" role="group" aria-label="Marcos de tiempo favoritos"></div>
+        <button type="button" class="gx-tb gx-tfdd" data-menu="tf" title="Todos los marcos (o escribe 5, 15, 1h, 4h, D…)"><b class="gx-tfname">${TF_SHORT[st.tf]}</b>${icon("chev", 14)}</button>
         <span class="gx-vs"></span>
         <button type="button" class="gx-tb" data-menu="type" title="Tipo de gráfico"><span class="gx-typeic">${icon(typeIcon(CFG.type), 18)}</span>${icon("chev", 14)}</button>
         <span class="gx-vs"></span>
@@ -725,7 +726,7 @@
           <button type="button" class="gx-tool gx-hidet" data-act="hidetools" aria-label="Guardar la barra de herramientas" title="Guardar la barra de herramientas">${icon("chevL")}</button>
           <button type="button" class="gx-tool" data-act="favbar" aria-pressed="${st.favShow}" aria-label="Barra de favoritos" title="Barra de favoritos (marca herramientas con la estrella)">${icon(st.favShow ? "starOn" : "star")}</button>
         </div>
-        <div class="gx-canvas"><button type="button" class="gx-showtools" data-act="showtools" aria-label="Mostrar la barra de herramientas" title="Mostrar la barra de herramientas">${icon("chevR", 14)}</button><div class="gx-chart"></div><svg class="gx-free" hidden aria-hidden="true"></svg><div class="gx-favbar" hidden role="toolbar" aria-label="Herramientas favoritas"><span class="gx-fgrip" title="Arrastra para mover">${icon("grip", 16)}</span><div class="gx-favs"></div></div><div class="gx-btbadge" hidden>Backtesting · <span></span></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
+        <div class="gx-canvas"><div class="gx-tfbox" hidden role="status"><span>Marco</span><b></b><small>Intro para cambiar</small></div><button type="button" class="gx-showtools" data-act="showtools" aria-label="Mostrar la barra de herramientas" title="Mostrar la barra de herramientas">${icon("chevR", 14)}</button><div class="gx-chart"></div><svg class="gx-free" hidden aria-hidden="true"></svg><div class="gx-favbar" hidden role="toolbar" aria-label="Herramientas favoritas"><span class="gx-fgrip" title="Arrastra para mover">${icon("grip", 16)}</span><div class="gx-favs"></div></div><div class="gx-btbadge" hidden>Backtesting · <span></span></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
           <div class="gx-float" hidden role="toolbar" aria-label="Dibujo elegido">
             <div class="gx-sw">${PALETTE.map(c => `<button type="button" class="gx-c" data-color="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join("")}<label class="gx-cc" title="Otro color"><input type="color" data-f="color" aria-label="Otro color"></label></div>
             <span class="gx-vs"></span>
@@ -810,6 +811,15 @@
           if (type === "init") msg("Cargando precios…");
           const r = await prov.bars(st.sym, st.tf, type === "forward" ? timestamp : null);
           if (prov !== st.prov) return;
+          if (type === "init" && st.anchor && r.bars.length) {
+            const need = st.anchor - (TF_MS[st.tf] || 3e5) * 60; let guard = 0;
+            while (r.more && r.bars.length && r.bars[0].timestamp > need && guard++ < 8) {
+              const o = await prov.bars(st.sym, st.tf, r.bars[0].timestamp); if (prov !== st.prov) return;
+              const older = o.bars.filter(b => b.timestamp < r.bars[0].timestamp); if (!older.length) { r.more = false; break; }
+              r.bars = older.concat(r.bars); r.more = o.more;
+            }
+            st.anchor = null;
+          }
           msg(type === "init" && !r.bars.length ? "No hay velas para este mercado en este marco." : "");
           callback(r.bars, { forward: r.more && r.bars.length > 0, backward: false });
           if (type === "init" && r.bars.length) { st.price = r.bars[r.bars.length - 1].close; opts.onPrice && opts.onPrice(st.price, st.sym); }
@@ -861,7 +871,7 @@
     const evs = () => ({
       onDrawEnd: e => { const k = st.tool; afterDraw(e.overlay); save(); doneTool(k); if (!st.stay) showFloat(e.overlay.id, TEXTABLE.includes(e.overlay.name) && e.overlay.name !== "tkEmoji"); },
       onPressedMoveEnd: e => { afterDraw(e.overlay); save(); },
-      onRemoved: () => { if (!st.quiet) save(); },
+      onRemoved: () => { if (!st.quiet) queueSave(); },
       onRightClick: e => { removeSel(e.overlay.id); return true; },
       onSelected: e => { if (st.tool === "eraser") { removeSel(e.overlay.id); return; } showFloat(e.overlay.id, false); },
       onDeselected: () => hideFloat()
@@ -874,7 +884,12 @@
     const getOv = id => ch.getOverlays({ id })[0];
     function serial() { return ch.getOverlays({ groupId: "draw" }).map(o => ({ name: o.name, points: o.points.map(p => ({ timestamp: p.timestamp, value: p.value })), extendData: o.extendData, styles: o.styles, lock: o.lock })); }
     let saveT = null;
-    function persist(list) { const sym = st.sym; ls.set("tk-draw-" + sym, list); clearTimeout(saveT); saveT = setTimeout(() => opts.saveDrawings && opts.saveDrawings(sym, list), 1200); }
+    let pend = null, qT = null;
+    function flushRemote() { clearTimeout(saveT); if (!pend) return; const p = pend; pend = null; try { opts.saveDrawings && opts.saveDrawings(p.sym, p.list, p.t); } catch (e) { /* lo reintenta la copia local */ } }
+    function persist(list) { const sym = st.sym, t = Date.now(); ls.set("tk-draw-" + sym, { t, list }); pend = { sym, list, t }; clearTimeout(saveT); saveT = setTimeout(flushRemote, 500); }
+    const queueSave = () => { clearTimeout(qT); qT = setTimeout(() => { if (!st.quiet) save(); }, 0); };
+    const onHide = () => { if (document.visibilityState === "hidden") flushRemote(); };
+    document.addEventListener("visibilitychange", onHide); window.addEventListener("pagehide", flushRemote);
     function save() {
       const list = serial(), j = JSON.stringify(list);
       if (st.hist[st.hist.length - 1] !== j) { st.hist.push(j); if (st.hist.length > 60) st.hist.shift(); st.fut = []; }
@@ -885,8 +900,14 @@
       (list || []).forEach(d => { if (d && d.name && d.points) ch.createOverlay(Object.assign({ name: d.name, groupId: "draw", points: d.points, extendData: d.extendData, styles: d.styles, lock: !!d.lock || st.locked, visible: !st.hidden, mode: magMode() }, evs())); });
     }
     async function restore() {
-      let list = ls.get("tk-draw-" + st.sym, null);
-      if (opts.loadDrawings) { try { const remote = await opts.loadDrawings(st.sym); if (remote) list = remote; } catch (e) { /* uso la copia local */ } }
+      const loc = ls.get("tk-draw-" + st.sym, null), lt = loc && !Array.isArray(loc) ? loc.t || 0 : 0;
+      let list = loc ? (Array.isArray(loc) ? loc : loc.list) : null;
+      if (opts.loadDrawings) {
+        try {
+          const rem = await opts.loadDrawings(st.sym);
+          if (rem) { const rl = Array.isArray(rem) ? rem : rem.list, rt = Array.isArray(rem) ? 0 : rem.t || 0; if (!loc || rt > lt || (!lt && !rt && rl)) list = rl; else if (lt > rt && loc) { pend = { sym: st.sym, list, t: lt }; flushRemote(); } }
+        } catch (e) { /* uso la copia local */ }
+      }
       build(list); st.hist = [JSON.stringify(serial())]; st.fut = [];
     }
     function undo() { if (st.hist.length < 2) return; st.fut.push(st.hist.pop()); const l = JSON.parse(st.hist[st.hist.length - 1]); build(l); persist(l); hideFloat(); }
@@ -996,7 +1017,7 @@
           if (b.hasAttribute("data-close")) { closeModal(); return; }
           if (b.dataset.tv) { const o = getOv(b.dataset.tv); ch.overrideOverlay({ id: o.id, visible: o.visible === false }); }
           if (b.dataset.tl) { const o = getOv(b.dataset.tl); ch.overrideOverlay({ id: o.id, lock: !o.lock }); }
-          if (b.dataset.td) { ch.removeOverlay({ id: b.dataset.td }); hideFloat(); }
+          if (b.dataset.td) { st.quiet = true; ch.removeOverlay({ id: b.dataset.td }); st.quiet = false; hideFloat(); }
           save(); paint();
         };
       });
@@ -1030,7 +1051,7 @@
       if (patch.color) { st.color = patch.color; ls.set("tk-color", patch.color); $$(".gx-c").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.color === patch.color))); }
       save();
     }
-    function removeSel(id) { const i = id || st.sel; if (!i) return; ch.removeOverlay({ id: i }); F.hidden = true; st.sel = null; }
+    function removeSel(id) { const i = id || st.sel; if (!i) return; ch.removeOverlay({ id: i }); F.hidden = true; st.sel = null; queueSave(); }
     function dupSel() {
       const o = st.sel && getOv(st.sel); if (!o) return;
       const dt = (TF_MS[st.tf] || 3e5) * 5;
@@ -1052,8 +1073,36 @@
     function openModal(html, bind) { DLG.onclick = null; DLG.onchange = null; DLG.innerHTML = html; MOD.hidden = false; bind && bind(); const f = DLG.querySelector("input,button"); f && f.focus(); }
     function closeModal() { MOD.hidden = true; DLG.innerHTML = ""; }
     function typeIcon(t) { return t === "candle_stroke" ? "candlesH" : t === "ohlc" ? "bars" : t === "area" ? "area" : "candles"; }
+    st.tfFav = ls.get("tk-tffav", ["1m", "5m", "15m", "1h", "4h", "1d"]);
+    function renderTfq() {
+      const q = $(".gx-tfq"); if (!q) return;
+      q.innerHTML = TFS.filter(([k]) => st.tfFav.includes(k)).map(([k, l]) => `<button type="button" class="gx-tfb" data-tfq="${k}" aria-pressed="${k === st.tf}" title="${l}">${TF_SHORT[k]}</button>`).join("");
+      $(".gx-tfdd").classList.toggle("on", !st.tfFav.includes(st.tf));
+    }
     function menuTf(btn) {
-      openPop(btn, `<div class="gx-mh">Marco de tiempo</div>` + TFS.map(([k, l]) => `<button type="button" class="gx-mi" data-pick="${k}" aria-pressed="${k === st.tf}"><b>${TF_SHORT[k]}</b><span>${l}</span></button>`).join(""), k => setTf(k));
+      openPop(btn, `<div class="gx-mh">Marco de tiempo</div>` + TFS.map(([k, l]) => `<div class="gx-mrow"><button type="button" class="gx-mi" data-pick="${k}" aria-pressed="${k === st.tf}"><b style="min-width:30px">${TF_SHORT[k]}</b><span>${l}</span></button><button type="button" class="gx-star" data-tfstar="${k}" aria-pressed="${st.tfFav.includes(k)}" aria-label="Mostrar ${l} en la barra" title="Mostrar en la barra">${icon(st.tfFav.includes(k) ? "starOn" : "star", 15)}</button></div>`).join("") + `<div class="gx-muted" style="padding:8px 10px 4px;font-size:12px">Atajo: escribe el marco en el gráfico (5, 15, 1h, 4h, D…) y pulsa Intro.</div>`, k => setTf(k));
+      POP.addEventListener("click", e => { const b = e.target.closest("[data-tfstar]"); if (!b) return; e.stopPropagation(); const k = b.dataset.tfstar, i = st.tfFav.indexOf(k); if (i >= 0) st.tfFav.splice(i, 1); else st.tfFav.push(k); ls.set("tk-tffav", st.tfFav); b.setAttribute("aria-pressed", String(i < 0)); b.innerHTML = icon(i < 0 ? "starOn" : "star", 15); renderTfq(); }, { capture: true, once: false });
+    }
+    /* escribir el marco con el teclado: 5, 15, 1h, 240, D, W… */
+    let tfBuf = "", tfT = null;
+    function tfBox(show) { const b = $(".gx-tfbox"); if (!b) return; b.hidden = !show; if (show) b.querySelector("b").textContent = tfBuf; }
+    function parseTf(v) {
+      v = v.trim().toLowerCase(); if (!v) return null;
+      if (v === "d" || v === "1d") return "1d"; if (v === "w" || v === "s" || v === "1w" || v === "1s") return "1w";
+      const m = v.match(/^(\d+)\s*([mhdws]?)$/); if (!m) return null; let n = +m[1], u = m[2] || "m";
+      if (u === "m" && n % 60 === 0 && n >= 60) { u = "h"; n = n / 60; }
+      if (u === "h" && n === 24) { u = "d"; n = 1; }
+      const k = n + (u === "s" ? "w" : u); return TFS.some(x => x[0] === k) ? k : null;
+    }
+    function tfKey(e) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return false;
+      const k = e.key;
+      if (!tfBuf && !/^[0-9dDwW]$/.test(k)) return false;
+      if (tfBuf && k === "Escape") { tfBuf = ""; tfBox(false); return true; }
+      if (tfBuf && k === "Enter") { const t = parseTf(tfBuf); tfBuf = ""; tfBox(false); if (t) setTf(t); else { hint("Ese marco no está disponible. Prueba 1, 5, 15, 30, 1h, 4h, D o W."); setTimeout(() => hint(""), 2600); } return true; }
+      if (tfBuf && k === "Backspace") { tfBuf = tfBuf.slice(0, -1); tfBox(!!tfBuf); return true; }
+      if (/^[0-9a-zA-Z]$/.test(k) && tfBuf.length < 5) { tfBuf += k.toUpperCase(); tfBox(true); clearTimeout(tfT); tfT = setTimeout(() => { tfBuf = ""; tfBox(false); }, 4000); return true; }
+      return false;
     }
     function menuType(btn) {
       const t = [["candle_solid", "Velas", "candles"], ["candle_stroke", "Velas huecas", "candlesH"], ["ohlc", "Barras", "bars"], ["area", "Área", "area"]];
@@ -1067,11 +1116,33 @@
         setTool(k);
       });
     }
+    function viewAnchor() {
+      try {
+        const L = ch.getDataList(), v = ch.getVisibleRange(); if (!L.length || !v) return null;
+        if (st.anchorKeep && st.anchorKeep.tf === st.tf && st.anchorKeep.vr === JSON.stringify(v)) return { ts: st.anchorKeep.ts }; // no se ha movido desde el último cambio
+        st.anchorKeep = null;
+        const last = Math.min(L.length - 1, Math.max(0, (v.realTo != null ? v.realTo : v.to) - 1)), first = Math.max(0, v.realFrom != null ? v.realFrom : v.from);
+        if (last >= L.length - 2) return null; // estaba viendo lo último: sigue en vivo
+        return { ts: L[Math.floor((first + last) / 2)].timestamp, right: L[last].timestamp };
+      } catch (e) { return null; }
+    }
+    function goAnchor(a) {
+      if (!a) return;
+      const L = ch.getDataList(); if (!L.length) return;
+      let i = L.findIndex(b => b.timestamp > a.ts) - 1; if (i < -1) i = L.length - 1; if (i < 0) { i = 0; hint("No hay velas tan antiguas en este marco: te dejo en la más antigua."); setTimeout(() => hint(""), 2800); }
+      const v = ch.getVisibleRange(), half = v ? Math.max(5, Math.floor(((v.realTo || v.to) - (v.realFrom || v.from)) / 2)) : 40;
+      try { ch.scrollToDataIndex(Math.min(L.length - 1, i + half), 0); } catch (e) { /* sin desplazar */ }
+      setTimeout(() => { try { st.anchorKeep = { ts: a.ts, tf: st.tf, vr: JSON.stringify(ch.getVisibleRange()) }; } catch (e) { /* nada */ } }, 60);
+    }
     function setTf(k) {
+      if (k === st.tf) return;
       const was = R.on, keep = R.on && !R.picking && bar() ? bar().timestamp : null, hadPos = !!R.pos;
+      const anchor = R.on ? null : viewAnchor();
       if (R.on) exitReplay();
-      st.tf = k; CUR_TF = k; ls.set(TFK, k); opts.onTf && opts.onTf(k); $(".gx-tfname").textContent = TF_SHORT[k];
+      st.anchor = anchor ? anchor.ts : null;
+      st.tf = k; CUR_TF = k; ls.set(TFK, k); opts.onTf && opts.onTf(k); $(".gx-tfname").textContent = TF_SHORT[k]; renderTfq();
       st.prov = pickProv(); setSrc(); ch.setPeriod(TFS.find(x => x[0] === k)[2]);
+      if (anchor) whenLoaded(() => setTimeout(() => goAnchor(anchor), 30));
       if (was) { enterReplay(); if (keep) whenLoaded(() => { startAt(keep); if (hadPos) { hint("La simulada abierta se ha cerrado al cambiar de marco."); setTimeout(() => hint(""), 3000); } }); }
     }
     function modalSymbol() {
@@ -1300,6 +1371,7 @@
       }
       if (t.closest(".gx-dlg") || t.closest(".gx-pop")) { if (t.dataset.sym) { closeModal(); opts.onSymbol ? opts.onSymbol(t.dataset.sym) : inst.setSymbol(t.dataset.sym); } else if (t.hasAttribute("data-close")) closeModal(); return; }
       if (t.dataset.menu === "tf") { POP.hidden ? menuTf(t) : closePop(); return; }
+      if (t.dataset.tfq) { setTf(t.dataset.tfq); return; }
       if (t.dataset.menu === "type") { POP.hidden ? menuType(t) : closePop(); return; }
       if (t.dataset.more) { menuGroup(t, t.dataset.more); return; }
       if (t.dataset.tool === "tkEmoji") { menuEmoji(t); return; }
@@ -1327,7 +1399,7 @@
       if (a === "favbar") { st.favShow = !st.favShow; ls.set("tk-favshow", st.favShow); renderFav(); if (st.favShow && !st.fav.length) { hint("Marca herramientas con la estrella en sus menús para verlas aquí."); setTimeout(() => hint(""), 3000); } return; }
       if (a === "lockall") { st.locked = !st.locked; t.setAttribute("aria-pressed", String(st.locked)); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, lock: st.locked })); return; }
       if (a === "hide") { st.hidden = !st.hidden; t.setAttribute("aria-pressed", String(st.hidden)); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, visible: !st.hidden })); return; }
-      if (a === "clear") { if (ch.getOverlays({ groupId: "draw" }).length && window.confirm("¿Borrar todos los dibujos de " + st.sym + "? Puedes deshacerlo con la flecha de deshacer.")) { ch.removeOverlay({ groupId: "draw" }); F.hidden = true; } return; }
+      if (a === "clear") { if (ch.getOverlays({ groupId: "draw" }).length && window.confirm("¿Borrar todos los dibujos de " + st.sym + "? Puedes deshacerlo con la flecha de deshacer.")) { ch.removeOverlay({ groupId: "draw" }); F.hidden = true; queueSave(); } return; }
       if (a === "exit") { exitReplay(); return; }
       if (a === "restart") { pause(); if (R.pos) { ch.removeOverlay({ id: R.pos.id }); R.pos = null; } R.picking = true; $(".gx-start").hidden = false; $(".gx-play").hidden = true; ch.setDataLoader(live); ch.resetData(); hint("Toca otra vela o elige una fecha."); return; }
       if (a === "play") { play(); return; }
@@ -1352,6 +1424,7 @@
     const onKey = e => {
       if (!document.body.contains(el) || (me && inst !== me)) return;
       const typing = e.target.matches && e.target.matches("input,textarea,select");
+      if (!(R.on && !R.picking && (e.key === " " || e.key === "c" || e.key === "C")) && tfKey(e)) { e.preventDefault(); return; }
       if (FR && (e.key === "Enter" || e.key === "Escape")) { e.preventDefault(); endFree(e.key === "Enter"); return; }
       if (e.key === "Escape") { if (!MOD.hidden) closeModal(); else if (!POP.hidden) closePop(); else if (R.cut) cutMode(false); return; }
       if (typing) return;
@@ -1372,20 +1445,21 @@
     const activate = () => { if (inst === me) return; inst = me; CUR_TF = st.tf; CUR_DIGITS = digits(); ALL.forEach(x => x.el.classList.toggle("tk-act", x === me)); opts.onActive && opts.onActive(me); };
     el.addEventListener("pointerdown", activate, true);
     me = inst = {
-      el, ch, ro, onKey, key: KEY, activate,
+      el, ch, ro, onKey, key: KEY, activate, flush: () => { flushRemote(); document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", flushRemote); },
       get sym() { return st.sym; }, get tf() { return st.tf; },
-      setSymbol(sym) { if (sym === st.sym) return; const was = R.on; if (R.on) exitReplay(); st.sym = sym; F.hidden = true; load(); restore(); if (was) enterReplay(); },
+      setSymbol(sym) { if (sym === st.sym) return; flushRemote(); const was = R.on; if (R.on) exitReplay(); st.sym = sym; F.hidden = true; load(); restore(); if (was) enterReplay(); },
       setTheme(dark) { DARK = !!dark; ch.setStyles(styles()); applyInd(); paintBg(); applyCursor(); },
       price: () => st.price,
       stop() { pause(); if (st.unsub) { st.unsub(); st.unsub = null; } }
     };
     ALL.add(me); ALL.forEach(x => x.el.classList.toggle("tk-act", x === me));
-    load(); applyInd(); restore(); renderFav(); applyCursor();
+    load(); applyInd(); restore(); renderFav(); applyCursor(); renderTfq();
     if (ls.get("tk-notools", false)) el.querySelector(".gx").classList.add("notools");
     if (st.baseCur !== "cursor") $$("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === st.baseCur)));
     return me;
   }
   function destroyOne(x) {
+    try { x.flush && x.flush(); } catch (e) { /* nada pendiente */ }
     try { x.stop(); x.ro.disconnect(); document.removeEventListener("keydown", x.onKey); KC.dispose(x.el.querySelector(".gx-chart")); } catch (e) { /* ya no existe */ }
     ALL.delete(x); if (inst === x) inst = Array.from(ALL)[0] || null;
   }

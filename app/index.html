@@ -356,17 +356,17 @@ textarea.input{height:auto;padding:9px 11px;resize:vertical;line-height:1.5}
   .side-auto .main{border-left:1px solid var(--linea)}
   .side-auto .side{position:fixed;left:0;top:0;bottom:0;z-index:60;width:232px;border-right:1px solid var(--linea);
     clip-path:inset(0 160px 0 0);will-change:clip-path;transition:clip-path .26s cubic-bezier(.22,.8,.24,1) .12s,box-shadow .26s ease .12s}
-  .side-auto .side:hover,.side-auto .side:focus-within{clip-path:inset(0 -80px 0 0);box-shadow:20px 0 44px -14px rgba(0,0,0,.55);transition-delay:.05s}
+  .side-auto .side.open,.side-auto .side:has(:focus-visible),.side-auto .side:has(.acsw.open){clip-path:inset(0 -80px 0 0);box-shadow:20px 0 44px -14px rgba(0,0,0,.55);transition-delay:.05s}
   .side-auto .side .nl,.side-auto .side .brand2 span,.side-auto .side .acsel-t,.side-auto .side .acsel>svg{opacity:0;transition:opacity .18s ease .1s}
-  .side-auto .side:hover .nl,.side-auto .side:focus-within .nl,.side-auto .side:hover .brand2 span,.side-auto .side:focus-within .brand2 span,.side-auto .side:hover .acsel-t,.side-auto .side:focus-within .acsel-t,.side-auto .side:hover .acsel>svg,.side-auto .side:focus-within .acsel>svg{opacity:1;transition-delay:.1s}
+  .side-auto .side:is(.open,:has(:focus-visible),:has(.acsw.open)) :is(.nl,.brand2 span,.acsel-t,.acsel>svg){opacity:1;transition-delay:.1s}
   .side-auto .navlink,.side-auto .brand2,.side-auto .acsel{white-space:nowrap}
   .side-auto .themes{flex-direction:column;align-items:flex-start;padding:0 6px}
   .side-auto .navlink{position:relative;transition:background-color .2s ease,border-color .2s ease}
   .side-auto .acsel{transition:border-color .2s ease,background-color .2s ease}
-  .side-auto .side:not(:hover):not(:focus-within) .acsel{border-color:transparent;background:transparent}
-  .side-auto .side:not(:hover):not(:focus-within) .navlink[aria-current="page"]{background:transparent!important;border-color:transparent!important}
+  .side-auto .side:not(.open):not(:has(:focus-visible)):not(:has(.acsw.open)) .acsel{border-color:transparent;background:transparent}
+  .side-auto .side:not(.open):not(:has(:focus-visible)):not(:has(.acsw.open)) .navlink[aria-current="page"]{background:transparent!important;border-color:transparent!important}
   .side-auto .navlink[aria-current="page"]::before{content:"";position:absolute;left:2px;top:0;bottom:0;width:36px;border-radius:10px;background:var(--cobaltoC);border:1px solid color-mix(in srgb,var(--cobalto) 55%,transparent);opacity:0;transition:opacity .2s ease;z-index:-1}
-  .side-auto .side:not(:hover):not(:focus-within) .navlink[aria-current="page"]::before{opacity:1}
+  .side-auto .side:not(.open):not(:has(:focus-visible)):not(:has(.acsw.open)) .navlink[aria-current="page"]::before{opacity:1}
   .side-auto .side nav{isolation:isolate}
   .tabs{display:none}
   .main{flex:1;min-width:0;max-width:1320px;padding:28px 32px 40px;margin:0}
@@ -510,6 +510,19 @@ textarea.input{height:auto;padding:9px 11px;resize:vertical;line-height:1.5}
 .gx-showtools:hover{color:var(--tinta);border-color:var(--cobalto)}
 .gx.notools .gx-showtools{display:flex}
 @media (max-width:1023px){.gx-hidet{display:none!important}.gx.notools .gx-tools{display:flex!important}.gx.notools .gx-showtools{display:none}}
+.gx-tfq{display:flex;gap:1px;align-items:center}
+.gx-tfb{height:30px;min-width:34px;padding:0 7px;border:0;border-radius:7px;background:transparent;color:var(--suave);font:inherit;font-size:13px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+.gx-tfb:hover{background:var(--sub);color:var(--tinta)}
+.gx-tfb[aria-pressed="true"]{background:var(--cobaltoC);color:var(--cobalto2)}
+:root:not([data-theme="dark"]) .gx-tfb[aria-pressed="true"]{color:var(--cobalto)}
+.gx-tfdd .gx-tfname{display:none}
+.gx-tfdd.on .gx-tfname{display:inline;color:var(--cobalto2)}
+.tkgrid:not([data-k="1"]) .gx-tfq{display:none}
+.tkgrid:not([data-k="1"]) .gx-tfdd .gx-tfname{display:inline}
+.gx-tfbox{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:12;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:150px;padding:14px 22px;background:var(--card);border:1px solid var(--cobalto);border-radius:14px;box-shadow:0 18px 40px -12px rgba(0,0,0,.55)}
+.gx-tfbox[hidden]{display:none}
+.gx-tfbox span,.gx-tfbox small{font-size:11.5px;color:var(--suave)}
+.gx-tfbox b{font-size:30px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;min-height:36px}
 .gx-free{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:7}
 .gx.free .gx-chart,.gx.free .gx-chart *{cursor:crosshair!important;touch-action:none}
 .gx[data-cur="dot"] .gx-chart,.gx[data-cur="dot"] .gx-chart *{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'><circle cx='6' cy='6' r='3' fill='%237b93ff' stroke='white' stroke-width='1.5'/></svg>") 6 6, crosshair!important}
@@ -653,7 +666,7 @@ body.bt-mode .live-only{display:none!important}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/klinecharts@10.1.0/dist/umd/klinecharts.min.js"></script>
-<script src="grafico.js?v=9"></script>
+<script src="grafico.js?v=10"></script>
 </head>
 <body>
 <div id="app" aria-live="polite"></div>
@@ -1574,8 +1587,8 @@ function chartOpts(i){
     onPosition:main?pos=>{const a=S.an,f=v=>Number(v).toFixed(pos.digits);a.side=pos.side;a.entry=f(pos.entry);a.stop=f(pos.stop);a.tp=f(pos.tp);
       [["anEntry","entry"],["anStop","stop"],["anTp","tp"]].forEach(([id,k])=>{const x=document.getElementById(id);if(x)x.value=a[k]});
       document.querySelectorAll("[data-side]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.side===a.side)));paintAnalizar();toast("Boleto rellenado con tu dibujo")}:null,
-    loadDrawings:async sym=>{const {data,error}=await sb.from("docs").select("data").eq("col","draw").eq("id",sym).maybeSingle();if(error)throw error;return data&&data.data&&data.data.list||null},
-    saveDrawings:async(sym,list)=>{await sb.from("docs").upsert({user_id:S.user.id,col:"draw",id:sym,data:{list}})},
+    loadDrawings:async sym=>{const {data,error}=await sb.from("docs").select("data,updated_at").eq("col","draw").eq("id",sym).maybeSingle();if(error)throw error;if(!data||!data.data||!data.data.list)return null;return {list:data.data.list,t:data.data.t||0}},
+    saveDrawings:async(sym,list,t)=>{const {error}=await sb.from("docs").upsert({user_id:S.user.id,col:"draw",id:sym,data:{list,t:t||Date.now()},updated_at:new Date().toISOString()});if(error&&!S.drawErr){S.drawErr=1;toast("No se pudieron guardar los dibujos en la nube; quedan en este navegador")}},
     saveSim:async rec=>{const {error}=await sb.from("sim_trades").insert(Object.assign({user_id:S.user.id},rec));if(error)toast("No se pudo guardar la simulada")}
   };
 }
@@ -1717,6 +1730,13 @@ function render(){
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{applyTheme(b.dataset.themeSet);document.querySelectorAll("[data-theme-set]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.themeSet===b.dataset.themeSet)));refreshWidgets()});
   document.querySelectorAll("[data-theme-toggle]").forEach(b=>b.onclick=()=>{applyTheme(isDark()?"light":"dark");refreshWidgets()});
   bindAcctMenus();
+  const sd=document.querySelector(".side-auto .side");
+  if(sd){let t=null;
+    const arm=()=>{if(t||sd.classList.contains("open"))return;t=setTimeout(()=>{t=null;sd.classList.add("open")},150)};
+    sd.addEventListener("pointerenter",e=>{if(e.pointerType!=="touch")arm()});
+    sd.addEventListener("pointermove",e=>{if(e.pointerType!=="touch")arm()});
+    sd.addEventListener("pointerleave",()=>{clearTimeout(t);t=null;if(sd.querySelector(".acsw.open"))return;sd.classList.remove("open")});
+  }
   document.querySelectorAll("[data-acct-all]").forEach(b=>b.onclick=()=>setAcct(""));
   document.querySelectorAll("[data-ause]").forEach(b=>b.onclick=()=>setAcct(b.dataset.ause));
   bindView(r);
