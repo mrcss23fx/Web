@@ -638,6 +638,7 @@
     tree: '<path d="M4 4h5M4 10h5M4 16h5"/><rect x="11" y="2.5" width="6" height="3" rx="1"/><rect x="11" y="8.5" width="6" height="3" rx="1"/><rect x="11" y="14.5" width="6" height="3" rx="1"/>',
     star: '<path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z"/>',
     starOn: '<path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z" fill="currentColor"/>',
+    kbd: '<rect x="2" y="5" width="16" height="10" rx="2"/><path d="M5 8h1M8 8h1M11 8h1M14 8h1M6 12h8"/>',
     chevL: '<path d="M12 5l-5 5 5 5"/>',
     chevR: '<path d="M8 5l5 5-5 5"/>',
     grip: '<circle cx="7" cy="5" r="1.1" fill="currentColor"/><circle cx="13" cy="5" r="1.1" fill="currentColor"/><circle cx="7" cy="10" r="1.1" fill="currentColor"/><circle cx="13" cy="10" r="1.1" fill="currentColor"/><circle cx="7" cy="15" r="1.1" fill="currentColor"/><circle cx="13" cy="15" r="1.1" fill="currentColor"/>',
@@ -764,6 +765,7 @@
           <span class="gx-tsep"></span>
           <button type="button" class="gx-tool" data-act="tree" aria-label="Lista de dibujos" title="Lista de dibujos">${icon("tree")}</button>
           <button type="button" class="gx-tool gx-hidet" data-act="hidetools" aria-label="Guardar la barra de herramientas" title="Guardar la barra de herramientas">${icon("chevL")}</button>
+          <button type="button" class="gx-tool" data-act="keys" aria-label="Atajos de teclado" title="Atajos de teclado (?)">${icon("kbd")}</button>
           <button type="button" class="gx-tool" data-act="favbar" aria-pressed="${st.favShow}" aria-label="Barra de favoritos" title="Barra de favoritos (marca herramientas con la estrella)">${icon(st.favShow ? "starOn" : "star")}</button>
         </div>
         <div class="gx-canvas"><div class="gx-tfbox" hidden role="status"><span>Marco</span><b></b><small>Intro para cambiar</small></div><button type="button" class="gx-showtools" data-act="showtools" aria-label="Mostrar la barra de herramientas" title="Mostrar la barra de herramientas">${icon("chevR", 14)}</button><div class="gx-chart"></div><svg class="gx-free" hidden aria-hidden="true"></svg><div class="gx-favbar" hidden role="toolbar" aria-label="Herramientas favoritas"><span class="gx-fgrip" title="Arrastra para mover">${icon("grip", 16)}</span><div class="gx-favs"></div></div><div class="gx-btbadge" hidden>Backtesting · <span></span></div><div class="gx-msg" hidden></div><div class="gx-hint" hidden></div>
@@ -908,14 +910,35 @@
     function saveInd(a) { ls.set("tk-ind2", a); applyInd(); }
 
     /* ---------- dibujos ---------- */
-    const evs = () => ({
+    /* Mayús al dibujar o al mover un punto: líneas a 0°, 45° o 90°; rectángulos y elipses perfectos */
+    const SNAP_LINE = ["segment", "rayLine", "straightLine", "tkInfoLine", "tkAngle", "tkArrow", "tkArrowMarker", "tkForecast", "fibonacciLine", "tkFibExt", "parallelStraightLine", "priceChannelLine", "tkRegression", "tkPriceNote", "tkTriangle", "tkPitchfork", "tkSchiff", "tkSchiffMod", "tkInsidePf", "tkFibChannel", "tkFibFan", "tkGannFan", "tkXABCD", "tkCypher", "tkABCD", "tkHS", "tkTriPat", "tkThreeDrives", "tkEw5", "tkEwABC", "tkEwTri", "tkEwWXY", "tkEwWXYXZ", "tkCurve", "tkArc", "tkDoubleCurve", "tkRotRect", "tkPriceRange", "tkDateRange"];
+    const SNAP_BOX = ["tkRect", "tkEllipse", "tkCircle", "tkGannBox", "tkGannSq", "tkMeasure", "tkFibCircles"];
+    function snapPoint(points, idx, pt, box2) {
+      if (!st.shift || points.length < 2 || !pt) return;
+      const ai = idx > 0 ? idx - 1 : 1, a = points[ai]; if (!a || a.value == null) return;
+      try {
+        const [pa, pb] = ch.convertToPixel([{ timestamp: a.timestamp, dataIndex: a.dataIndex, value: a.value }, { timestamp: pt.timestamp, dataIndex: pt.dataIndex, value: pt.value }], { paneId: "candle_pane" });
+        const dx = pb.x - pa.x, dy = pb.y - pa.y, T = Math.tan(Math.PI / 8);
+        if (box2) { const d = Math.max(Math.abs(dx), Math.abs(dy)); const y = pa.y + (dy < 0 ? -1 : 1) * Math.abs(dx); const v = ch.convertFromPixel([{ x: pb.x, y }], { paneId: "candle_pane" }); const r = Array.isArray(v) ? v[0] : v; if (r && r.value != null && d) pt.value = r.value; return; }
+        if (Math.abs(dy) <= Math.abs(dx) * T) { pt.value = a.value; return; }                         // horizontal
+        if (Math.abs(dx) <= Math.abs(dy) * T) { pt.timestamp = a.timestamp; if (a.dataIndex != null) pt.dataIndex = a.dataIndex; return; } // vertical
+        const y = pa.y + (dy < 0 ? -1 : 1) * Math.abs(dx), v = ch.convertFromPixel([{ x: pb.x, y }], { paneId: "candle_pane" }), r = Array.isArray(v) ? v[0] : v; if (r && r.value != null) pt.value = r.value; // 45°
+      } catch (e) { /* sin ajuste */ }
+    }
+    const snapHooks = name => SNAP_LINE.includes(name) || SNAP_BOX.includes(name) ? {
+      performEventMoveForDrawing: ({ points, performPointIndex, performPoint }) => snapPoint(points, performPointIndex, performPoint, SNAP_BOX.includes(name)),
+      performEventPressedMove: ({ points, performPointIndex, performPoint }) => { if (st.dragging) snapPoint(points, performPointIndex, performPoint, SNAP_BOX.includes(name)); }
+    } : {};
+    const evs = name => Object.assign({
       onDrawEnd: e => { const k = st.tool; afterDraw(e.overlay); save(); doneTool(k); if (!st.stay) showFloat(e.overlay.id, TEXTABLE.includes(e.overlay.name) && e.overlay.name !== "tkEmoji"); },
-      onPressedMoveEnd: e => { afterDraw(e.overlay); save(); },
+      onPressedMoveEnd: e => { st.dragging = false; afterDraw(e.overlay); save(); },
       onRemoved: () => { if (!st.quiet) queueSave(); },
       onRightClick: e => { removeSel(e.overlay.id); return true; },
       onSelected: e => { if (st.tool === "eraser") { removeSel(e.overlay.id); return; } showFloat(e.overlay.id, false); },
-      onDeselected: () => hideFloat()
-    });
+      onDeselected: () => hideFloat(),
+      onPressedMoveStart: () => { st.dragging = true; },
+      onPressedMoving: () => { st.dragging = true; }
+    }, snapHooks(name));
     function afterDraw(o) {
       if (o.name === "tkPos" && !(o.extendData && o.extendData.sim) && o.points.length >= 3 && opts.onPosition) {
         opts.onPosition({ side: o.extendData.side, entry: o.points[0].value, stop: o.points[1].value, tp: o.points[2].value, digits: digits() });
@@ -937,7 +960,7 @@
     }
     function build(list) {
       st.quiet = true; ch.removeOverlay({ groupId: "draw" }); st.quiet = false;
-      (list || []).forEach(d => { if (d && d.name && d.points) ch.createOverlay(Object.assign({ name: d.name, groupId: "draw", points: d.points, extendData: d.extendData, styles: d.styles, lock: !!d.lock || st.locked, visible: !st.hidden, mode: magMode() }, evs())); });
+      (list || []).forEach(d => { if (d && d.name && d.points) ch.createOverlay(Object.assign({ name: d.name, groupId: "draw", points: d.points, extendData: d.extendData, styles: d.styles, lock: !!d.lock || st.locked, visible: !st.hidden, mode: magMode() }, evs(d.name))); });
     }
     async function restore() {
       const loc = ls.get("tk-draw-" + st.sym, null), lt = loc && !Array.isArray(loc) ? loc.t || 0 : 0;
@@ -979,7 +1002,7 @@
       const ed = k === "tkLong" ? { side: "buy" } : k === "tkShort" ? { side: "sell" } : newStyle(name);
       const o = { name, groupId: "draw", extendData: ed, mode: magMode() };
       if (BUILTIN.includes(name)) o.styles = { line: lineSt(sty({ extendData: ed })), text: { color: ed.color } };
-      ch.createOverlay(Object.assign(o, evs()));
+      ch.createOverlay(Object.assign(o, evs(name)));
     }
     const doneTool = k => setTool(st.stay && k && !CURSORS.includes(k) ? k : "cursor");
     /* favoritos */
@@ -1092,10 +1115,54 @@
       save();
     }
     function removeSel(id) { const i = id || st.sel; if (!i) return; ch.removeOverlay({ id: i }); F.hidden = true; st.sel = null; queueSave(); }
+    /* mover el dibujo elegido: ←/→ una vela, ↑/↓ un píxel (Mayús ×10) */
+    let nudgeT = null;
+    function shiftTs(ts, n) {
+      const L = ch.getDataList(), ms = TF_MS[st.tf] || 3e5; if (!L.length) return ts + n * ms;
+      let i = L.findIndex(b => b.timestamp >= ts); if (i < 0) return ts + n * ms; if (L[i].timestamp !== ts) return ts + n * ms;
+      const j = i + n; if (j < 0) return L[0].timestamp + j * ms; if (j >= L.length) return L[L.length - 1].timestamp + (j - L.length + 1) * ms; return L[j].timestamp;
+    }
+    function nudge(dxBars, dyPx) {
+      const o = getOv(st.sel); if (!o || o.lock || st.locked) { if (o) { hint("Este dibujo está bloqueado."); setTimeout(() => hint(""), 1500); } return; }
+      let pts = o.points.map(p => ({ timestamp: p.timestamp, value: p.value }));
+      if (dyPx) { try { const px = ch.convertToPixel(pts, { paneId: "candle_pane" }); let v = ch.convertFromPixel(px.map(q => ({ x: q.x, y: q.y + dyPx })), { paneId: "candle_pane" }); v = Array.isArray(v) ? v : [v]; pts = pts.map((p, i) => ({ timestamp: p.timestamp, value: v[i] && v[i].value != null ? v[i].value : p.value })); } catch (e) { /* sin mover */ } }
+      if (dxBars) pts = pts.map(p => ({ timestamp: shiftTs(p.timestamp, dxBars), value: p.value }));
+      ch.overrideOverlay({ id: o.id, points: pts }); showFloat(o.id, false);
+      clearTimeout(nudgeT); nudgeT = setTimeout(save, 300);
+    }
+    function quickLine(name) {
+      let pt = null;
+      try { if (lastCross && lastCross.x != null) { let r = ch.convertFromPixel([{ x: lastCross.x, y: lastCross.y }], { paneId: "candle_pane" }); r = Array.isArray(r) ? r[0] : r; const kb = crossBar(); if (r && r.value != null) pt = { timestamp: kb ? kb.timestamp : r.timestamp, value: r.value }; } } catch (e) { /* sin cruz */ }
+      if (!pt) { const L = ch.getDataList(), b = L[L.length - 1]; if (!b) return; pt = { timestamp: b.timestamp, value: b.close }; }
+      const ed = newStyle(name), o = { name, groupId: "draw", points: [pt], extendData: ed, mode: magMode(), styles: { line: lineSt(sty({ extendData: ed })), text: { color: ed.color } } };
+      ch.createOverlay(Object.assign(o, evs(name))); save();
+    }
+    function modalKeys() {
+      const K = (k, t) => `<div class="gx-krow"><span>${t}</span><span>${k.split(" ").map(x => `<kbd>${esc(x)}</kbd>`).join(" ")}</span></div>`, mac = /Mac|iPhone|iPad/.test(navigator.platform), M = mac ? "⌘" : "Ctrl", A = mac ? "⌥" : "Alt";
+      openModal(`<div class="gx-dh"><h3>Atajos de teclado</h3><button type="button" class="gx-tb gx-ic" data-close aria-label="Cerrar">${icon("x", 18)}</button></div><div class="gx-keys">
+        <div class="gx-msub">Dibujos</div>
+        ${K("Mayús", "Mantener al dibujar o mover un punto: línea recta (0°, 45°, 90°) o forma cuadrada")}
+        ${K("← → ↑ ↓", "Mover el dibujo seleccionado (con Mayús, 10 veces más)")}
+        ${K(M + " C", "Copiar dibujo")}${K(M + " V", "Pegar dibujo")}${K(M + " D", "Duplicar dibujo")}
+        ${K("Supr", "Borrar dibujo")}${K(M + " Z", "Deshacer")}${K(M + " Mayús Z", "Rehacer")}${K("Esc", "Cancelar dibujo o cerrar menú")}
+        <div class="gx-msub">Herramientas</div>
+        ${K(A + " T", "Línea de tendencia")}${K(A + " H", "Línea horizontal en el cursor")}${K(A + " V", "Línea vertical en el cursor")}${K(A + " J", "Rayo horizontal")}${K(A + " F", "Retroceso de Fibonacci")}
+        <div class="gx-msub">Gráfico</div>
+        ${K("5 15 1h D …", "Escribir el marco y pulsar Intro")}${K(A + " R", "Volver a las últimas velas")}${K("?", "Ver estos atajos")}
+        <div class="gx-msub">Backtesting</div>
+        ${K("← →", "Una vela atrás o adelante")}${K("Mayús ← →", "Diez velas")}${K("Espacio", "Reproducir o pausar")}${K("C", "Elegir punto")}
+      </div>`, () => { DLG.onclick = e => { if (e.target.closest("[data-close]")) closeModal(); }; });
+    }
+    function pasteClip() {
+      const c = st.clip; c.n++; const off = c.sym === st.sym ? 5 * c.n : 0;
+      const pts = c.points.map(p => ({ timestamp: off ? shiftTs(p.timestamp, off) : p.timestamp, value: p.value }));
+      const o = { name: c.name, groupId: "draw", points: pts, extendData: JSON.parse(JSON.stringify(c.extendData)), styles: c.styles, mode: magMode() };
+      const id = ch.createOverlay(Object.assign(o, evs(c.name))); save(); if (typeof id === "string") { showFloat(id, false); }
+    }
     function dupSel() {
       const o = st.sel && getOv(st.sel); if (!o) return;
       const dt = (TF_MS[st.tf] || 3e5) * 5;
-      ch.createOverlay(Object.assign({ name: o.name, groupId: "draw", points: o.points.map(p => ({ timestamp: p.timestamp + dt, value: p.value })), extendData: Object.assign({}, o.extendData), styles: o.styles, mode: magMode() }, evs()));
+      ch.createOverlay(Object.assign({ name: o.name, groupId: "draw", points: o.points.map(p => ({ timestamp: p.timestamp + dt, value: p.value })), extendData: Object.assign({}, o.extendData), styles: o.styles, mode: magMode() }, evs(o.name)));
       save();
     }
 
@@ -1435,6 +1502,7 @@
       if (a === "stay") { st.stay = !st.stay; ls.set("tk-stay", st.stay); t.setAttribute("aria-pressed", String(st.stay)); hint(st.stay ? "Seguir dibujando: activado" : "Seguir dibujando: desactivado"); setTimeout(() => hint(""), 1500); return; }
       if (a === "zoom") { try { ch.zoomAtCoordinate(e.shiftKey ? 0.75 : 1.35, undefined, 160); } catch (x) { /* sin zoom */ } return; }
       if (a === "tree") { modalTree(); return; }
+      if (a === "keys") { modalKeys(); return; }
       if (a === "hidetools" || a === "showtools") { const h = a === "hidetools"; ls.set("tk-notools", h); el.querySelector(".gx").classList.toggle("notools", h); setTimeout(() => ch.resize(), 30); return; }
       if (a === "favbar") { st.favShow = !st.favShow; ls.set("tk-favshow", st.favShow); renderFav(); if (st.favShow && !st.fav.length) { hint("Marca herramientas con la estrella en sus menús para verlas aquí."); setTimeout(() => hint(""), 3000); } return; }
       if (a === "lockall") { st.locked = !st.locked; t.setAttribute("aria-pressed", String(st.locked)); ch.getOverlays({ groupId: "draw" }).forEach(o => ch.overrideOverlay({ id: o.id, lock: st.locked })); return; }
@@ -1468,6 +1536,15 @@
       if (FR && (e.key === "Enter" || e.key === "Escape")) { e.preventDefault(); endFree(e.key === "Enter"); return; }
       if (e.key === "Escape") { if (!MOD.hidden) closeModal(); else if (!POP.hidden) closePop(); else if (R.cut) cutMode(false); return; }
       if (typing) return;
+      if (e.altKey && !e.metaKey && !e.ctrlKey && MOD.hidden) {
+        const c = e.code;
+        if (c === "KeyT") { e.preventDefault(); setTool("segment"); return; }
+        if (c === "KeyF") { e.preventDefault(); setTool("fibonacciLine"); return; }
+        if (c === "KeyJ") { e.preventDefault(); setTool("horizontalRayLine"); return; }
+        if (c === "KeyH" || c === "KeyV") { e.preventDefault(); quickLine(c === "KeyH" ? "horizontalStraightLine" : "verticalStraightLine"); return; }
+        if (c === "KeyR") { e.preventDefault(); try { ch.scrollToRealTime(200); } catch (x) { /* nada */ } return; }
+      }
+      if (e.key === "?" && MOD.hidden) { e.preventDefault(); modalKeys(); return; }
       if (R.on && !R.picking && MOD.hidden) {
         if (e.key === "ArrowRight") { e.preventDefault(); e.shiftKey ? jumpTo(R.idx + 10) : (pause(), step()); return; }
         if (e.key === "ArrowLeft") { e.preventDefault(); e.shiftKey ? jumpTo(R.idx - 10) : back(); return; }
@@ -1475,10 +1552,21 @@
         if ((e.key === "c" || e.key === "C") && !e.metaKey && !e.ctrlKey) { e.preventDefault(); cutMode(!R.cut); return; }
       }
       const mod = e.metaKey || e.ctrlKey;
+      if (st.sel && !mod && /^Arrow(Left|Right|Up|Down)$/.test(e.key) && MOD.hidden && POP.hidden) {
+        e.preventDefault(); const k = e.shiftKey ? 10 : 1;
+        nudge(e.key === "ArrowLeft" ? -k : e.key === "ArrowRight" ? k : 0, e.key === "ArrowUp" ? -k : e.key === "ArrowDown" ? k : 0); return;
+      }
+      if (mod && e.key.toLowerCase() === "c" && st.sel && !window.getSelection().toString()) { const o = getOv(st.sel); if (o) { st.clip = { name: o.name, points: o.points.map(p => ({ timestamp: p.timestamp, value: p.value })), extendData: JSON.parse(JSON.stringify(o.extendData || {})), styles: o.styles, sym: st.sym, n: 0 }; hint("Dibujo copiado. Ctrl/Cmd + V para pegarlo."); setTimeout(() => hint(""), 1800); } e.preventDefault(); return; }
+      if (mod && e.key.toLowerCase() === "v" && st.clip) { e.preventDefault(); pasteClip(); return; }
+      if (mod && e.key.toLowerCase() === "d" && st.sel) { e.preventDefault(); dupSel(); return; }
       if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
       if ((e.key === "Delete" || e.key === "Backspace") && st.sel) { e.preventDefault(); removeSel(); }
     };
     document.addEventListener("keydown", onKey);
+    const shiftTrack = e => { st.shift = !!e.shiftKey; };
+    document.addEventListener("keyup", shiftTrack); document.addEventListener("keydown", shiftTrack, true);
+    box.addEventListener("pointermove", shiftTrack, true); box.addEventListener("pointerdown", shiftTrack, true);
+    window.addEventListener("blur", () => { st.shift = false; });
     if (MODE === "bt") whenLoaded(() => enterReplay()); else if (opts.onMode) opts.onMode("live");
     const ro = new ResizeObserver(() => ch.resize()); ro.observe(box);
 
