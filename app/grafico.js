@@ -723,7 +723,7 @@
     let MODE = MODES[KEY] || "live";
     let me = null;
     DARK = !!opts.dark;
-    const st = { sym: opts.sym, tf: ls.get(TFK, opts.tf || "5m"), tool: "cursor", magnet: ls.get("tk-magnet", false), stay: ls.get("tk-stay", false), favShow: ls.get("tk-favshow", true), fav: ls.get("tk-fav", ["segment", "horizontalStraightLine", "fibonacciLine", "tkRect", "tkLong", "tkShort", "tkText"]), baseCur: ls.get("tk-cur", "cursor"), emoji: "🚀", hidden: false, locked: false, sel: null, prov: null, unsub: null, quiet: false, price: null,
+    const st = { sym: opts.sym, tf: ls.get(TFK, opts.tf || "5m"), tool: "cursor", magnet: ls.get("tk-magnet", false), stay: ls.get("tk-stay", false), favShow: ls.get("tk-favshow", true), fav: ls.get("tk-fav", ["segment", "horizontalStraightLine", "fibonacciLine", "tkRect", "tkLong", "tkShort", "tkText"]), baseCur: ["cursor", "cursorDot", "cursorArrow"].includes(ls.get("tk-cur", "cursor")) ? ls.get("tk-cur", "cursor") : "cursor", emoji: "🚀", hidden: false, locked: false, sel: null, prov: null, unsub: null, quiet: false, price: null,
       color: ls.get("tk-color", null), last: ls.get("tk-lasttool", {}), hist: [], fut: [] };
     if (!TF_MS[st.tf]) st.tf = "5m";
     CUR_TF = st.tf;
@@ -987,15 +987,27 @@
       return ed;
     }
     function applyCursor() {
-      const c = st.baseCur, g = el.querySelector(".gx"); g.dataset.cur = c === "cursorDot" ? "dot" : c === "cursorArrow" ? "arrow" : c === "eraser" ? "eraser" : "";
+      const c = st.tool === "eraser" ? "eraser" : st.baseCur, g = el.querySelector(".gx"); g.dataset.cur = c === "cursorDot" ? "dot" : c === "cursorArrow" ? "arrow" : c === "eraser" ? "eraser" : "";
       try { const show = c === "cursor" || c === "eraser"; ch.setStyles({ crosshair: { horizontal: { line: { show } }, vertical: { line: { show } } } }); } catch (e) { /* estilo no disponible */ }
+    }
+    /* quita el dibujo que se estaba empezando (para que al cambiar de herramienta no se quede «enganchado») */
+    function cancelDrawing() {
+      try { ch.getOverlays({ groupId: "draw" }).filter(o => o.currentStep != null && o.currentStep !== -1).forEach(o => { st.quiet = true; ch.removeOverlay({ id: o.id }); st.quiet = false; }); } catch (e) { st.quiet = false; }
     }
     function setTool(k) {
       if (FR && FR.k !== k) endFree(false);
-      if (k === "cursor") k = st.baseCur || "cursor";
+      cancelDrawing();
+      if (k === "__base") k = st.baseCur || "cursor";            // volver al cursor de siempre (tras dibujar, Esc…)
       st.tool = k;
+      if (CURSORS.includes(k)) showInGroup("cursor", k);
       $$("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === k)));
-      if (CURSORS.includes(k)) { st.baseCur = k; ls.set("tk-cur", k); applyCursor(); if (k === "eraser") hint("Borrador: toca un dibujo para borrarlo."), setTimeout(() => hint(""), 2500); return; }
+      if (CURSORS.includes(k)) {
+        if (k !== "eraser") { st.baseCur = k; ls.set("tk-cur", k); }  // el borrador nunca se queda como cursor por defecto
+        applyCursor();
+        if (k === "eraser") { hint("Borrador: toca un dibujo para borrarlo. Esc o la cruz para salir."); setTimeout(() => hint(""), 2600); }
+        return;
+      }
+      applyCursor();
       hideFloat();
       if (FREE.includes(k)) { startFree(k); return; }
       const name = k === "tkLong" || k === "tkShort" ? "tkPos" : k;
@@ -1004,7 +1016,7 @@
       if (BUILTIN.includes(name)) o.styles = { line: lineSt(sty({ extendData: ed })), text: { color: ed.color } };
       ch.createOverlay(Object.assign(o, evs(name)));
     }
-    const doneTool = k => setTool(st.stay && k && !CURSORS.includes(k) ? k : "cursor");
+    const doneTool = k => setTool(st.stay && k && !CURSORS.includes(k) ? k : "__base");
     /* favoritos */
     function toggleFav(k) { const i = st.fav.indexOf(k); if (i >= 0) st.fav.splice(i, 1); else st.fav.push(k); ls.set("tk-fav", st.fav); renderFav(); return i < 0; }
     function renderFav() {
@@ -1047,7 +1059,7 @@
           }
         } catch (e) { hint("No se pudo dibujar ahí."); setTimeout(() => hint(""), 2000); }
       }
-      if (commit) doneTool(f.k); else setTool("cursor");
+      if (commit) doneTool(f.k); else setTool("__base");
     }
     (() => {
       const pos = e => { const r = box.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
@@ -1215,11 +1227,16 @@
       const t = [["candle_solid", "Velas", "candles"], ["candle_stroke", "Velas huecas", "candlesH"], ["ohlc", "Barras", "bars"], ["area", "Área", "area"]];
       openPop(btn, `<div class="gx-mh">Tipo de gráfico</div>` + t.map(([k, l, i]) => `<button type="button" class="gx-mi" data-pick="${k}" aria-pressed="${k === CFG.type}">${icon(i, 18)}<span>${l}</span></button>`).join(""), k => { CFG.type = k; ls.set("tk-cfg", CFG); ch.setStyles(styles()); $(".gx-typeic").innerHTML = icon(typeIcon(k), 18); });
     }
+    function showInGroup(gid, k) {
+      st.last[gid] = k; ls.set("tk-lasttool", st.last);
+      const main = el.querySelector(`[data-grp="${gid}"] .gx-tool`); if (!main) return;
+      main.dataset.tool = k; main.innerHTML = icon(k); main.title = TOOL_NAME[k]; main.setAttribute("aria-label", TOOL_NAME[k]);
+    }
     function menuGroup(btn, gid) {
       const g = GROUPS.find(x => x[0] === gid);
       openPop(btn, `<div class="gx-mh">${esc(g[1])}</div>` + g[2].map(([k, l]) => k === "#" ? `<div class="gx-msub">${esc(l)}</div>` : `<div class="gx-mrow"><button type="button" class="gx-mi" data-pick="${k}" aria-pressed="${k === st.tool}">${icon(k, 18)}<span>${esc(l)}</span></button>${CURSORS.includes(k) ? "" : `<button type="button" class="gx-star" data-fav="${k}" aria-pressed="${st.fav.includes(k)}" aria-label="${st.fav.includes(k) ? "Quitar de" : "Añadir a"} favoritos: ${esc(l)}" title="Favoritos">${icon(st.fav.includes(k) ? "starOn" : "star", 15)}</button>`}</div>`).join(""), k => {
         st.last[gid] = k; ls.set("tk-lasttool", st.last);
-        const main = el.querySelector(`[data-grp="${gid}"] .gx-tool`); main.dataset.tool = k; main.innerHTML = icon(k); main.title = TOOL_NAME[k]; main.setAttribute("aria-label", TOOL_NAME[k]);
+        showInGroup(gid, k);
         setTool(k);
       });
     }
@@ -1534,7 +1551,12 @@
       const typing = e.target.matches && e.target.matches("input,textarea,select");
       if (!(R.on && !R.picking && (e.key === " " || e.key === "c" || e.key === "C")) && tfKey(e)) { e.preventDefault(); return; }
       if (FR && (e.key === "Enter" || e.key === "Escape")) { e.preventDefault(); endFree(e.key === "Enter"); return; }
-      if (e.key === "Escape") { if (!MOD.hidden) closeModal(); else if (!POP.hidden) closePop(); else if (R.cut) cutMode(false); return; }
+      if (e.key === "Escape") {
+        if (!MOD.hidden) closeModal(); else if (!POP.hidden) closePop(); else if (R.cut) cutMode(false);
+        else if (!CURSORS.includes(st.tool) || st.tool === "eraser") setTool("__base");
+        else if (st.sel) { hideFloat(); }
+        return;
+      }
       if (typing) return;
       if (e.altKey && !e.metaKey && !e.ctrlKey && MOD.hidden) {
         const c = e.code;
@@ -1583,7 +1605,8 @@
     ALL.add(me); ALL.forEach(x => x.el.classList.toggle("tk-act", x === me));
     load(); applyInd(); restore(); renderFav(); applyCursor(); renderTfq();
     if (ls.get("tk-notools", false)) el.querySelector(".gx").classList.add("notools");
-    if (st.baseCur !== "cursor") $$("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === st.baseCur)));
+    if (st.last.cursor === "eraser" || !st.last.cursor) showInGroup("cursor", st.baseCur);
+    st.tool = st.baseCur; $$("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === st.baseCur)));
     return me;
   }
   function destroyOne(x) {
