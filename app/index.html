@@ -1992,7 +1992,8 @@ function render(){
   if(r.view!=="analizar"&&window.TkChart&&TkChart.current){TkChart.destroy();document.body.style.overflow=""}
   const XV=window.TK_VIEWS&&TK_VIEWS[r.view];
   const NEWV=["app","backtest","historial","emociones","diario","noticias","asistente","inicio","btanalisis","btops","btcal","btnotas","rendimiento","calendario","informe","finanzas"];
-  const content=(window.tkCrumb&&!["analizar","op","inicio","app"].includes(r.view)?tkCrumb(r.view):"")+(XV?XV.view(r):NEWV.includes(r.view)?`<div class="muted">Cargando…</div>`:r.view==="mas"?viewMas():r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():r.view==="cuentas"?viewCuentas():
+  if(NEWV.includes(r.view)&&!XV&&document.readyState==="complete"&&!S.loadWarn){S.loadWarn=setTimeout(()=>{S.lastView=null;render()},2500)}
+  const content=(window.tkCrumb&&!["analizar","op","inicio","app"].includes(r.view)?tkCrumb(r.view):"")+(XV?XV.view(r):NEWV.includes(r.view)?`<div class="stack" style="gap:12px;max-width:520px;padding:40px 0"><div class="muted">Cargando…</div>${document.readyState==="complete"?`<div class="small muted">Si tarda mucho, recarga la página sin caché: Ctrl + F5 (en Mac, ⌘ + Mayús + R).</div><button type="button" class="btn" onclick="location.replace(location.pathname+'?r='+Date.now()+location.hash)" style="height:40px;align-self:flex-start">Recargar ahora</button>`:""}</div>`:r.view==="mas"?viewMas():r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():r.view==="cuentas"?viewCuentas():
     r.view==="grupo"?viewSoon("Grupo","Los grupos nuevos, donde solo se comparte disciplina y nunca dinero, llegan en el último paso de esta versión. Mientras tanto, tus grupos siguen en la versión anterior."):
     r.view==="aprender"?viewSoon("Aprender","Las lecciones llegarán cuando termines el bootcamp. Tus apuntes siguen en la versión anterior."):viewHoy());
   $app.innerHTML=r.view==="inicio"||r.view==="app"?homeShell(content):shell(r.view==="op"?"hoy":r.view,content);
@@ -2198,8 +2199,8 @@ if(SB_OK){
 window.TKAPP={S,sb,esc,SVG,fmtR,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
 })();
 </script>
-<link rel="stylesheet" href="extra2.css?v=12">
+<link rel="stylesheet" href="extra2.css?v=13">
 <script src="extra.js?v=4"></script>
-<script src="extra2.js?v=12"></script>
+<script src="extra2.js?v=13"></script>
 </body>
 </html>

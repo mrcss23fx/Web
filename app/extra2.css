@@ -564,3 +564,4 @@ button.calc{cursor:pointer}button.calc:hover{border-color:var(--cobalto)}
 .hbshell .hb-appv{min-height:calc(100vh - 100px)}
 @media (min-width:901px) and (min-height:700px){.hb-catg{grid-auto-rows:minmax(190px,min(320px,calc((100vh - 360px)/2)))}}
 .hbshell .hb-appv{min-height:0}
+.hb-t.noanim{animation:none}

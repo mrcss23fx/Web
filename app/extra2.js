@@ -6,6 +6,10 @@
   const A = window.TKAPP;
   const { S, sb, esc, SVG, fmtR, num, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, lsGet, lsSet, acctName, selAcct, FEELS, greet, money, inSession, MESES_L, NAV_APPS, appOf, ico, isDark } = A;
   const V = window.TK_VIEWS;
+  if (!(NAV_APPS || []).some(a => a[0] === "resultados")) {
+    let tried = false; try { tried = sessionStorage.getItem("tk-fresh") === "1"; sessionStorage.setItem("tk-fresh", "1"); } catch (e) {}
+    if (!tried) { location.replace(location.pathname + "?r=" + Date.now() + location.hash); return; }
+  } else { try { sessionStorage.removeItem("tk-fresh"); } catch (e) {} }
   const { $, $$, I, IC, norm, closed, fmtDT, fmtD, statCard, empty, ring, download, healthOk, px, dur, loadEmo } = window.TK_X;
   const BT = () => window.TK_BT, DI = () => window.TK_DIARIO;
   const re = () => { S.lastView = null; render(); };
@@ -177,10 +181,11 @@
     view() {
       loadAll();
       const D = hData(), first = esc((S.name || "").split(" ")[0] || "trader");
+      setTimeout(() => { S.hbAnim = true; }, 600);
       return `<div class="hb hb-full">
         <section class="hb-l">${metaRow(D)}
           <h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1>
-          <div class="hb-grid">${HAPPS.map(k => `<div class="hb-t t-${k}" role="link" tabindex="0" data-href="${appHref(k)}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${appTile(k, D)}</div>`).join("")}</div>
+          <div class="hb-grid">${HAPPS.filter(k => appDef(k)).map(k => `<div class="hb-t t-${k} ${S.hbAnim ? "noanim" : ""}" role="link" tabindex="0" data-href="${appHref(k)}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${appTile(k, D)}</div>`).join("")}</div>
         </section></div>`;
     },
     bind() { bindTiles(); }
