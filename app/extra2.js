@@ -37,33 +37,6 @@
   /* ======================= INICIO: PORTADA DE CUADROS ======================= */
   const TFQ = ["1m", "3m", "5m", "15m", "30m", "45m", "1h", "2h", "4h", "1d", "1w"];
   const TFL = { "1m": "1 min", "3m": "3 min", "5m": "5 min", "15m": "15 min", "30m": "30 min", "45m": "45 min", "1h": "1 hora", "2h": "2 horas", "4h": "4 horas", "1d": "1 día", "1w": "1 semana" };
-  /* grupos de la portada: [clave, título, explicación, cuadros] */
-  const HGROUPS = [
-    ["operar", "Operar", "Lo que usas durante la sesión", ["hoy", "analizar", "backtest", "noticias"]],
-    ["revisar", "Revisar", "Lo que miras al terminar para mejorar", ["rendimiento", "progreso", "emociones", "historial", "calendario", "informe", "diario"]],
-    ["tu", "Tu cuenta", "Tus normas, tus cuentas y tu dinero", ["plan", "cuentas", "finanzas", "asistente"]],
-    ["pronto", "Próximamente", "", ["aprender", "grupo"]]
-  ];
-  /* [nombre, explicación de una línea, texto del botón] */
-  const HT = {
-    hoy: ["Hoy", "Tu sesión de hoy: resultado, operaciones y horario", "Abrir Hoy"],
-    analizar: ["Analizar", "Gráfico en directo con herramientas de dibujo", "Abrir gráfico"],
-    backtest: ["Backtesting", "Practica con datos reales, vela a vela", "Ver sesiones"],
-    noticias: ["Calendario económico", "Noticias que mueven el mercado esta semana", "Ver calendario"],
-    rendimiento: ["Rendimiento", "Tus números de los últimos 90 días, en R", "Ver rendimiento"],
-    progreso: ["Progreso", "Cuánto cumples tu plan, semana a semana", "Ver progreso"],
-    emociones: ["Emociones", "Cómo te sientes al operar y qué te cuesta", "Ver emociones"],
-    historial: ["Operaciones", "Todas tus operaciones en una tabla", "Ver operaciones"],
-    calendario: ["Calendario", "Tu resultado de cada día y cada semana", "Ver calendario"],
-    informe: ["Informe diario", "Resumen completo de un día concreto", "Ver informe"],
-    diario: ["Diario", "Páginas para preparar y revisar tus sesiones", "Abrir diario"],
-    plan: ["Mi plan", "Tu horario, tus límites y tus normas", "Ver mi plan"],
-    cuentas: ["Cuentas", "Demo, fondeo y capital propio", "Ver cuentas"],
-    finanzas: ["Finanzas", "Lo que pagas y cobras con el trading", "Ver finanzas"],
-    asistente: ["Inteligencia", "Pregunta por tus números y te respondo", "Abrir asistente"],
-    aprender: ["Aprender", "Lecciones y apuntes del bootcamp", ""],
-    grupo: ["Grupo", "Comparte disciplina con tu grupo, nunca dinero", ""]
-  };
   const ARW = '<path d="M7 13l6-6M8 7h5v5"/>';
   const hhmm = t => new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
   const ago = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? "ahora mismo" : m < 60 ? "hace " + m + " min" : m < 1440 ? "hace " + Math.round(m / 60) + " h" : "hace " + Math.round(m / 1440) + (Math.round(m / 1440) === 1 ? " día" : " días"); };
@@ -80,164 +53,153 @@
     const now = minOfNow(), a = minOfS(p.start), b = minOfS(p.end), phase = now < a ? "antes" : now < b ? "en" : "despues";
     return { today, st, p, C90, s90, good, nextHigh: ev && ev.find(e => e.impact === "High"), todayEv, sess, pages, phase, a, b, now };
   }
-  /* piezas comunes */
-  const mrow = (label, val, cls) => `<div class="tc-row ${cls || ""}"><span>${label}</span><b class="mono">${val}</b></div>`;
-  const seg = (n, mx) => `<div class="tc-seg" role="img" aria-label="${n} de ${mx}">${Array.from({ length: Math.max(1, mx) }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</div>`;
-  const pbar = (f, label) => `<div class="tc-bar" role="img" aria-label="${esc(label || "")}"><i style="width:${(Math.max(0, Math.min(1, f)) * 100).toFixed(1)}%"></i></div>`;
-  function tBody(k, D) {
-    const p = D.p;
+  /* portada: 8 aplicaciones en cuadros vivos; al entrar en una ves sus categorías */
+  const HAPPS = ["hoy", "analizar", "backtest", "resultados", "diario", "cartera", "asistente", "recursos"];
+  const appDef = k => NAV_APPS.find(a => a[0] === k);
+  const APPDESC = {
+    hoy: "Tu día de trading: lo que llevas hoy, tu plan y tu grupo.",
+    analizar: "El gráfico en directo con todas tus herramientas.",
+    backtest: "Practica con el mercado real, vela a vela, en sesiones o retos de fondeo.",
+    resultados: "Cómo te va: tus números, tu progreso, tus emociones y cada operación.",
+    diario: "Páginas para preparar y revisar tus sesiones.",
+    cartera: "Tus cuentas de demo, fondeo y capital propio, y lo que gastas y cobras.",
+    asistente: "Pregunta por tus números y te respondo con tus datos.",
+    recursos: "Calendario económico y aprendizaje."
+  };
+  const CATDESC = {
+    hoy: "Lo que llevas hoy y tus normas", plan: "Tu horario, tus límites y tus normas", grupo: "Disciplina compartida, nunca dinero",
+    analizar: "Gráfico en directo", backtest: "Crea y continúa tus sesiones", btanalisis: "Tus estadísticas de práctica", btops: "Todo lo que has operado practicando", btcal: "Resultado simulado por día", btnotas: "Notas de cada sesión",
+    rendimiento: "Tus números en R", progreso: "Cuánto cumples tu plan", emociones: "Qué emociones te ayudan y cuáles te cuestan", historial: "Todas tus operaciones en una tabla", calendario: "Tu resultado de cada día", informe: "El resumen completo de un día",
+    diario: "Tus páginas y plantillas", cuentas: "Demo, fondeo y capital propio", finanzas: "Lo que pagas y cobras", asistente: "Pregunta por tus números",
+    noticias: "Noticias que mueven el mercado", aprender: "Lecciones del bootcamp"
+  };
+  const appHref = k => { const a = appDef(k); return a[2].length > 1 ? "#app/" + k : "#" + a[2][0][0]; };
+  const rbtn = (href, label) => `<a class="hb-go" href="${href}" aria-label="Entrar en ${esc(label)}" title="Entrar en ${esc(label)}" data-stop>${I(ARW, 16, 2)}</a>`;
+  const tFoot = (name, sub, href) => `<div class="hb-tf"><span><b>${esc(name)}</b><small>${sub}</small></span>${rbtn(href, name)}</div>`;
+  function appTile(k, D) {
+    const p = D.p, name = appDef(k)[1], href = appHref(k), n = appDef(k)[2].length;
+    const cats = n > 1 ? `<span class="hb-cats-n">${n} apartados</span>` : "";
     switch (k) {
       case "hoy": {
-        const used = D.today.length, mx = p.maxTrades || 3, left = Math.max(0, mx - used);
-        const st = D.phase === "antes" ? `Empieza en ${durTxt(D.a - D.now)}` : D.phase === "en" ? `En horario · quedan ${durTxt(D.b - D.now)}` : "Horario terminado";
-        return [`<div class="tc-hero"><span class="tc-l">Resultado de hoy</span><b class="tc-v mono">${D.st.n ? fmtR(D.st.tot) : "—"}</b></div>
-          <div class="tc-blk"><div class="tc-row"><span>Operaciones</span><b class="mono">${used} de ${mx}</b></div>${seg(used, mx)}</div>
-          <div class="tc-blk"><div class="tc-row"><span>Horario ${esc(p.start)}–${esc(p.end)}</span><b>${st}</b></div>${pbar(D.phase === "antes" ? 0 : D.phase === "despues" ? 1 : (D.now - D.a) / Math.max(1, D.b - D.a), "Avance del horario")}</div>`,
-          left ? `Te ${left === 1 ? "queda 1 operación" : "quedan " + left + " operaciones"}` : "Has llegado al máximo de hoy"];
+        const used = D.today.length, mx = p.maxTrades || 3, f = Math.min(1, used / mx), tf = D.phase === "antes" ? 0 : D.phase === "despues" ? 1 : (D.now - D.a) / Math.max(1, D.b - D.a);
+        return `<div class="hb-w">${cats}<div class="hb-bar" role="img" aria-label="${used} de ${mx} operaciones"><i style="left:${(f * 100).toFixed(1)}%"></i></div>
+          <div class="hb-sbar" role="img" aria-label="Horario ${esc(p.start)} a ${esc(p.end)}"><span>${esc(p.start)}</span><div><em style="width:${(tf * 100).toFixed(1)}%"></em></div><span>${esc(p.end)}</span></div></div>
+          ${tFoot(name, D.st.n ? fmtR(D.st.tot) + " · " + used + " de " + mx + " operaciones" : used + " de " + mx + " operaciones hoy", href)}`;
       }
       case "analizar": {
         const sym = (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD", tf = lsGet("tk-tf", "5m");
-        return [`<div class="tc-hero"><span class="tc-l">Mercado</span><b class="tc-v">${esc(sym)}</b></div>
-          <div class="tc-blk"><span class="tc-l">Temporalidad al abrir</span><div class="tc-step"><button type="button" data-tfs="-1" aria-label="Temporalidad más corta" data-stop>−</button><b>${esc(TFL[tf] || tf)}</b><button type="button" data-tfs="1" aria-label="Temporalidad más larga" data-stop>+</button></div></div>`,
-          "Tus dibujos se guardan solos"];
+        return `<div class="hb-w"><span class="hb-cats-n">Se abre en</span><div class="hb-step"><button type="button" data-tfs="-1" aria-label="Temporalidad más corta" data-stop>−</button><b class="mono">${esc(TFL[tf] || tf)}</b><button type="button" data-tfs="1" aria-label="Temporalidad más larga" data-stop>+</button></div></div>
+          ${tFoot(name, esc(sym) + " · gráfico en directo", href)}`;
       }
       case "backtest": {
         const i = Math.min(S.hbBt || 0, Math.max(0, D.sess.length - 1)), x = D.sess[i];
-        if (!x) return [`<div class="tc-hero"><span class="tc-l">Sesiones</span><b class="tc-v">Ninguna aún</b></div><p class="tc-p">Elige un mercado y unas fechas, y avanza vela a vela como si fuera en directo. También puedes practicar un reto de fondeo.</p><button type="button" class="tc-cta" data-btnew data-stop>${I(IC.plus, 16, 2.2)} Crear sesión</button>`, "Modo clásico o reto de fondeo"];
+        if (!x) return `<div class="hb-media-c"><button type="button" class="hb-play" data-btnew aria-label="Crear sesión" data-stop>${I(IC.plus, 22, 2.2)}</button></div><div class="hb-media-t"><b>${esc(name)}</b><small>Crea tu primera sesión · ${n} apartados</small></div>`;
         const from = new Date(x.from + "T00:00").getTime(), to = new Date(x.to + "T23:59").getTime(), pr = Math.max(0, Math.min(1, ((x.lastTs || from) - from) / (to - from)));
-        const T = (S.btTrades || []).filter(t => t.session_id === x.id && t.r != null), r = T.reduce((a, t) => a + +t.r, 0);
-        return [`<div class="tc-hero"><span class="tc-l">${D.sess.length > 1 ? `Sesión ${i + 1} de ${D.sess.length}` : "Tu sesión"}</span><b class="tc-v tc-ell">${esc(x.name)}</b><span class="tc-s">${esc((x.syms || []).join(" · "))} · ${x.mode === "fondeo" ? "reto de fondeo" : "modo clásico"}</span></div>
-          <div class="tc-blk"><div class="tc-row"><span>Avance del periodo</span><b class="mono">${Math.round(pr * 100)} %</b></div>${pbar(pr, "Avance del periodo")}${mrow("Operaciones simuladas", T.length ? T.length + " · " + fmtR(r) : "0")}</div>
-          <div class="tc-media"><button type="button" class="tc-mb" data-btcyc="-1" aria-label="Sesión anterior" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M14 5l-6 5 6 5zM6 5v10"/>', 15, 2)}</button><button type="button" class="tc-play" data-btplay="${esc(x.id)}" data-stop>${I('<path d="M7 4.5v11l9-5.5z"/>', 16, 2)} ${x.lastTs ? "Continuar" : "Empezar"}</button><button type="button" class="tc-mb" data-btcyc="1" aria-label="Sesión siguiente" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M6 5l6 5-6 5zM14 5v10"/>', 15, 2)}</button></div>`,
-          D.sess.length + (D.sess.length === 1 ? " sesión guardada" : " sesiones guardadas")];
+        return `<span class="hb-cats-n lt">${esc(name)} · ${n} apartados</span><div class="hb-media-c"><button type="button" class="hb-mb" data-btcyc="-1" aria-label="Sesión anterior" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M14 5l-6 5 6 5zM6 5v10"/>', 16, 2)}</button><button type="button" class="hb-play" data-btplay="${esc(x.id)}" aria-label="${x.lastTs ? "Continuar" : "Empezar"} ${esc(x.name)}" data-stop>${I('<path d="M7 4.5v11l9-5.5z"/>', 22, 2)}</button><button type="button" class="hb-mb" data-btcyc="1" aria-label="Sesión siguiente" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M6 5l6 5-6 5zM14 5v10"/>', 16, 2)}</button></div>
+          <div class="hb-media-t"><div class="hb-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div><b>${esc(x.name)}</b><small>${esc((x.syms || []).join(" · "))} · ${x.mode === "fondeo" ? "reto de fondeo" : "clásico"} · ${Math.round(pr * 100)} %</small></div>`;
       }
-      case "noticias": {
-        const e = D.nextHigh, hi = D.todayEv.filter(x => x.impact === "High").length;
-        return [`<div class="tc-hero"><span class="tc-l">Próxima noticia de alto impacto</span>${e ? `<b class="tc-v mono">${dayKey(e.ts) === todayKey() ? hhmm(e.ts) : new Date(e.ts).toLocaleDateString("es-ES", { weekday: "short" }) + " " + hhmm(e.ts)}</b><span class="tc-s"><b>${esc(e.country)}</b> · ${esc(e.title)}</span>` : `<b class="tc-v">—</b><span class="tc-s">${S.news ? "No queda ninguna esta semana" : "Cargando…"}</span>`}</div>
-          <div class="tc-blk">${mrow("Noticias hoy", S.news ? String(D.todayEv.length) : "—")}${mrow("De alto impacto", S.news ? String(hi) : "—")}</div>`,
-          "Horas en tu zona horaria"];
-      }
-      case "rendimiento": {
-        let c = 0; const cv = [0].concat(D.C90.map(t => c += t.r)), s = D.s90;
-        return [`<div class="tc-split"><div class="tc-hero"><span class="tc-l">Resultado en 90 días</span><b class="tc-v mono">${s.n ? fmtR(s.tot) : "—"}</b><span class="tc-s">${s.n} operaciones cerradas</span></div>
-            <div class="tc-kpis"><div><span>Factor de beneficio</span><b class="mono">${s.pf == null ? "—" : s.pf === Infinity ? "∞" : num(s.pf, 2)}</b></div><div><span>Acierto</span><b class="mono">${s.win == null ? "—" : num(s.win, 0) + " %"}</b></div><div><span>Esperanza</span><b class="mono">${s.exp != null ? fmtR(s.exp) : "—"}</b></div><div><span>Peor caída</span><b class="mono">${s.n ? fmtR(s.dd) : "—"}</b></div></div></div>
-          <div class="tc-chart">${cv.length > 2 ? lineChart(cv, { h: 84, label: "Resultado acumulado en 90 días", from: fmtD(D.C90[0].open_time), to: fmtD(D.C90[D.C90.length - 1].open_time) }) : `<span class="tc-empty">La curva aparece con tus primeras operaciones</span>`}</div>`,
-          "Curva de resultado acumulado"];
-      }
-      case "progreso": {
+      case "resultados": {
         const pc = D.C90.length ? Math.round(D.good / D.C90.length * 100) : null;
-        return [`<div class="tc-hero"><span class="tc-l">Operaciones dentro del plan</span><b class="tc-v mono">${pc == null ? "—" : pc + " %"}</b><span class="tc-s">${D.C90.length ? D.good + " de " + D.C90.length + " en 90 días" : "Aún sin operaciones"}</span></div>
-          <div class="tc-blk">${pbar(pc == null ? 0 : pc / 100, "Dentro del plan")}<div class="tc-tag">${pc == null ? "Empieza a operar tu plan" : pc >= 80 ? "Proceso sólido" : pc >= 60 ? "Vas por buen camino" : "Revisa qué norma rompes"}</div></div>`,
-          "Se juzga el proceso, no el resultado"];
-      }
-      case "emociones": {
-        if (!healthOk()) return [`<div class="tc-hero"><span class="tc-l">Registro de emociones</span><b class="tc-v">Desactivado</b></div><p class="tc-p">Actívalo en Mi plan para anotar cómo te sientes al entrar y ver qué emociones te cuestan.</p>`, "Datos de salud: solo con tu permiso"];
-        const fe = {}; let n = 0; S.trades.forEach(t => { const f = (t.review || {}).feel; if (f) { fe[f] = (fe[f] || 0) + 1; n++; } }); const top = Object.entries(fe).sort((a, b) => b[1] - a[1])[0];
-        return [`<div class="tc-hero"><span class="tc-l">Emoción más frecuente</span><b class="tc-v">${top ? esc(top[0]) : "—"}</b><span class="tc-s">${top ? top[1] + (top[1] === 1 ? " vez" : " veces") : "Aún sin emociones anotadas"}</span></div>
-          <div class="tc-blk">${mrow("Operaciones con emoción", n + " de " + S.trades.length)}${pbar(S.trades.length ? n / S.trades.length : 0, "Operaciones anotadas")}</div>`,
-          n < S.trades.length ? (S.trades.length - n) + " sin anotar" : "Todas anotadas"];
-      }
-      case "historial": {
-        const t = S.trades[0];
-        return [`<div class="tc-hero"><span class="tc-l">Operaciones registradas</span><b class="tc-v mono">${S.allTrades.length}</b><span class="tc-s">${selAcct() ? "en " + esc(acctName(selAcct().a)) : "en todas tus cuentas"}</span></div>
-          ${t ? `<div class="tc-blk"><span class="tc-l">Última operación</span><div class="tc-last"><b>${esc(t.symbol)}</b><span>${t.side === "buy" ? "Compra" : "Venta"}</span><b class="mono">${t.status === "closed" ? fmtR(t.r) : "Abierta"}</b><small>${ago(new Date(t.open_time).getTime())}</small></div></div>` : ""}`,
-          "Filtra, ordena, importa y exporta"];
-      }
-      case "calendario": {
-        const days = []; let wk = 0, wn = 0;
-        for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const k = dayKey(d), st = tradeStats(closed(S.trades.filter(t => t.open_time && dayKey(t.open_time) === k))); days.push({ l: "LMXJVSD"[(d.getDay() + 6) % 7], n: st.n, v: st.tot, d: d.getDate() }); wk += st.tot; wn += st.n; }
-        const mx = Math.max(.5, ...days.map(x => Math.abs(x.v)));
-        return [`<div class="tc-hero"><span class="tc-l">Últimos 7 días</span><b class="tc-v mono">${wn ? fmtR(wk) : "—"}</b><span class="tc-s">${wn} operaciones</span></div>
-          <div class="tc-week">${days.map(x => `<span class="${x.n ? (x.v < 0 ? "neg" : "pos") : ""}" style="${x.n && x.v >= 0 ? `--a:${(.3 + Math.abs(x.v) / mx * .7).toFixed(2)}` : ""}" title="${x.d}: ${x.n ? fmtR(x.v) : "sin operaciones"}"><i></i><small>${x.l}</small></span>`).join("")}</div>
-          <div class="tc-legend"><span><i class="pos"></i> Positivo</span><span><i class="neg"></i> Negativo</span><span><i></i> Sin operar</span></div>`,
-          "Toca un día para ver su informe"];
-      }
-      case "informe": {
-        const C = closed(D.today), g = C.filter(t => evaluate(t).good).length, rev = (S.pages || []).some(x => !x.isTpl && x.day === todayKey());
-        return [`<div class="tc-hero"><span class="tc-l">${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))}</span><b class="tc-v mono">${D.st.n ? fmtR(D.st.tot) : "—"}</b></div>
-          <div class="tc-blk">${mrow("Dentro del plan", C.length ? g + " de " + C.length : "—")}${mrow("Revisión escrita", rev ? "Hecha" : "Pendiente")}</div>`,
-          "También puedes ver cualquier otro día"];
+        return `<div class="hb-w">${cats}<div class="hb-ban">${pc == null ? "Aún sin operaciones" : pc >= 80 ? "Proceso sólido" : pc >= 60 ? "Vas por buen camino" : "Revisa tus normas"}</div><div class="hb-big"><span class="hb-bl">Dentro del plan</span><b class="mono">${pc == null ? "—" : pc}</b><small>${pc == null ? "" : "%"}</small></div></div>
+          ${tFoot(name, D.s90.n ? fmtR(D.s90.tot) + " en 90 días" : "Rendimiento, progreso y emociones", href)}`;
       }
       case "diario": {
         const pg = D.pages[0];
-        return [`<div class="tc-hero"><span class="tc-l">Última página</span><b class="tc-v tc-ell">${pg ? esc(pg.title || "Sin título") : S.pagesLoaded ? "Ninguna aún" : "…"}</b><span class="tc-s">${pg ? "Editada " + ago(pg.updated) : "Usa una plantilla para empezar"}</span></div>
-          <div class="tc-blk">${mrow("Páginas", String(D.pages.length))}${mrow("Plantillas", "8 listas para usar")}</div>`,
-          "Antes de operar, después y cada semana"];
+        return `<span class="hb-ic">${ico("diario", 20)}</span><div style="flex:1"></div>${tFoot(name, pg ? "Última: " + esc(pg.title || "Sin título") + " · " + ago(pg.updated) : S.pagesLoaded ? "Escribe tu primera página" : "Tus páginas", href)}`;
       }
-      case "plan": {
-        return [`<div class="tc-hero"><span class="tc-l">Hoy se aplica</span><b class="tc-v">Tu plan</b></div>
-          <div class="tc-blk">${mrow("Horario", esc(p.start) + "–" + esc(p.end))}${mrow("Máximo de operaciones", String(p.maxTrades))}${p.riskPct != null ? mrow("Riesgo por operación", num(p.riskPct, 2).replace(/,?0+$/, "") + " %") : ""}</div>`,
-          S.planDoc && S.planDoc.pending ? "Tienes cambios que se aplican mañana" : "Los cambios se aplican desde mañana"];
-      }
-      case "cuentas": {
-        const A = (S.accts || []).filter(a => a.status !== "archivada"), c = t => A.filter(a => a.type === t).length, sa = selAcct();
-        return [`<div class="tc-hero"><span class="tc-l">Cuentas activas</span><b class="tc-v mono">${A.length}</b><span class="tc-s">Viendo: ${sa ? esc(acctName(sa.a)) : "todas las cuentas"}</span></div>
-          <div class="tc-blk">${mrow("Fondeo", String(c("fondeo")))}${mrow("Demo", String(c("demo")))}${mrow("Capital propio", String(c("propia")))}</div>`,
-          "Cambia de cuenta arriba a la derecha"];
-      }
-      case "finanzas": {
-        if (inSession(D.p)) return [`<div class="tc-hero"><span class="tc-l">Ahora mismo</span><b class="tc-v">Bloqueado</b></div><p class="tc-p">Durante tu horario no se muestra dinero, para que pienses en R y en tu proceso. Se abre a las ${esc(D.p.end)}.</p>`, "Tu regla: dinero solo fuera de horario"];
-        if (!S.finLoaded) loadFin().then(() => { if (location.hash === "#inicio" || location.hash === "") re(); });
-        const cur = finCur(), L = (S.fin || []).filter(x => x.cur === cur), inc = L.filter(x => FT[x.type] && FT[x.type][1] > 0).reduce((a, x) => a + x.amount, 0), out = L.filter(x => FT[x.type] && FT[x.type][1] < 0).reduce((a, x) => a + x.amount, 0);
-        return [`<div class="tc-hero"><span class="tc-l">Saldo neto</span><b class="tc-v mono">${S.finLoaded ? money(inc - out, cur) : "…"}</b><span class="tc-s">cobrado menos gastado</span></div>
-          <div class="tc-blk">${mrow("Entra", money(inc, cur))}${mrow("Sale", money(out, cur))}</div>`,
-          L.length + (L.length === 1 ? " movimiento" : " movimientos")];
+      case "cartera": {
+        const A = (S.accts || []).filter(a => a.status !== "archivada"), c = t => A.filter(a => a.type === t).length;
+        return `<div class="hb-w">${cats}<div class="hb-ac"><span>${I('<path d="M4 14l4-4 3 3 5-6"/>', 13, 2.2)} Fondeo ${c("fondeo")}</span><span>${I('<circle cx="10" cy="10" r="5"/>', 13, 2.2)} Demo ${c("demo")} · Propia ${c("propia")}</span></div><div class="hb-pill">${A.length} ${A.length === 1 ? "cuenta" : "cuentas"}</div></div>
+          ${tFoot(name, inSession(p) ? "Finanzas al terminar tu horario" : "Cuentas y finanzas", href)}`;
       }
       case "asistente": {
-        const Q = ["¿A qué hora opero mejor?", "¿Qué norma rompo más?", "¿Cómo voy esta semana?", "¿Cuál es mi mejor mercado?"];
-        return [`<span class="tc-l">Prueba a preguntar</span><div class="tc-qs">${Q.slice(0, 3).map(q => `<a class="tc-q" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 13)}</span></a>`).join("")}</div>`,
-          "Responde con tus datos, no es una IA externa"];
+        const q = ["¿A qué hora opero mejor?", "¿Qué norma rompo más?", "¿Cómo voy esta semana?", "¿Cuál es mi mejor mercado?"][new Date().getDate() % 4];
+        return `<div class="hb-w"><a class="hb-q" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 14)}</span></a></div>${tFoot(name, "Pregunta por tus números", href)}`;
       }
-      case "aprender": case "grupo":
-        return [`<span class="tc-soon">Próximamente</span>`, k === "grupo" ? "Llega en el último paso de esta versión" : "Cuando termines el bootcamp"];
-    }
-    return ["", ""];
-  }
-  /* portada sencilla: tres grupos de cinco cuadros, cada uno con nombre, para qué sirve y un solo dato */
-  const HSIMPLE = [
-    ["Operar", ["hoy", "analizar", "backtest", "noticias", "plan"]],
-    ["Revisar", ["rendimiento", "progreso", "historial", "calendario", "informe"]],
-    ["Tu espacio", ["diario", "emociones", "asistente", "cuentas", "finanzas"]]
-  ];
-  const HDESC = {
-    hoy: "Tu sesión de hoy y tus normas", analizar: "El gráfico para analizar y operar", backtest: "Practica con el mercado real, vela a vela", noticias: "Noticias que mueven el mercado", plan: "Tu horario, límites y normas",
-    rendimiento: "Tus números en R", progreso: "Cuánto cumples tu plan", historial: "Todas tus operaciones", calendario: "Tu resultado de cada día", informe: "El resumen de un día",
-    diario: "Escribe antes y después de operar", emociones: "Cómo te sientes al operar", asistente: "Pregunta por tus números", cuentas: "Demo, fondeo y capital propio", finanzas: "Lo que pagas y cobras"
-  };
-  function fact(k, D) {
-    const p = D.p, mx = p.maxTrades || 3;
-    switch (k) {
-      case "hoy": return D.st.n ? `${fmtR(D.st.tot)} · ${D.today.length} de ${mx} operaciones` : `${D.today.length} de ${mx} operaciones`;
-      case "analizar": { const sym = (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD"; return esc(sym); }
-      case "backtest": return D.sess[0] ? "Última: " + esc(D.sess[0].name) : "Crea tu primera sesión";
-      case "noticias": return D.nextHigh ? `Próxima fuerte: ${dayKey(D.nextHigh.ts) === todayKey() ? "hoy" : new Date(D.nextHigh.ts).toLocaleDateString("es-ES", { weekday: "long" })} ${hhmm(D.nextHigh.ts)}` : S.news ? "Sin noticias fuertes pendientes" : "Cargando…";
-      case "plan": return `${esc(p.start)}–${esc(p.end)} · máx. ${mx} operaciones`;
-      case "rendimiento": return D.s90.n ? fmtR(D.s90.tot) + " en 90 días" : "Aún sin operaciones";
-      case "progreso": return D.C90.length ? Math.round(D.good / D.C90.length * 100) + " % dentro del plan" : "Aún sin operaciones";
-      case "historial": return S.allTrades.length + (S.allTrades.length === 1 ? " operación" : " operaciones");
-      case "calendario": { const w = closed(S.trades.filter(t => new Date(t.open_time) >= Date.now() - 7 * 864e5)), st = tradeStats(w); return st.n ? fmtR(st.tot) + " en 7 días" : "Sin operaciones esta semana"; }
-      case "informe": return D.st.n ? "Hoy: " + fmtR(D.st.tot) : "Hoy aún sin operaciones";
-      case "diario": return D.pages.length ? D.pages.length + (D.pages.length === 1 ? " página" : " páginas") : "Empieza con una plantilla";
-      case "emociones": { if (!healthOk()) return "Desactivado · actívalo en Mi plan"; const fe = {}; S.trades.forEach(t => { const f = (t.review || {}).feel; if (f) fe[f] = (fe[f] || 0) + 1; }); const top = Object.entries(fe).sort((x, y) => y[1] - x[1])[0]; return top ? "Más frecuente: " + esc(top[0]) : "Sin emociones anotadas"; }
-      case "asistente": return "Responde con tus datos";
-      case "cuentas": { const n = (S.accts || []).filter(a => a.status !== "archivada").length; return n + (n === 1 ? " cuenta" : " cuentas"); }
-      case "finanzas": return inSession(p) ? "Se abre al terminar tu horario" : "Cobros y gastos de fondeo";
+      case "recursos": {
+        const e = D.nextHigh;
+        return `<div class="hb-w">${cats}${e ? `<div class="hb-ev"><b class="mono">${dayKey(e.ts) === todayKey() ? hhmm(e.ts) : new Date(e.ts).toLocaleDateString("es-ES", { weekday: "short" }) + " " + hhmm(e.ts)}</b><span>${esc(e.country)} · alto impacto</span><small>${esc(e.title)}</small></div>` : `<div class="hb-ev"><b>—</b><small>${S.news ? "Sin noticias fuertes pendientes" : "Cargando noticias…"}</small></div>`}</div>
+          ${tFoot(name, "Calendario económico", href)}`;
+      }
     }
     return "";
   }
+  /* dato de cada categoría para la página de la aplicación */
+  function catInfo(k, D) {
+    const sim = (S.btTrades || []).filter(t => t.r != null), sst = tradeStats(sim.map(t => ({ r: +t.r, status: "closed" })));
+    const fe = {}; S.trades.forEach(t => { const f = (t.review || {}).feel; if (f) fe[f] = (fe[f] || 0) + 1; }); const topF = Object.entries(fe).sort((a, b) => b[1] - a[1])[0];
+    const w = tradeStats(closed(S.trades.filter(t => new Date(t.open_time) >= Date.now() - 7 * 864e5))), mx = D.p.maxTrades || 3;
+    const M = {
+      hoy: [D.st.n ? fmtR(D.st.tot) : "—", D.today.length + " de " + mx + " operaciones", D.today.length / mx],
+      plan: [esc(D.p.start) + "–" + esc(D.p.end), "máximo " + mx + " operaciones", null],
+      grupo: ["Pronto", "llega en el último paso", null],
+      analizar: [esc((S.an && S.an.sym) || "EURUSD"), "se abre en " + (TFL[lsGet("tk-tf", "5m")] || ""), null],
+      backtest: [String(D.sess.length), D.sess.length === 1 ? "sesión" : "sesiones", null],
+      btanalisis: [BT() ? BT().hms(D.sess.reduce((a, x) => a + (x.secs || 0), 0)) : "—", "de estudio", null],
+      btops: [String(sim.length), sst.n ? fmtR(sst.tot) + " simulado" : "simuladas", null],
+      btcal: [sst.n ? fmtR(sst.tot) : "—", "resultado simulado", null],
+      btnotas: [String((S.pages || []).filter(x => !x.isTpl && (x.bt || x.tpl === "bt")).length), "notas", null],
+      rendimiento: [D.s90.n ? fmtR(D.s90.tot) : "—", "en 90 días", D.s90.win != null ? D.s90.win / 100 : null],
+      progreso: [D.C90.length ? Math.round(D.good / D.C90.length * 100) + " %" : "—", "dentro del plan", D.C90.length ? D.good / D.C90.length : null],
+      emociones: [healthOk() ? (topF ? esc(topF[0]) : "—") : "Desactivado", healthOk() ? "la más frecuente" : "actívalo en Mi plan", null],
+      historial: [String(S.allTrades.length), "operaciones", null],
+      calendario: [w.n ? fmtR(w.tot) : "—", "últimos 7 días", null],
+      informe: [D.st.n ? fmtR(D.st.tot) : "—", "hoy", null],
+      diario: [String(D.pages.length), D.pages.length === 1 ? "página" : "páginas", null],
+      cuentas: [String((S.accts || []).filter(a => a.status !== "archivada").length), "cuentas activas", null],
+      finanzas: [inSession(D.p) ? "Bloqueado" : "Disponible", inSession(D.p) ? "hasta las " + esc(D.p.end) : "cobros y gastos", null],
+      asistente: ["R", "responde con tus datos", null],
+      noticias: [D.nextHigh ? hhmm(D.nextHigh.ts) : "—", D.nextHigh ? "próxima fuerte · " + esc(D.nextHigh.country) : "sin noticias fuertes", null],
+      aprender: ["Pronto", "tras el bootcamp", null]
+    };
+    return M[k] || ["", "", null];
+  }
+  const greetLine = D => D.phase === "antes" ? `tu sesión empieza a las ${esc(D.p.start)}.` : D.phase === "en" ? "opera tu plan con calma." : D.today.length ? "buen trabajo hoy." : "que tengas un buen día.";
+  const metaRow = D => `<div class="hb-meta"><span>${I(IC.cal, 15)} ${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))}</span><span>${I(IC.clock, 15)} ${D.phase === "en" ? "En tu horario" : D.phase === "antes" ? "Antes de tu horario" : "Fuera de horario"}</span><span>${I('<path d="M3 14l4-5 4 3 6-8"/>', 15)} ${D.st.n ? fmtR(D.st.tot) + " hoy" : "Sin operaciones hoy"}</span></div>`;
+  const loadAll = () => {
+    const again = () => { if (/^#?(inicio|app\/.*)?$/.test(location.hash.replace(/^#/, ""))) re(); };
+    if (!S.news && window.tkLoadNews) tkLoadNews().then(again);
+    if (!S.btLoaded && BT()) BT().loadSessions().then(again);
+    if (!S.pagesLoaded && DI()) DI().loadPages().then(again);
+  };
+  function bindTiles() {
+    $$("[data-href]").forEach(el => {
+      el.addEventListener("click", e => { if (e.target.closest("[data-stop]")) return; location.hash = el.dataset.href; });
+      el.addEventListener("keydown", e => { if (e.target === el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); location.hash = el.dataset.href; } });
+    });
+    $$("[data-tfs]").forEach(b => b.onclick = () => { const cur = lsGet("tk-tf", "5m"), i = Math.max(0, TFQ.indexOf(cur)), n = TFQ[Math.max(0, Math.min(TFQ.length - 1, i + +b.dataset.tfs))]; lsSet("tk-tf", n); re(); });
+    $$("[data-btcyc]").forEach(b => b.onclick = () => { const n = (S.bts || []).length; S.hbBt = ((S.hbBt || 0) + +b.dataset.btcyc + n) % n; re(); });
+    $$("[data-btplay]").forEach(b => b.onclick = () => { const x = (S.bts || []).find(y => y.id === b.dataset.btplay); if (x && BT()) BT().run(x); });
+    $$("[data-btnew]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer(), 60); });
+    $$("[data-ask]").forEach(a => a.onclick = () => { S.asPrefill = a.dataset.ask; });
+  }
   V.inicio = {
     view() {
-      const again = () => { if (location.hash === "#inicio" || location.hash === "") re(); };
-      if (!S.news && window.tkLoadNews) tkLoadNews().then(again);
-      if (!S.btLoaded && BT()) BT().loadSessions().then(again);
-      if (!S.pagesLoaded && DI()) DI().loadPages().then(again);
+      loadAll();
       const D = hData(), first = esc((S.name || "").split(" ")[0] || "trader");
-      return `<div class="hs">
-        <div class="hs-hi"><h1>${greet()}, ${first}</h1><p>¿Qué quieres hacer hoy?</p></div>
-        ${HSIMPLE.map(([g, ks]) => `<section class="hs-g" aria-label="${esc(g)}"><h2>${esc(g)}</h2><div class="hs-grid">${ks.map((k, i) => `<a class="ts" href="#${k}" style="animation-delay:${(i * .03).toFixed(2)}s"><span class="ts-top"><span class="ts-ic">${ico(k, 22)}</span><span class="ts-go" aria-hidden="true">${I(ARW, 15, 2)}</span></span><b>${esc(HT[k][0])}</b><small>${esc(HDESC[k])}</small><span class="ts-f">${fact(k, D)}</span></a>`).join("")}</div></section>`).join("")}
-      </div>`;
+      return `<div class="hb hb-full">
+        <section class="hb-l">${metaRow(D)}
+          <h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1>
+          <div class="hb-grid">${HAPPS.map(k => `<div class="hb-t t-${k}" role="link" tabindex="0" data-href="${appHref(k)}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${appTile(k, D)}</div>`).join("")}</div>
+        </section></div>`;
     },
-    bind() {}
+    bind() { bindTiles(); }
+  };
+  V.app = {
+    view(r) {
+      loadAll();
+      const k = r.id, a = appDef(k);
+      if (!a) return `<div class="hb hb-full"><p>Esta aplicación no existe.</p><a class="btn" href="#inicio">Volver al inicio</a></div>`;
+      const D = hData(), cats = a[2];
+      return `<div class="hb hb-full hb-appv">
+        <section class="hb-l">
+          <a class="hb-back" href="#inicio">${I('<path d="M12 5l-5 5 5 5"/>', 16, 2.2)} Inicio</a>
+          <div class="hb-apph"><span class="hb-apic">${ico(k, 26)}</span><div><h1>${esc(a[1])}</h1><p>${esc(APPDESC[k] || "")}</p></div></div>
+          <div class="hb-catg n${cats.length}">${cats.map(([ck, cl], i) => { const [v, s, f] = catInfo(ck, D); return `<a class="hb-pc hb-cat" href="#${ck}" style="animation-delay:${(i * .04).toFixed(2)}s"><span class="hb-pci">${ico(ck, 22)}</span><b>${esc(cl)}</b><small>${esc(CATDESC[ck] || "")}</small>
+            <span class="hb-pcv mono">${v}</span><span class="hb-pcs">${s}</span>${f != null ? `<span class="hb-pcb"><i style="width:${(Math.max(0, Math.min(1, f)) * 100).toFixed(1)}%"></i></span>` : ""}<span class="hb-pco">Entrar ${I(ARW, 14, 2)}</span></a>`; }).join("")}</div>
+        </section></div>`;
+    },
+    bind() { bindTiles(); }
   };
 
   /* ---------- buscador (Inicio y Ctrl/⌘ K) ---------- */
