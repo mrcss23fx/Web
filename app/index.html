@@ -964,7 +964,9 @@ const ico=(n,s=20,w=1.8,c="currentColor")=>`<svg width="${s}" height="${s}" view
 const NAV=[["inicio","Inicio"],["hoy","Hoy"],["analizar","Analizar"],["diario","Diario"],["mas","Más"]];
 const OSDEF=(/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent)?"mac":"win");
 const NAV_APPS=[
- ["inicio","Inicio",[["inicio","Tus aplicaciones"],["hoy","Hoy"],["analizar","Analizar"]]],
+ ["inicio","Inicio",[["inicio","Inicio"]]],
+ ["hoy","Hoy",[["hoy","Hoy"]]],
+ ["analizar","Analizar",[["analizar","Analizar"]]],
  ["backtest","Backtesting",[["backtest","Sesiones"],["btanalisis","Análisis"],["btops","Operaciones"],["btcal","Calendario"],["btnotas","Cuaderno"]]],
  ["seguimiento","Seguimiento",[["rendimiento","Rendimiento"],["progreso","Progreso"],["emociones","Emociones"],["historial","Operaciones"],["calendario","Calendario"],["informe","Informe diario"]]],
  ["diario","Diario",[["diario","Páginas"]]],
@@ -1164,6 +1166,12 @@ function bridgeChip(){
 
 /* ---------- pantallas ---------- */
 function initials(){const n=(S.name||"").trim().split(/\s+/);return ((n[0]||"?")[0]+(n[1]?n[1][0]:(n[0]||"?")[1]||"")).toUpperCase()}
+function homeShell(content){
+  const nav=NAV.map(([k,l])=>`<a href="#${k}" ${k==="inicio"?'aria-current="page"':""}>${ico(k)}${l}</a>`).join("");
+  return `<div class="hbshell"><header class="hbtop"><a class="brand2" href="#inicio" aria-label="Tickora, inicio"><svg class="tlogo" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="var(--cobalto)"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="var(--cobalto)"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="var(--cobalto2)" opacity=".8"/></svg><span>TICKORA</span></a>
+    <div class="hbtop-r">${acctSwitch("mini")}<button type="button" class="hbtb" data-pal aria-label="Buscar (Ctrl/⌘ K)" title="Buscar (Ctrl/⌘ K)">${SVG('<circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2L17 17"/>',18)}</button><button type="button" class="hbtb" data-style-open aria-label="Estilo y colores" title="Estilo y colores">${SVG('<path d="M10 2.5a7.5 7.5 0 100 15c1 0 1.5-.6 1.5-1.4 0-.9-.7-1.2-.7-2 0-.7.6-1.3 1.4-1.3h1.7a3.6 3.6 0 003.6-3.6c0-3.7-3.4-6.7-7.5-6.7z"/><circle cx="6.5" cy="9" r="1" fill="currentColor"/><circle cx="9.5" cy="6" r="1" fill="currentColor"/><circle cx="13.5" cy="7" r="1" fill="currentColor"/>',18)}</button><button type="button" class="hbtb" data-theme-toggle aria-label="Cambiar entre claro y oscuro" title="Claro u oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button><a class="avatar" href="#plan" title="${esc(S.name)} · ${esc(S.user.email||"")}">${esc(initials())}</a></div></header>
+  <main class="hbmain" id="main">${content}</main><nav class="tabs" aria-label="Secciones">${nav}</nav></div>`;
+}
 function shell(view,content){
   const nav=NAV.map(([k,l])=>`<a href="#${k}" ${view===k||(k==="mas"&&!NAV.some(n=>n[0]===view))?'aria-current="page"':""}>${ico(k)}${l}</a>`).join("");
   const cur=appOf(view);
@@ -1987,7 +1995,7 @@ function render(){
   const content=(window.tkCrumb&&!["analizar","op","inicio"].includes(r.view)?tkCrumb(r.view):"")+(XV?XV.view(r):NEWV.includes(r.view)?`<div class="muted">Cargando…</div>`:r.view==="mas"?viewMas():r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():r.view==="cuentas"?viewCuentas():
     r.view==="grupo"?viewSoon("Grupo","Los grupos nuevos, donde solo se comparte disciplina y nunca dinero, llegan en el último paso de esta versión. Mientras tanto, tus grupos siguen en la versión anterior."):
     r.view==="aprender"?viewSoon("Aprender","Las lecciones llegarán cuando termines el bootcamp. Tus apuntes siguen en la versión anterior."):viewHoy());
-  $app.innerHTML=shell(r.view==="op"?"hoy":r.view,content);
+  $app.innerHTML=r.view==="inicio"?homeShell(content):shell(r.view==="op"?"hoy":r.view,content);
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{applyTheme(b.dataset.themeSet);document.querySelectorAll("[data-theme-set]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.themeSet===b.dataset.themeSet)));refreshWidgets()});
   document.querySelectorAll("[data-theme-toggle]").forEach(b=>b.onclick=()=>{applyTheme(isDark()?"light":"dark");refreshWidgets()});
   bindAcctMenus();
@@ -2190,8 +2198,8 @@ if(SB_OK){
 window.TKAPP={S,sb,esc,SVG,fmtR,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
 })();
 </script>
-<link rel="stylesheet" href="extra2.css?v=3">
+<link rel="stylesheet" href="extra2.css?v=4">
 <script src="extra.js?v=4"></script>
-<script src="extra2.js?v=3"></script>
+<script src="extra2.js?v=4"></script>
 </body>
 </html>

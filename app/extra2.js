@@ -37,17 +37,26 @@
   /* ======================= INICIO: PANEL DE CUADROS ======================= */
   const TFQ = ["1m", "3m", "5m", "15m", "30m", "45m", "1h", "2h", "4h", "1d", "1w"];
   const TFL = { "1m": "1 min", "3m": "3 min", "5m": "5 min", "15m": "15 min", "30m": "30 min", "45m": "45 min", "1h": "1 h", "2h": "2 h", "4h": "4 h", "1d": "1 día", "1w": "1 sem." };
-  const HGRP = [["todo", "Todo"], ["operar", "Operar"], ["revisar", "Revisar"], ["cartera", "Cuentas y dinero"], ["ayuda", "Ayuda"]];
+  const HGRP = [["todo", "Todo"], ["operar", "Operar"], ["revisar", "Revisar"], ["cartera", "Cuentas y dinero"], ["ayuda", "Ayuda"], ["tu", "Tú"]];
+  /* [apartado, nombre, grupo, descripción, opciones relacionadas] */
   const TILES = [
-    ["hoy", "Hoy", "operar", [["hoy", "Hoy"], ["plan", "Mi plan"], ["informe", "Informe de hoy"], ["noticias", "Noticias de hoy"]]],
-    ["analizar", "Analizar", "operar", [["analizar", "Gráfico"], ["backtest", "Backtesting"], ["noticias", "Calendario económico"]]],
-    ["backtest", "Backtesting", "operar", [["backtest", "Sesiones"], ["btanalisis", "Análisis"], ["btops", "Operaciones"], ["btcal", "Calendario"], ["btnotas", "Cuaderno"]]],
-    ["seguimiento", "Seguimiento", "revisar", [["rendimiento", "Rendimiento"], ["progreso", "Progreso"], ["emociones", "Emociones"], ["historial", "Operaciones"], ["calendario", "Calendario"], ["informe", "Informe diario"]]],
-    ["diario", "Diario", "revisar", [["diario", "Páginas"], ["btnotas", "Cuaderno de backtesting"], ["informe", "Notas del día"]]],
-    ["cartera", "Cartera", "cartera", [["cuentas", "Cuentas"], ["finanzas", "Finanzas"]]],
-    ["asistente", "Inteligencia", "ayuda", [["asistente", "Asistente"]]],
-    ["recursos", "Recursos", "ayuda", [["noticias", "Calendario económico"], ["aprender", "Aprender"]]],
-    ["tu", "Tú", "cartera", [["plan", "Mi plan"], ["grupo", "Grupo"], ["cuentas", "Cuentas"]]]
+    ["hoy", "Hoy", "operar", "Tu día: operaciones, horario y normas.", [["hoy", "Hoy"], ["informe", "Informe de hoy"], ["plan", "Mi plan"]]],
+    ["analizar", "Analizar", "operar", "Gráfico con todas tus herramientas de dibujo.", [["analizar", "Gráfico"], ["noticias", "Noticias de hoy"]]],
+    ["backtest", "Backtesting", "operar", "Repasa el mercado vela a vela y practica retos.", [["backtest", "Sesiones"], ["btanalisis", "Análisis"], ["btops", "Operaciones simuladas"], ["btcal", "Calendario"], ["btnotas", "Cuaderno"]]],
+    ["noticias", "Calendario económico", "operar", "Noticias de esta semana y la siguiente.", [["noticias", "Calendario económico"], ["hoy", "Hoy"]]],
+    ["rendimiento", "Rendimiento", "revisar", "Tus números en R: curva, caída y factor de beneficio.", [["rendimiento", "Rendimiento"], ["historial", "Operaciones"], ["calendario", "Calendario"]]],
+    ["progreso", "Progreso", "revisar", "Cómo cumples tu plan semana a semana.", [["progreso", "Progreso"], ["rendimiento", "Rendimiento"]]],
+    ["emociones", "Emociones", "revisar", "Qué emociones te ayudan y cuáles te cuestan.", [["emociones", "Emociones"], ["informe", "Emociones del día"]]],
+    ["historial", "Operaciones", "revisar", "Todas tus operaciones en una tabla.", [["historial", "Operaciones"], ["rendimiento", "Rendimiento"]]],
+    ["calendario", "Calendario", "revisar", "Tu resultado de cada día y cada semana.", [["calendario", "Calendario"], ["informe", "Informe diario"]]],
+    ["informe", "Informe diario", "revisar", "Todo lo de un día: operaciones, emociones y notas.", [["informe", "Informe diario"], ["calendario", "Calendario"], ["diario", "Diario"]]],
+    ["diario", "Diario", "revisar", "Páginas con plantillas para preparar y revisar.", [["diario", "Páginas"], ["btnotas", "Cuaderno de backtesting"]]],
+    ["cuentas", "Cuentas", "cartera", "Demo, fondeo y capital propio con sus normas.", [["cuentas", "Cuentas"], ["finanzas", "Finanzas"]]],
+    ["finanzas", "Finanzas", "cartera", "Lo que pagas y cobras con el trading.", [["finanzas", "Finanzas"], ["cuentas", "Cuentas"]]],
+    ["asistente", "Inteligencia", "ayuda", "Pregunta por tus números y te respondo.", [["asistente", "Asistente"]]],
+    ["aprender", "Aprender", "ayuda", "Lecciones y apuntes del bootcamp.", [["aprender", "Aprender"]]],
+    ["plan", "Mi plan", "tu", "Tu horario, tus límites y tus normas.", [["plan", "Mi plan"], ["cuentas", "Cuentas"]]],
+    ["grupo", "Grupo", "tu", "Comparte disciplina, nunca dinero.", [["grupo", "Grupo"]]]
   ];
   const ARW = '<path d="M7 13l6-6M8 7h5v5"/>';
   const hhmm = t => new Date(t).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
@@ -88,31 +97,59 @@
         return `<div class="hb-media-c"><button type="button" class="hb-mb" data-btcyc="-1" aria-label="Sesión anterior" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M14 5l-6 5 6 5zM6 5v10"/>', 16, 2)}</button><button type="button" class="hb-play" data-btplay="${esc(x.id)}" aria-label="${x.lastTs ? "Continuar" : "Empezar"} ${esc(x.name)}" data-stop>${I('<path d="M7 4.5v11l9-5.5z"/>', 22, 2)}</button><button type="button" class="hb-mb" data-btcyc="1" aria-label="Sesión siguiente" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M6 5l6 5-6 5zM14 5v10"/>', 16, 2)}</button></div>
           <div class="hb-media-t"><div class="hb-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div><b>${esc(x.name)}</b><small>${esc((x.syms || []).join(" · "))} · ${x.mode === "fondeo" ? "reto de fondeo" : "clásico"} · ${Math.round(pr * 100)} %</small></div>`;
       }
-      case "seguimiento": {
+      case "progreso": {
         const pc = D.n90 ? Math.round(D.good / D.n90 * 100) : null;
         return `<div class="hb-w"><div class="hb-ban">${pc == null ? "Aún sin operaciones" : pc >= 80 ? "Proceso sólido" : pc >= 60 ? "Buen camino" : "Revisa tus normas"}</div><div class="hb-big"><span class="hb-bl">Dentro del plan</span><b class="mono">${pc == null ? "—" : pc}</b><small>${pc == null ? "" : "%"}</small></div></div>
-          ${tFoot("Seguimiento", D.s90.n ? fmtR(D.s90.tot) + " en 90 días" : "Rendimiento y emociones", "rendimiento")}`;
+          ${tFoot("Progreso", D.n90 + " operaciones en 90 días", "progreso")}`;
+      }
+      case "rendimiento": {
+        const C = closed(S.trades.filter(t => new Date(t.open_time) >= Date.now() - 90 * 864e5)).sort((x, y) => new Date(x.open_time) - new Date(y.open_time)); let c = 0; const cv = [0].concat(C.map(t => c += t.r));
+        return `<div class="hb-w"><div class="hb-val mono">${D.s90.n ? fmtR(D.s90.tot) : "—"}</div><div class="hb-spark">${cv.length > 2 ? spark(cv, 220, 54) : `<span class="small" style="color:var(--hb-ink2)">Sin datos todavía</span>`}</div></div>${tFoot("Rendimiento", "Últimos 90 días", "rendimiento")}`;
+      }
+      case "emociones": {
+        const fe = {}; S.trades.forEach(t => { const f = (t.review || {}).feel; if (f) fe[f] = (fe[f] || 0) + 1; }); const top = Object.entries(fe).sort((x, y) => y[1] - x[1])[0];
+        return `<div class="hb-w">${healthOk() ? `<div class="hb-emo"><span class="hb-bl">La más frecuente</span><b>${top ? esc(top[0]) : "—"}</b><small>${top ? top[1] + (top[1] === 1 ? " vez" : " veces") : "Anota cómo te sientes al entrar"}</small></div>` : `<div class="hb-emo"><span class="hb-bl">Desactivado</span><b>Actívalo</b><small>en Mi plan</small></div>`}</div>${tFoot("Emociones", "Lo que sientes al operar", "emociones")}`;
+      }
+      case "historial": {
+        const t = S.trades[0];
+        return `<div class="hb-w"><div class="hb-val mono">${S.allTrades.length}</div>${t ? `<div class="hb-last"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"} · <span class="mono">${t.status === "closed" ? fmtR(t.r) : "abierta"}</span></div>` : ""}</div>${tFoot("Operaciones", "Todas tus operaciones", "historial")}`;
+      }
+      case "calendario": {
+        const days = []; for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const k = dayKey(d), L = closed(S.trades.filter(t => t.open_time && dayKey(t.open_time) === k)), st = tradeStats(L); days.push({ l: "LMXJVSD"[(d.getDay() + 6) % 7], n: st.n, v: st.tot }); }
+        const mx = Math.max(.5, ...days.map(x => Math.abs(x.v)));
+        return `<div class="hb-w"><div class="hb-week">${days.map(x => `<span class="${x.n ? (x.v < 0 ? "neg" : "pos") : ""}" style="${x.n && x.v >= 0 ? `--a:${(.25 + Math.abs(x.v) / mx * .75).toFixed(2)}` : ""}" title="${x.n ? fmtR(x.v) : "sin operaciones"}"><i></i><small>${x.l}</small></span>`).join("")}</div></div>${tFoot("Calendario", "Últimos 7 días", "calendario")}`;
+      }
+      case "informe": {
+        const C = closed(D.today), g = C.filter(t => evaluate(t).good).length;
+        return `<div class="hb-w"><div class="hb-val mono">${D.st.n ? fmtR(D.st.tot) : "—"}</div><div class="hb-last">${C.length ? g + " de " + C.length + " dentro del plan" : "Hoy aún no hay operaciones cerradas"}</div></div>${tFoot("Informe diario", cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric" })), "informe")}`;
+      }
+      case "finanzas": {
+        const lock = inSession(D.p);
+        return `<div class="hb-w"><div class="hb-lock">${lock ? I('<rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 016 0v3"/>', 26) : I('<circle cx="10" cy="10" r="7"/><path d="M12.5 7.6c-.5-.8-1.4-1.3-2.5-1.3-1.5 0-2.5.8-2.5 1.8 0 2.5 5 1.3 5 3.8 0 1.1-1.1 1.9-2.5 1.9-1.2 0-2.2-.5-2.7-1.4M10 4.6v1.7M10 13.8v1.6"/>', 26)}<span>${lock ? "Disponible al terminar tu horario" : "Cobros de fondeo, retos y gastos"}</span></div></div>${tFoot("Finanzas", lock ? "Ahora piensas en R" : "Fuera de horario", "finanzas")}`;
+      }
+      case "aprender": case "grupo": {
+        return `<div class="hb-w"><div class="hb-soon">Próximamente</div></div>${tFoot(k === "grupo" ? "Grupo" : "Aprender", k === "grupo" ? "Disciplina compartida" : "Lecciones del bootcamp", k)}`;
       }
       case "diario": {
         const pg = D.pages[0];
         return `<span class="hb-ic">${ico("diario", 20)}</span><div style="flex:1"></div>${tFoot("Diario", pg ? esc(pg.title || "Sin título") + " · " + ago(pg.updated) : S.pagesLoaded ? "Escribe tu primera página" : "Tus páginas", pg ? "diario/" + encodeURIComponent(pg.id) : "diario")}`;
       }
-      case "cartera": {
+      case "cuentas": {
         const A = S.accts || [], c = t => A.filter(a => a.type === t).length, sa = selAcct();
         return `<div class="hb-w"><div class="hb-ac"><span>${I('<path d="M4 14l4-4 3 3 5-6"/>', 13, 2.2)} Fondeo ${c("fondeo")}</span><span>${I('<circle cx="10" cy="10" r="5"/>', 13, 2.2)} Demo ${c("demo")} · Propia ${c("propia")}</span></div><div class="hb-pill">${A.length} ${A.length === 1 ? "cuenta" : "cuentas"}</div></div>
-          ${tFoot("Cartera", sa ? esc(acctName(sa.a)) + " seleccionada" : "Todas las cuentas", "cuentas")}`;
+          ${tFoot("Cuentas", sa ? esc(acctName(sa.a)) + " seleccionada" : "Todas las cuentas", "cuentas")}`;
       }
       case "asistente": {
         const q = ["¿A qué hora opero mejor?", "¿Qué norma rompo más?", "¿Cómo voy esta semana?", "¿Cuál es mi mejor mercado?"][new Date().getDate() % 4];
         return `<div class="hb-w"><a class="hb-q" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 14)}</span></a></div>${tFoot("Inteligencia", "Pregunta por tus números", "asistente")}`;
       }
-      case "recursos": {
+      case "noticias": {
         const e = D.nextHigh || D.next;
         return `<div class="hb-w">${e ? `<div class="hb-ev"><b class="mono">${hhmm(e.ts)}</b><span>${esc(e.country)} · ${e.impact === "High" ? "alto impacto" : e.impact === "Medium" ? "impacto medio" : "impacto bajo"}</span><small>${esc(e.title)}</small></div>` : `<div class="hb-ev"><b>—</b><small>${S.news ? "Sin noticias pendientes" : "Cargando noticias…"}</small></div>`}</div>
-          ${tFoot("Recursos", "Calendario económico", "noticias")}`;
+          ${tFoot("Calendario económico", e ? "Próxima noticia fuerte" : "Esta semana", "noticias")}`;
       }
-      case "tu": {
-        return `<div class="hb-w"><div class="hb-chips"><span>Máx. ${p.maxTrades} op.</span><span>${esc(p.start)}–${esc(p.end)}</span>${p.riskPct != null ? `<span>Riesgo ${num(p.riskPct, 2).replace(/,?0+$/, "")} %</span>` : ""}</div></div>${tFoot("Tú", "Tu plan de hoy", "plan")}`;
+      case "plan": {
+        return `<div class="hb-w"><div class="hb-chips"><span>Máx. ${p.maxTrades} op.</span><span>${esc(p.start)}–${esc(p.end)}</span>${p.riskPct != null ? `<span>Riesgo ${num(p.riskPct, 2).replace(/,?0+$/, "")} %</span>` : ""}</div></div>${tFoot("Mi plan", "Tu plan de hoy", "plan")}`;
       }
     }
     return "";
@@ -147,23 +184,24 @@
     return M[k] || ["", "", null];
   }
   function hPanel(t, D) {
-    const [k, name, , pages] = t;
-    return `<div class="hb-ph"><h2>${esc(name)}</h2><span class="hb-time mono">${hhmm(Date.now())}</span></div>
+    const [k, name, , desc, pages] = t;
+    return `<div class="hb-ph"><h2>${esc(name)}</h2><span class="hb-time mono">${hhmm(Date.now())}</span></div><p class="hb-desc">${esc(desc)}</p>
       <div class="hb-pg">${pages.map(([pk, pl], i) => { const [s, v, f] = pageInfo(pk, D); return `<a class="hb-pc ${i === 0 && pages.length % 2 ? "wide" : ""}" href="#${pk}"><span class="hb-pci">${ico(pk, 22)}</span><b>${esc(pl)}</b><small>${s}</small>
-        <span class="hb-pcv mono">${v}</span>${f != null ? `<span class="hb-pcb"><i style="width:${(Math.max(0, Math.min(1, f)) * 100).toFixed(1)}%"></i></span>` : ""}<span class="hb-pco">Abrir ${I(ARW, 14, 2)}</span></a>`; }).join("")}</div>`;
+        <span class="hb-pcv mono">${v}</span>${f != null ? `<span class="hb-pcb"><i style="width:${(Math.max(0, Math.min(1, f)) * 100).toFixed(1)}%"></i></span>` : ""}<span class="hb-pco">Abrir ${I(ARW, 14, 2)}</span></a>`; }).join("")}</div>
+      <a class="btn hb-open" href="#${k}">Entrar en ${esc(name)} ${I(ARW, 16, 2)}</a>`;
   }
   V.inicio = {
     view() {
       if (!S.news && window.tkLoadNews) tkLoadNews().then(() => { if (location.hash === "#inicio" || location.hash === "") re(); });
       if (!S.btLoaded && BT()) BT().loadSessions().then(() => { if (location.hash === "#inicio" || location.hash === "") re(); });
       if (!S.pagesLoaded && DI()) DI().loadPages().then(() => { if (location.hash === "#inicio" || location.hash === "") re(); });
-      const D = hData(), g = S.hbG || "todo", sel = lsGet("tk-homesel", "hoy"), T = TILES.filter(t => g === "todo" || t[2] === g), cur = TILES.find(t => t[0] === sel) || TILES[0];
+      const D = hData(), g = S.hbG || "todo", sel0 = lsGet("tk-homesel", "hoy"), sel = TILES.some(t => t[0] === sel0) ? sel0 : "hoy", T = TILES.filter(t => g === "todo" || t[2] === g), cur = TILES.find(t => t[0] === sel) || TILES[0];
       const first = esc((S.name || "").split(" ")[0] || "trader");
       const l2 = D.phase === "antes" ? `tu sesión empieza a las ${esc(D.p.start)}.` : D.phase === "en" ? "opera tu plan con calma." : D.today.length ? "buen trabajo hoy." : "que tengas un buen día.";
       return `<div class="hb">
         <section class="hb-l">
           <div class="hb-meta"><span>${I(IC.cal, 15)} ${cap(new Date().toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" }))}</span><span>${I('<path d="M3 14l4-5 4 3 6-8"/>', 15)} ${D.st.n ? fmtR(D.st.tot) + " hoy" : "Sin operaciones hoy"}</span><span>${I(IC.clock, 15)} ${D.phase === "en" ? "En tu horario" : D.phase === "antes" ? "Antes de tu horario" : "Fuera de horario"}</span>
-            <button type="button" class="hb-sb" data-pal aria-label="Buscar (Ctrl/⌘ K)" title="Buscar (Ctrl/⌘ K)">${I(IC.search, 16)}</button></div>
+</div>
           <h1 class="hb-hi">Hola, ${first},<br>${l2}</h1>
           <div class="hb-chipsrow"><div class="xpop"><button type="button" class="hb-add" data-hadd aria-haspopup="true" aria-expanded="false" aria-label="Crear">${I(IC.plus, 18, 2.2)}</button><div class="xpopm" id="hAddM" hidden>${actions().slice(0, 6).map((a, i) => `<button type="button" class="xpopb" data-pa="${i}">${esc(a[0])}</button>`).join("")}</div></div>
             <div class="hb-g" role="group" aria-label="Filtrar aplicaciones">${HGRP.map(([k, l]) => `<button type="button" data-hg="${k}" aria-pressed="${g === k}">${l}</button>`).join("")}</div></div>
@@ -180,7 +218,7 @@
       $$("[data-ht]").forEach(el => {
         el.addEventListener("click", e => { if (e.target.closest("[data-stop]")) return; pick(el.dataset.ht); });
         el.addEventListener("keydown", e => { if (e.target !== el) return; if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(el.dataset.ht); } });
-        el.addEventListener("dblclick", e => { if (e.target.closest("[data-stop]")) return; const t = TILES.find(x => x[0] === el.dataset.ht); location.hash = "#" + t[3][0][0]; });
+        el.addEventListener("dblclick", e => { if (e.target.closest("[data-stop]")) return; const t = TILES.find(x => x[0] === el.dataset.ht); location.hash = "#" + t[0]; });
       });
       $$("[data-tfs]").forEach(b => b.onclick = () => { const cur = lsGet("tk-tf", "5m"), i = Math.max(0, TFQ.indexOf(cur)), n = TFQ[Math.max(0, Math.min(TFQ.length - 1, i + +b.dataset.tfs))]; lsSet("tk-tf", n); re(); });
       $$("[data-btcyc]").forEach(b => b.onclick = () => { const n = (S.bts || []).length; S.hbBt = ((S.hbBt || 0) + +b.dataset.btcyc + n) % n; re(); });
