@@ -565,3 +565,40 @@ button.calc{cursor:pointer}button.calc:hover{border-color:var(--cobalto)}
 @media (min-width:901px) and (min-height:700px){.hb-catg{grid-auto-rows:minmax(190px,min(320px,calc((100vh - 360px)/2)))}}
 .hbshell .hb-appv{min-height:0}
 .hb-t.noanim{animation:none}
+
+/* ======================= TODAS LAS PÁGINAS CON EL DISEÑO DE LA PORTADA ======================= */
+:root{--cardS:#ffffff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--cardS:#121a2e}}
+:root[data-theme="dark"]{--cardS:#121a2e}
+/* dentro de la portada y sus páginas, las tarjetas pasan a ser de cristal */
+.hbshell{--card:var(--hb-t);--sub:var(--hb-t2);--linea:var(--hb-line);--linea2:color-mix(in srgb,var(--hb-line) 70%,transparent);--shadow:var(--hb-sh);--papel:transparent}
+.hbshell :is(.acmenu,.xpopm,.slash,.hm-res,.ascmd,.imgbar,.chartmenu,.acm){background:var(--cardS)}
+.hbshell .tabs{background:color-mix(in srgb,var(--cardS) 82%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.hbshell .main.pgmain{flex:1;width:100%;max-width:1440px;margin:0 auto;padding:18px 28px 48px;box-sizing:border-box}
+@media (max-width:1023px){.hbshell .main.pgmain{padding:12px 14px 100px;max-width:none}}
+.hbshell .pgmain :is(.card,.xk,.xcard,.bscard,.pgcard,.tplc,.racc,.rnote){border-radius:20px;border-color:var(--hb-line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.hbshell .pgmain .card{background:var(--hb-t);box-shadow:var(--hb-sh)}
+.hbshell .pgmain h1{font-family:var(--sans);font-size:clamp(28px,3vw,40px);font-weight:500;letter-spacing:-.025em;line-height:1.15;color:var(--hb-ink)}
+.hbshell .pgmain .h2b,.hbshell .pgmain h2{letter-spacing:-.01em}
+.hbshell .pgmain .xhead{margin-bottom:4px}
+.hbshell .pgmain :is(.input,.xsel,select.input,textarea.input){background:var(--hb-t2);border-color:var(--hb-line)}
+.hbshell .pgmain .xsearch{background:var(--hb-t2);border-color:var(--hb-line)}
+.hbshell .pgmain .xtablewrap{background:color-mix(in srgb,var(--hb-t) 60%,transparent);border-color:var(--hb-line);border-radius:16px}
+.hbshell .pgmain .xtable th{background:color-mix(in srgb,var(--cardS) 70%,transparent);backdrop-filter:blur(10px)}
+.hbshell .pgmain :is(.pills button,.pseg button,.chipb){background:var(--hb-t2);border-color:var(--hb-line)}
+.hbshell .pgmain :is(.pills button[aria-pressed="true"],.pseg button[aria-pressed="true"]){background:var(--cobalto);border-color:var(--cobalto);color:#fff}
+.hbshell .pgmain .btn2{background:var(--hb-t2);border-color:var(--hb-line)}
+.hbshell .pgmain .xpb,.hbshell .pgmain .xib{background:var(--hb-t2);border-color:var(--hb-line)}
+/* barra de cada página: volver + categorías + crear */
+.pgbar{display:flex;align-items:center;gap:12px;margin:0 0 22px;min-width:0}
+.pgtabs{flex:1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:4px;border-radius:999px;background:var(--hb-t);border:1px solid var(--hb-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);min-width:0}
+.pgtabs::-webkit-scrollbar{display:none}
+.pgtabs a{flex:none;display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-radius:999px;color:var(--hb-ink2);text-decoration:none;font-size:13.5px;font-weight:600;transition:background .15s,color .15s}
+.pgtabs a:hover{color:var(--hb-ink);background:var(--hb-t2)}
+.pgtabs a[aria-current="page"]{background:var(--cobalto);color:#fff;box-shadow:0 6px 16px -8px var(--cobalto)}
+.pgtabs a:focus-visible{outline:2px solid var(--cobalto);outline-offset:2px}
+.pgtabs-sp{flex:1}
+.pgbar .hb-back{flex:none}
+.pgadd{flex:none}
+.pgadd .hbtb{background:var(--cobalto);border-color:var(--cobalto);color:#fff}
+@media (max-width:760px){.pgbar{gap:8px;margin-bottom:16px}.pgtabs a span{display:none}.pgtabs a[aria-current="page"] span{display:inline}.pgtabs a{padding:0 11px}.pgbar .hb-back{padding:0 10px;font-size:0;gap:0}.pgbar .hb-back svg{width:18px;height:18px}}

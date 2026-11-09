@@ -415,7 +415,7 @@ button.acsel{font:inherit;text-align:left;width:100%}
 .hc7 i,.hleg i{width:14px;height:14px;border-radius:4px;display:block}
 .h0{background:var(--linea2)}.hz{background:transparent}
 .hg{background:var(--cobalto);box-shadow:0 0 8px -2px var(--cobalto)}
-.hb{background:var(--ambar);opacity:.85}
+.hbad{background:var(--ambar);opacity:.85}
 .hleg{display:flex;gap:12px;font-size:11.5px;color:var(--suave);flex-wrap:wrap}
 .hleg span{display:inline-flex;align-items:center;gap:6px}
 .hleg i{width:9px;height:9px;border-radius:50%;box-shadow:none}
@@ -1166,11 +1166,11 @@ function bridgeChip(){
 
 /* ---------- pantallas ---------- */
 function initials(){const n=(S.name||"").trim().split(/\s+/);return ((n[0]||"?")[0]+(n[1]?n[1][0]:(n[0]||"?")[1]||"")).toUpperCase()}
-function homeShell(content){
-  const nav=NAV.map(([k,l])=>`<a href="#${k}" ${k==="inicio"?'aria-current="page"':""}>${ico(k)}${l}</a>`).join("");
+function homeShell(content,view){
+  const cv=view||"inicio",nav=NAV.map(([k,l])=>`<a href="#${k}" ${cv===k||(k==="mas"&&!NAV.some(n=>n[0]===cv))?'aria-current="page"':""}>${ico(k)}${l}</a>`).join("");
   return `<div class="hbshell"><header class="hbtop"><a class="brand2" href="#inicio" aria-label="Tickora, inicio"><svg class="tlogo" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="var(--cobalto)"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="var(--cobalto)"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="var(--cobalto2)" opacity=".8"/></svg><span>TICKORA</span></a>
     <div class="hbtop-r">${acctSwitch("mini")}<button type="button" class="hbtb" data-pal aria-label="Buscar (Ctrl/⌘ K)" title="Buscar (Ctrl/⌘ K)">${SVG('<circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2L17 17"/>',18)}</button><button type="button" class="hbtb" data-style-open aria-label="Estilo y colores" title="Estilo y colores">${SVG('<path d="M10 2.5a7.5 7.5 0 100 15c1 0 1.5-.6 1.5-1.4 0-.9-.7-1.2-.7-2 0-.7.6-1.3 1.4-1.3h1.7a3.6 3.6 0 003.6-3.6c0-3.7-3.4-6.7-7.5-6.7z"/><circle cx="6.5" cy="9" r="1" fill="currentColor"/><circle cx="9.5" cy="6" r="1" fill="currentColor"/><circle cx="13.5" cy="7" r="1" fill="currentColor"/>',18)}</button><button type="button" class="hbtb" data-theme-toggle aria-label="Cambiar entre claro y oscuro" title="Claro u oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button><a class="avatar" href="#plan" title="${esc(S.name)} · ${esc(S.user.email||"")}">${esc(initials())}</a></div></header>
-  <main class="hbmain" id="main">${content}</main><nav class="tabs" aria-label="Secciones">${nav}</nav></div>`;
+  <main class="${view?"main pgmain":"hbmain"}" id="main">${content}</main><nav class="tabs" aria-label="Secciones">${nav}</nav></div>`;
 }
 function shell(view,content){
   const nav=NAV.map(([k,l])=>`<a href="#${k}" ${view===k||(k==="mas"&&!NAV.some(n=>n[0]===view))?'aria-current="page"':""}>${ico(k)}${l}</a>`).join("");
@@ -1240,7 +1240,7 @@ function radarHex(sc){
 function heat7(info,weeks){
   const end=new Date();end.setHours(0,0,0,0);const start=new Date(end);start.setDate(start.getDate()-((end.getDay()+6)%7)-7*(weeks-1));
   let cols="";for(let w=0;w<weeks;w++){let c="";for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+w*7+i);const x=info.byDay[dayKey(d)];
-    const cls=d>end?"hz":x?(x.every(t=>evaluate(t).good)?"hg":"hb"):"h0";c+=`<i class="${cls}" title="${d.toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"})}${x?" · "+x.length+" op. · "+fmtR(x.reduce((a,t)=>a+(t.r||0),0)):""}"></i>`}cols+=`<div class="hc7">${c}</div>`}
+    const cls=d>end?"hz":x?(x.every(t=>evaluate(t).good)?"hg":"hbad"):"h0";c+=`<i class="${cls}" title="${d.toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"})}${x?" · "+x.length+" op. · "+fmtR(x.reduce((a,t)=>a+(t.r||0),0)):""}"></i>`}cols+=`<div class="hc7">${c}</div>`}
   return `<div class="heat7"><div class="hd7">${"LMXJVSD".split("").map(d=>`<span>${d}</span>`).join("")}</div><div class="hg7">${cols}</div></div>`;
 }
 function ticketMini(today,dayR,p){
@@ -1497,7 +1497,7 @@ function viewHoy(){
       <div class="stack hright" style="gap:16px">
         <div class="card stack" style="gap:4px"><b style="font-size:15px">Nota de disciplina (30 días)</b>${radarHex(sc)}</div>
         <div class="card stack" style="gap:12px"><b style="font-size:15px">Actividad</b>
-          <div class="hleg"><span><i class="hg"></i>Dentro del plan</span><span><i class="hb"></i>Fuera del plan</span></div>
+          <div class="hleg"><span><i class="hg"></i>Dentro del plan</span><span><i class="hbad"></i>Fuera del plan</span></div>
           ${heat7(info,10)}
           <div class="small" style="color:var(--suave)">${info.days.length} días operados &nbsp;|&nbsp; Racha actual: ${info.cur} &nbsp;|&nbsp; Máx: ${info.best}</div>
         </div>
@@ -1993,10 +1993,10 @@ function render(){
   const XV=window.TK_VIEWS&&TK_VIEWS[r.view];
   const NEWV=["app","backtest","historial","emociones","diario","noticias","asistente","inicio","btanalisis","btops","btcal","btnotas","rendimiento","calendario","informe","finanzas"];
   if(NEWV.includes(r.view)&&!XV&&document.readyState==="complete"&&!S.loadWarn){S.loadWarn=setTimeout(()=>{S.lastView=null;render()},2500)}
-  const content=(window.tkCrumb&&!["analizar","op","inicio","app"].includes(r.view)?tkCrumb(r.view):"")+(XV?XV.view(r):NEWV.includes(r.view)?`<div class="stack" style="gap:12px;max-width:520px;padding:40px 0"><div class="muted">Cargando…</div>${document.readyState==="complete"?`<div class="small muted">Si tarda mucho, recarga la página sin caché: Ctrl + F5 (en Mac, ⌘ + Mayús + R).</div><button type="button" class="btn" onclick="location.replace(location.pathname+'?r='+Date.now()+location.hash)" style="height:40px;align-self:flex-start">Recargar ahora</button>`:""}</div>`:r.view==="mas"?viewMas():r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():r.view==="cuentas"?viewCuentas():
+  const content=(window.tkCrumb&&!["analizar","inicio","app"].includes(r.view)?tkCrumb(r.view):"")+(XV?XV.view(r):NEWV.includes(r.view)?`<div class="stack" style="gap:12px;max-width:520px;padding:40px 0"><div class="muted">Cargando…</div>${document.readyState==="complete"?`<div class="small muted">Si tarda mucho, recarga la página sin caché: Ctrl + F5 (en Mac, ⌘ + Mayús + R).</div><button type="button" class="btn" onclick="location.replace(location.pathname+'?r='+Date.now()+location.hash)" style="height:40px;align-self:flex-start">Recargar ahora</button>`:""}</div>`:r.view==="mas"?viewMas():r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():r.view==="cuentas"?viewCuentas():
     r.view==="grupo"?viewSoon("Grupo","Los grupos nuevos, donde solo se comparte disciplina y nunca dinero, llegan en el último paso de esta versión. Mientras tanto, tus grupos siguen en la versión anterior."):
     r.view==="aprender"?viewSoon("Aprender","Las lecciones llegarán cuando termines el bootcamp. Tus apuntes siguen en la versión anterior."):viewHoy());
-  $app.innerHTML=r.view==="inicio"||r.view==="app"?homeShell(content):shell(r.view==="op"?"hoy":r.view,content);
+  $app.innerHTML=r.view==="inicio"||r.view==="app"?homeShell(content):r.view==="analizar"?shell("analizar",content):homeShell(content,r.view==="op"?"historial":r.view);
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{applyTheme(b.dataset.themeSet);document.querySelectorAll("[data-theme-set]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.themeSet===b.dataset.themeSet)));refreshWidgets()});
   document.querySelectorAll("[data-theme-toggle]").forEach(b=>b.onclick=()=>{applyTheme(isDark()?"light":"dark");refreshWidgets()});
   bindAcctMenus();
@@ -2199,8 +2199,8 @@ if(SB_OK){
 window.TKAPP={S,sb,esc,SVG,fmtR,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
 })();
 </script>
-<link rel="stylesheet" href="extra2.css?v=13">
+<link rel="stylesheet" href="extra2.css?v=15">
 <script src="extra.js?v=4"></script>
-<script src="extra2.js?v=13"></script>
+<script src="extra2.js?v=15"></script>
 </body>
 </html>

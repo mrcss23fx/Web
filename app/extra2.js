@@ -256,12 +256,11 @@
 
   /* ======================= RUTA, PESTAÑAS Y BOTÓN + ======================= */
   window.tkCrumb = function (view) {
-    const app = appOf(view); if (!app) return "";
-    const page = app[2].find(x => x[0] === view), many = app[2].length > 1;
-    return `<div class="xcrumb"><nav class="xcrumb-l" aria-label="Estás en"><a href="#${app[2][0][0]}">${esc(app[1])}</a>${many ? `<span aria-hidden="true">›</span><b>${esc(page[1])}</b>` : ""}</nav>
-      <div class="xcrumb-r"><button type="button" class="xib" data-pal title="Buscar (Ctrl/⌘ K)" aria-label="Buscar">${I(IC.search, 17)}</button>
-        <div class="xpop"><button type="button" class="xib xplus" data-plus aria-haspopup="true" aria-expanded="false" title="Crear" aria-label="Crear">${I(IC.plus, 17, 2.2)}</button><div class="xpopm right" id="plusM" hidden>${actions().slice(0, 5).map((a, i) => `<button type="button" class="xpopb" data-pa="${i}">${esc(a[0])}</button>`).join("")}</div></div></div></div>
-      ${many ? `<nav class="xsubtabs" aria-label="${esc(app[1])}">${app[2].map(([k, l]) => `<a href="#${k}" ${k === view ? 'aria-current="page"' : ""}>${esc(l)}</a>`).join("")}</nav>` : ""}`;
+    const app = appOf(view === "op" ? "historial" : view), many = app && app[2].length > 1;
+    const back = !app ? ["#inicio", "Inicio"] : many && view !== "op" ? ["#app/" + app[0], app[1]] : view === "op" ? ["#historial", "Operaciones"] : ["#inicio", "Inicio"];
+    return `<div class="pgbar"><a class="hb-back" href="${back[0]}">${I('<path d="M12 5l-5 5 5 5"/>', 16, 2.2)} ${esc(back[1])}</a>
+      ${many && view !== "op" ? `<nav class="pgtabs" aria-label="${esc(app[1])}">${app[2].map(([k, l]) => `<a href="#${k}" ${k === view ? 'aria-current="page"' : ""}>${ico(k, 16)}<span>${esc(l)}</span></a>`).join("")}</nav>` : `<span class="pgtabs-sp"></span>`}
+      <div class="xpop pgadd"><button type="button" class="hbtb" data-plus aria-haspopup="true" aria-expanded="false" title="Crear" aria-label="Crear">${I(IC.plus, 18, 2.2)}</button><div class="xpopm right" id="plusM" hidden>${actions().slice(0, 5).map((a, i) => `<button type="button" class="xpopb" data-pa="${i}">${esc(a[0])}</button>`).join("")}</div></div></div>`;
   };
   window.tkShellBind = function (r) {
     const app = appOf(r.view); if (app && app[0] !== "inicio") lsSet("tk-lastapp", app[0]);
@@ -270,7 +269,7 @@
     if (pb) { pb.onclick = e => { e.stopPropagation(); pm.hidden = !pm.hidden; pb.setAttribute("aria-expanded", String(!pm.hidden)); }; pm.onclick = e => { const a = e.target.closest("[data-pa]"); if (a) { pm.hidden = true; actions()[+a.dataset.pa][2](); } }; document.addEventListener("click", function off() { if (!document.body.contains(pm)) return document.removeEventListener("click", off); pm.hidden = true; pb.setAttribute("aria-expanded", "false"); }); }
     $$("[data-style-open]").forEach(b => b.onclick = stylePanel);
     const g = $("[data-guide]"); if (g) g.onclick = guidePop;
-    const sc = $(".xsubtabs [aria-current]"); if (sc && sc.scrollIntoView) sc.parentNode.scrollLeft = sc.offsetLeft - 16;
+    const sc = $(".pgtabs [aria-current]"); if (sc) sc.parentNode.scrollLeft = sc.offsetLeft - 40;
   };
   if (!window.__tkKeys) {
     window.__tkKeys = true;
