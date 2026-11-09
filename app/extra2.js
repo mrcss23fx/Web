@@ -193,12 +193,37 @@
     }
     return ["", ""];
   }
-  function tile(k, D) {
-    const [name, desc, cta] = HT[k], [body, foot] = tBody(k, D), soon = !cta;
-    return `<article class="tc t-${k} ${soon ? "soon" : ""}" ${soon ? "" : `data-go="${k}" tabindex="0" role="link" aria-label="${esc(name)}: ${esc(desc)}"`}>
-      <header class="tc-h"><span class="tc-ic">${ico(k, 20)}</span><span class="tc-ht"><b>${esc(name)}</b><small>${esc(desc)}</small></span>${soon ? "" : `<a class="tc-go" href="#${k}" aria-label="${esc(cta)}" title="${esc(cta)}" data-stop tabindex="-1">${I(ARW, 16, 2)}</a>`}</header>
-      <div class="tc-b">${body}</div>
-      <footer class="tc-f"><span>${foot}</span>${soon ? "" : `<span class="tc-fa">${esc(cta)} ${I(ARW, 14, 2)}</span>`}</footer></article>`;
+  /* portada sencilla: tres grupos de cinco cuadros, cada uno con nombre, para qué sirve y un solo dato */
+  const HSIMPLE = [
+    ["Operar", ["hoy", "analizar", "backtest", "noticias", "plan"]],
+    ["Revisar", ["rendimiento", "progreso", "historial", "calendario", "informe"]],
+    ["Tu espacio", ["diario", "emociones", "asistente", "cuentas", "finanzas"]]
+  ];
+  const HDESC = {
+    hoy: "Tu sesión de hoy y tus normas", analizar: "El gráfico para analizar y operar", backtest: "Practica con el mercado real, vela a vela", noticias: "Noticias que mueven el mercado", plan: "Tu horario, límites y normas",
+    rendimiento: "Tus números en R", progreso: "Cuánto cumples tu plan", historial: "Todas tus operaciones", calendario: "Tu resultado de cada día", informe: "El resumen de un día",
+    diario: "Escribe antes y después de operar", emociones: "Cómo te sientes al operar", asistente: "Pregunta por tus números", cuentas: "Demo, fondeo y capital propio", finanzas: "Lo que pagas y cobras"
+  };
+  function fact(k, D) {
+    const p = D.p, mx = p.maxTrades || 3;
+    switch (k) {
+      case "hoy": return D.st.n ? `${fmtR(D.st.tot)} · ${D.today.length} de ${mx} operaciones` : `${D.today.length} de ${mx} operaciones`;
+      case "analizar": { const sym = (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD"; return esc(sym); }
+      case "backtest": return D.sess[0] ? "Última: " + esc(D.sess[0].name) : "Crea tu primera sesión";
+      case "noticias": return D.nextHigh ? `Próxima fuerte: ${dayKey(D.nextHigh.ts) === todayKey() ? "hoy" : new Date(D.nextHigh.ts).toLocaleDateString("es-ES", { weekday: "long" })} ${hhmm(D.nextHigh.ts)}` : S.news ? "Sin noticias fuertes pendientes" : "Cargando…";
+      case "plan": return `${esc(p.start)}–${esc(p.end)} · máx. ${mx} operaciones`;
+      case "rendimiento": return D.s90.n ? fmtR(D.s90.tot) + " en 90 días" : "Aún sin operaciones";
+      case "progreso": return D.C90.length ? Math.round(D.good / D.C90.length * 100) + " % dentro del plan" : "Aún sin operaciones";
+      case "historial": return S.allTrades.length + (S.allTrades.length === 1 ? " operación" : " operaciones");
+      case "calendario": { const w = closed(S.trades.filter(t => new Date(t.open_time) >= Date.now() - 7 * 864e5)), st = tradeStats(w); return st.n ? fmtR(st.tot) + " en 7 días" : "Sin operaciones esta semana"; }
+      case "informe": return D.st.n ? "Hoy: " + fmtR(D.st.tot) : "Hoy aún sin operaciones";
+      case "diario": return D.pages.length ? D.pages.length + (D.pages.length === 1 ? " página" : " páginas") : "Empieza con una plantilla";
+      case "emociones": { if (!healthOk()) return "Desactivado · actívalo en Mi plan"; const fe = {}; S.trades.forEach(t => { const f = (t.review || {}).feel; if (f) fe[f] = (fe[f] || 0) + 1; }); const top = Object.entries(fe).sort((x, y) => y[1] - x[1])[0]; return top ? "Más frecuente: " + esc(top[0]) : "Sin emociones anotadas"; }
+      case "asistente": return "Responde con tus datos";
+      case "cuentas": { const n = (S.accts || []).filter(a => a.status !== "archivada").length; return n + (n === 1 ? " cuenta" : " cuentas"); }
+      case "finanzas": return inSession(p) ? "Se abre al terminar tu horario" : "Cobros y gastos de fondeo";
+    }
+    return "";
   }
   V.inicio = {
     view() {
@@ -207,27 +232,12 @@
       if (!S.btLoaded && BT()) BT().loadSessions().then(again);
       if (!S.pagesLoaded && DI()) DI().loadPages().then(again);
       const D = hData(), first = esc((S.name || "").split(" ")[0] || "trader");
-      const l2 = D.phase === "antes" ? `tu sesión empieza a las ${esc(D.p.start)}.` : D.phase === "en" ? "opera tu plan con calma." : D.today.length ? "buen trabajo hoy." : "que tengas un buen día.";
-      return `<div class="hp">
-        <div class="hp-top"><div><h1 class="hp-hi">${greet()}, ${first}, <span>${l2}</span></h1>
-          <div class="hp-meta"><span>${I(IC.cal, 15)} ${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))}</span><span>${I(IC.clock, 15)} ${D.phase === "en" ? "En tu horario" : D.phase === "antes" ? "Antes de tu horario" : "Fuera de horario"} · ${esc(D.p.start)}–${esc(D.p.end)}</span><span>${I('<path d="M3 14l4-5 4 3 6-8"/>', 15)} ${D.st.n ? fmtR(D.st.tot) + " hoy" : "Sin operaciones hoy"}</span></div></div>
-          <div class="xpop"><button type="button" class="btn hp-add" data-hadd aria-haspopup="true" aria-expanded="false">${I(IC.plus, 17, 2.2)} Crear</button><div class="xpopm right" id="hAddM" hidden>${actions().slice(0, 6).map((a, i) => `<button type="button" class="xpopb" data-pa="${i}">${esc(a[0])}</button>`).join("")}</div></div></div>
-        ${HGROUPS.map(([g, t, sub, ks]) => `<section class="hp-g g-${g}" aria-label="${esc(t)}"><div class="hp-gh"><h2>${esc(t)}</h2>${sub ? `<span>${esc(sub)}</span>` : ""}</div><div class="hp-grid">${ks.map(k => tile(k, D)).join("")}</div></section>`).join("")}
+      return `<div class="hs">
+        <div class="hs-hi"><h1>${greet()}, ${first}</h1><p>¿Qué quieres hacer hoy?</p></div>
+        ${HSIMPLE.map(([g, ks]) => `<section class="hs-g" aria-label="${esc(g)}"><h2>${esc(g)}</h2><div class="hs-grid">${ks.map((k, i) => `<a class="ts" href="#${k}" style="animation-delay:${(i * .03).toFixed(2)}s"><span class="ts-top"><span class="ts-ic">${ico(k, 22)}</span><span class="ts-go" aria-hidden="true">${I(ARW, 15, 2)}</span></span><b>${esc(HT[k][0])}</b><small>${esc(HDESC[k])}</small><span class="ts-f">${fact(k, D)}</span></a>`).join("")}</div></section>`).join("")}
       </div>`;
     },
-    bind() {
-      $$("[data-go]").forEach(el => {
-        el.addEventListener("click", e => { if (e.target.closest("[data-stop]")) return; location.hash = "#" + el.dataset.go; });
-        el.addEventListener("keydown", e => { if (e.target === el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); location.hash = "#" + el.dataset.go; } });
-      });
-      $$("[data-tfs]").forEach(b => b.onclick = () => { const cur = lsGet("tk-tf", "5m"), i = Math.max(0, TFQ.indexOf(cur)), n = TFQ[Math.max(0, Math.min(TFQ.length - 1, i + +b.dataset.tfs))]; lsSet("tk-tf", n); re(); });
-      $$("[data-btcyc]").forEach(b => b.onclick = () => { const n = (S.bts || []).length; S.hbBt = ((S.hbBt || 0) + +b.dataset.btcyc + n) % n; re(); });
-      $$("[data-btplay]").forEach(b => b.onclick = () => { const x = (S.bts || []).find(y => y.id === b.dataset.btplay); if (x && BT()) BT().run(x); });
-      $$("[data-btnew]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer(), 60); });
-      $$("[data-ask]").forEach(a => a.onclick = () => { S.asPrefill = a.dataset.ask; });
-      const ab = $("[data-hadd]"), am = $("#hAddM");
-      if (ab) { ab.onclick = e => { e.stopPropagation(); am.hidden = !am.hidden; ab.setAttribute("aria-expanded", String(!am.hidden)); }; am.onclick = e => { const a = e.target.closest("[data-pa]"); if (a) { am.hidden = true; actions()[+a.dataset.pa][2](); } }; document.addEventListener("click", function off() { if (!document.body.contains(am)) return document.removeEventListener("click", off); am.hidden = true; ab.setAttribute("aria-expanded", "false"); }); }
-    }
+    bind() {}
   };
 
   /* ---------- buscador (Inicio y Ctrl/⌘ K) ---------- */

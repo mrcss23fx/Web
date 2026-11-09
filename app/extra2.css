@@ -502,3 +502,25 @@ button.calc{cursor:pointer}button.calc:hover{border-color:var(--cobalto)}
 .tc-chart .xchart-ax{color:var(--hb-ink2)}
 .tc-f>span:first-child{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.35}
 @media (max-width:619px){.tc-go{display:none}}
+
+/* ======================= PORTADA (v3): sencilla ======================= */
+.hs{display:flex;flex-direction:column;gap:34px;padding:34px 0 20px;max-width:1440px;margin:0 auto;width:100%}
+.hs-hi h1{font-size:clamp(28px,3vw,40px);font-weight:650;letter-spacing:-.025em;line-height:1.15;margin:0;color:var(--hb-ink)}
+.hs-hi p{margin:8px 0 0;font-size:16px;color:var(--hb-ink2)}
+.hs-g{display:flex;flex-direction:column;gap:14px}
+.hs-g h2{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--hb-ink2);margin:0}
+.hs-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.ts{display:flex;flex-direction:column;gap:6px;min-height:178px;padding:18px;border-radius:20px;background:var(--hb-t);border:1px solid var(--hb-line);box-shadow:var(--hb-sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--hb-ink);text-decoration:none;transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .2s,box-shadow .2s;animation:hbIn .4s ease both;min-width:0}
+.ts:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--cobalto) 55%,var(--hb-line));box-shadow:0 18px 40px -22px color-mix(in srgb,var(--cobalto) 60%,transparent),var(--hb-sh)}
+.ts:focus-visible{outline:2px solid var(--cobalto);outline-offset:3px}
+.ts-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.ts-ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;color:var(--cobalto);background:color-mix(in srgb,var(--cobalto) 14%,transparent);border:1px solid color-mix(in srgb,var(--cobalto) 22%,transparent)}
+.ts-go{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--hb-ink2);transition:background .2s,color .2s}
+.ts:hover .ts-go{background:var(--cobalto);color:#fff}
+.ts b{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.ts small{font-size:13px;line-height:1.4;color:var(--hb-ink2)}
+.ts-f{margin-top:auto;padding-top:12px;font-size:12.5px;font-weight:600;color:var(--hb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion:reduce){.ts{animation:none;transition:none}.ts:hover{transform:none}}
+@media (max-width:1279px){.hs-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.hs{gap:26px;padding-top:20px}.hs-grid{grid-template-columns:1fr 1fr;gap:12px}.ts{min-height:150px;padding:14px;border-radius:18px}.ts-ic{width:38px;height:38px}.ts-top{margin-bottom:6px}.ts b{font-size:15.5px}.ts small{font-size:12.5px}.ts-f{font-size:12px;white-space:normal}}
+@media (max-width:1279px){.hs-grid .ts:last-child{grid-column:span 2}}
