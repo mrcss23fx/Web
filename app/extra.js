@@ -37,11 +37,9 @@
   const healthOk = () => S.consents && S.consents.health === true;
 
   /* ======================= HISTORIAL ======================= */
-  const HCOLS = [
-    ["open_time", "Fecha"], ["symbol", "Símbolo"], ["account", "Cuenta"], ["side", "Dirección"], ["status", "Estado"], ["r", "Resultado"],
-    ["risk_pct", "Riesgo"], ["open_price", "Entrada"], ["close_price", "Salida"], ["sl", "Stop"], ["tp", "Objetivo"], ["dur", "Duración"], ["plan", "Plan"], ["feel", "Emoción"]
-  ];
-  function histState() { return S.hist || (S.hist = { q: "", from: "", to: "", side: "", st: "", plan: "", sort: "open_time", dir: -1, page: 0, per: lsGet("tk-hist-per", 25) }); }
+  const HGROUPS = [["Información", ["open_time", "symbol", "account", "side", "status"]], ["Rendimiento", ["r", "risk_pct", "plan", "feel"]], ["Precios", ["open_price", "close_price", "sl", "tp"]], ["Fechas", ["close_time", "dur"]]];
+  const HLABEL = { open_time: "Fecha de entrada", symbol: "Símbolo", account: "Cuenta", side: "Dirección", status: "Estado", r: "Resultado", risk_pct: "Riesgo", plan: "Plan", feel: "Emoción", open_price: "Entrada", close_price: "Salida", sl: "Stop", tp: "Objetivo", close_time: "Fecha de salida", dur: "Duración" };
+  function histState() { return S.hist || (S.hist = { q: "", from: "", to: "", side: "", st: "", plan: "", sort: "open_time", dir: -1, page: 0, per: lsGet("tk-hist-per", 25), sel: new Set(), hide: lsGet("tk-hcols-off", []) }); }
   function histRows() {
     const h = histState(), q = norm(h.q);
     let L = S.trades.filter(t => t.open_time);
@@ -51,7 +49,7 @@
     if (h.side) L = L.filter(t => t.side === h.side);
     if (h.st) L = L.filter(t => (t.status === "closed" ? "closed" : "open") === h.st);
     if (h.plan) L = L.filter(t => t.status === "closed" && (evaluate(t).good ? "in" : "out") === h.plan);
-    const key = t => h.sort === "dur" ? (t.close_time ? new Date(t.close_time) - new Date(t.open_time) : -1) : h.sort === "plan" ? (t.status === "closed" ? (evaluate(t).good ? 1 : 0) : -1) : h.sort === "feel" ? ((t.review || {}).feel || "") : h.sort === "open_time" ? new Date(t.open_time).getTime() : t[h.sort];
+    const key = t => h.sort === "dur" ? (t.close_time ? new Date(t.close_time) - new Date(t.open_time) : -1) : h.sort === "plan" ? (t.status === "closed" ? (evaluate(t).good ? 1 : 0) : -1) : h.sort === "feel" ? ((t.review || {}).feel || "") : h.sort === "open_time" || h.sort === "close_time" ? (t[h.sort] ? new Date(t[h.sort]).getTime() : null) : t[h.sort];
     L.sort((a, b) => { const x = key(a), y = key(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * h.dir; });
     return L;
   }
@@ -62,15 +60,17 @@
       ${statCard("Acierto", st.win == null ? "—" : num(st.win, 0) + " %", st.n ? closed(L).filter(t => t.r > 0).length + " de " + st.n : "", ring(st.win))}
       ${statCard("Ganancia / pérdida media", wl, st.avgW != null ? fmtR(st.avgW) + " / " + (st.avgL != null ? fmtR(st.avgL) : "—") : "", "", "Cuánto ganas de media en las ganadoras frente a lo que pierdes en las perdedoras")}</div>`;
   }
+  const visCols = () => { const h = histState(), health = healthOk(); return HGROUPS.map(([g, ks]) => [g, ks.filter(k => !h.hide.includes(k) && (k !== "feel" || health))]).filter(g => g[1].length); };
   function histTable(L) {
     const h = histState(), pages = Math.max(1, Math.ceil(L.length / h.per)); if (h.page >= pages) h.page = pages - 1;
-    const rows = L.slice(h.page * h.per, (h.page + 1) * h.per), health = healthOk();
-    const cols = HCOLS.filter(c => c[0] !== "feel" || health);
+    const rows = L.slice(h.page * h.per, (h.page + 1) * h.per), G = visCols(), cols = G.flatMap(g => g[1]);
+    const allSel = rows.length && rows.every(t => h.sel.has(t.id));
     const cell = (t, k) => {
       const ev = t.status === "closed" ? evaluate(t) : null;
       switch (k) {
         case "open_time": return `<td class="mono">${fmtDT(t.open_time)}</td>`;
-        case "symbol": return `<td><b>${esc(t.symbol)}</b></td>`;
+        case "close_time": return `<td class="mono">${t.close_time ? fmtDT(t.close_time) : "—"}</td>`;
+        case "symbol": return `<td><b>${esc(t.symbol)}</b>${t.source === "manual" ? ` <span class="xtag" title="Añadida a mano">a mano</span>` : ""}</td>`;
         case "account": return `<td class="muted">${esc(acctLabel(t.account))}</td>`;
         case "side": return `<td><span class="xside ${t.side}">${t.side === "buy" ? "Compra" : "Venta"}</span></td>`;
         case "status": return `<td>${t.status === "closed" ? "Cerrada" : `<span class="xtag">Abierta</span>`}</td>`;
@@ -83,17 +83,108 @@
       }
       return "<td></td>";
     };
-    return `<div class="xtablewrap"><table class="xtable"><thead><tr>${cols.map(([k, l]) => `<th><button type="button" data-hsort="${k}" class="${h.sort === k ? "on" : ""}">${l}${h.sort === k ? (h.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`).join("")}</tr></thead>
-      <tbody>${rows.length ? rows.map(t => `<tr data-hop="${esc(t.id)}" tabindex="0">${cols.map(([k]) => cell(t, k)).join("")}</tr>`).join("") : `<tr><td colspan="${cols.length}">${empty(S.trades.length ? "Ninguna operación con estos filtros" : "Aún no hay operaciones", S.trades.length ? "Prueba a quitar algún filtro." : "Conecta MetaTrader 5 en Mi plan y aparecerán solas.", S.trades.length ? "" : `<a class="btn" href="#plan" style="height:38px">Conectar MT5</a>`)}</td></tr>`}</tbody></table></div>
+    return `<div class="xtablewrap"><table class="xtable htable"><thead>
+      <tr class="xgrp"><th></th>${G.map(([g, ks]) => `<th colspan="${ks.length}"><span>${g}</span></th>`).join("")}</tr>
+      <tr><th class="xcb"><input type="checkbox" data-hselall ${allSel ? "checked" : ""} aria-label="Seleccionar las de esta página"></th>${cols.map(k => `<th><button type="button" data-hsort="${k}" class="${h.sort === k ? "on" : ""}">${HLABEL[k]}${h.sort === k ? (h.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`).join("")}</tr></thead>
+      <tbody>${rows.length ? rows.map(t => `<tr data-hop="${esc(t.id)}" tabindex="0" class="${h.sel.has(t.id) ? "sel" : ""}"><td class="xcb"><input type="checkbox" data-hsel="${esc(t.id)}" ${h.sel.has(t.id) ? "checked" : ""} aria-label="Seleccionar"></td>${cols.map(k => cell(t, k)).join("")}</tr>`).join("") : `<tr><td colspan="${cols.length + 1}">${empty(S.trades.length ? "Ninguna operación con estos filtros" : "Aún no hay operaciones", S.trades.length ? "Prueba a quitar algún filtro." : "Conecta MetaTrader 5 en Mi plan o añade una operación a mano.", S.trades.length ? "" : `<div class="row" style="gap:8px;justify-content:center"><a class="btn" href="#plan" style="height:38px">Conectar MT5</a><button type="button" class="btn2" data-hadd style="height:38px">Añadir operación</button></div>`)}</td></tr>`}</tbody></table></div>
       <div class="xfoot"><span class="muted small">Mostrando ${L.length ? h.page * h.per + 1 : 0}–${Math.min(L.length, (h.page + 1) * h.per)} de ${L.length} operaciones</span>
         <div class="xpager"><button type="button" class="xpb" data-hpage="-1" ${h.page ? "" : "disabled"} aria-label="Página anterior">${I(IC.left, 16, 2)}</button><span class="xpn">${h.page + 1} / ${pages}</span><button type="button" class="xpb" data-hpage="1" ${h.page < pages - 1 ? "" : "disabled"} aria-label="Página siguiente">${I(IC.right, 16, 2)}</button></div>
         <label class="small muted">Filas <select class="xsel" id="hPer">${[10, 25, 50, 100].map(n => `<option ${n === h.per ? "selected" : ""}>${n}</option>`).join("")}</select></label></div>`;
+  }
+  function selBar() {
+    const h = histState(), n = h.sel.size; if (!n) return "";
+    const man = S.allTrades.filter(t => h.sel.has(t.id) && t.source === "manual").length;
+    return `<div class="xselbar"><b>${n} seleccionada${n > 1 ? "s" : ""}</b><button type="button" class="btn2" data-hselcsv style="height:32px">${I(IC.down, 15)} Exportar</button>${man ? `<button type="button" class="btn2" data-hseldel style="height:32px">${I(IC.trash, 15)} Borrar ${man} añadida${man > 1 ? "s" : ""} a mano</button>` : ""}<button type="button" class="link small" data-hselclear>Quitar selección</button></div>`;
+  }
+  const csvOf = L => {
+    const q = v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+    const head = ["Fecha entrada", "Fecha salida", "Símbolo", "Cuenta", "Dirección", "Estado", "R", "Riesgo %", "Entrada", "Salida", "Stop", "Objetivo", "Dentro del plan"].concat(healthOk() ? ["Emoción", "Intensidad"] : []);
+    const rows = L.map(t => [t.open_time, t.close_time, t.symbol, acctLabel(t.account), t.side === "buy" ? "Compra" : "Venta", t.status === "closed" ? "Cerrada" : "Abierta", t.r, t.risk_pct, t.open_price, t.close_price, t.sl, t.tp, t.status === "closed" ? (evaluate(t).good ? "Sí" : "No") : ""].concat(healthOk() ? [(t.review || {}).feel, (t.review || {}).int] : []));
+    return "﻿" + [head].concat(rows).map(r => r.map(q).join(";")).join("\n");
+  };
+  const nOr = v => { if (v == null) return null; const x = parseFloat(String(v).trim().replace(/\s/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".")); return isFinite(x) ? x : null; };
+  const calcR = (side, e, sl, x) => { if (e == null || sl == null || x == null || e === sl) return null; const risk = Math.abs(e - sl), mv = side === "buy" ? x - e : e - x; return Math.round(mv / risk * 100) / 100; };
+  async function insertManual(rows) {
+    const recs = rows.map(r => Object.assign({ user_id: S.user.id, id: "man:" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), source: "manual", review: {} }, r));
+    for (let i = 0; i < recs.length; i += 200) { const { error } = await sb.from("trades").insert(recs.slice(i, i + 200)); if (error) return { error }; }
+    S.allTrades = recs.concat(S.allTrades); window.TKAPP.applyAcct(); return { n: recs.length };
+  }
+  /* ventana «Añadir operación» */
+  function addTradeModal() {
+    const accts = (S.accts || []).filter(a => a.number), now = new Date(); now.setSeconds(0, 0);
+    const loc = d => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+    const box = document.createElement("div"); box.className = "xmodal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Añadir operación");
+    box.innerHTML = `<form class="xmodal-card" style="max-width:620px" id="mtF">
+      <div class="xmodal-h"><b>Añadir operación</b><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
+      <div class="xmodal-b stack" style="gap:12px">
+        <div class="xseg" role="group" aria-label="Dirección"><button type="button" data-side="buy" aria-pressed="true">Compra</button><button type="button" data-side="sell" aria-pressed="false">Venta</button></div>
+        <div class="fgrid"><label class="field"><span>Símbolo</span><input class="input" name="symbol" required maxlength="32" placeholder="EURUSD" list="mtSyms" autocomplete="off"></label>
+          <label class="field"><span>Cuenta</span><select class="input" name="account"><option value="">Sin cuenta</option>${accts.map(a => `<option value="${esc(a.number)}" ${selAcct() && selAcct().a.number === a.number ? "selected" : ""}>${esc(acctName(a))}</option>`).join("")}</select></label>
+          <label class="field"><span>Riesgo (%)</span><input class="input" name="risk_pct" inputmode="decimal" value="${S.plan && S.plan.riskPct != null ? String(S.plan.riskPct).replace(".", ",") : ""}"></label></div>
+        <datalist id="mtSyms">${symbolsInfo().map(x => `<option value="${esc(x.s)}">`).join("")}${MARKETS.flatMap(g => g[1]).map(s => `<option value="${esc(s)}">`).join("")}</datalist>
+        <div class="fgrid"><label class="field"><span>Entrada (fecha y hora)</span><input class="input" type="datetime-local" name="open_time" required value="${loc(now)}"></label><label class="field"><span>Salida (vacía si sigue abierta)</span><input class="input" type="datetime-local" name="close_time"></label></div>
+        <div class="fgrid f4"><label class="field"><span>Precio de entrada</span><input class="input" name="open_price" inputmode="decimal"></label><label class="field"><span>Stop</span><input class="input" name="sl" inputmode="decimal"></label><label class="field"><span>Objetivo</span><input class="input" name="tp" inputmode="decimal"></label><label class="field"><span>Precio de salida</span><input class="input" name="close_price" inputmode="decimal"></label></div>
+        <div class="fgrid"><label class="field"><span>Resultado en R</span><input class="input" name="r" inputmode="decimal" placeholder="Se calcula con los precios"></label><label class="field" style="grid-column:span 2"><span>Por qué entraste</span><input class="input" name="why" maxlength="300"></label></div>
+        <div class="small muted" id="mtHint">Pon entrada, stop y salida y calculo el resultado en R.</div>
+      </div>
+      <div class="xmodal-f"><button type="button" class="btn2" data-x style="height:40px">Cancelar</button><button type="submit" class="btn" style="height:40px">Guardar operación</button></div></form>`;
+    let side = "buy";
+    const f = box.querySelector("form"), close = () => { box.remove(); document.removeEventListener("keydown", ek); }, ek = e => { if (e.key === "Escape") close(); };
+    const v = n => f.elements[n].value.trim();
+    const upd = () => { const r = calcR(side, nOr(v("open_price")), nOr(v("sl")), nOr(v("close_price"))); if (r != null) { f.elements.r.placeholder = String(r).replace(".", ",") + " R (calculado)"; } else f.elements.r.placeholder = "Se calcula con los precios"; };
+    f.addEventListener("input", upd);
+    box.addEventListener("click", e => { if (e.target === box || e.target.closest("[data-x]")) return close(); const b = e.target.closest("[data-side]"); if (b) { side = b.dataset.side; box.querySelectorAll("[data-side]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); upd(); } });
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const ot = v("open_time"), ct = v("close_time"), closedT = !!ct;
+      if (ct && new Date(ct) < new Date(ot)) { toast("La salida tiene que ser después de la entrada"); return; }
+      let r = nOr(v("r")); if (r == null) r = calcR(side, nOr(v("open_price")), nOr(v("sl")), nOr(v("close_price")));
+      if (closedT && r == null) { toast("Pon el resultado en R o los precios de entrada, stop y salida"); return; }
+      const rec = { symbol: v("symbol").toUpperCase(), side, account: v("account") || null, open_time: new Date(ot).toISOString(), close_time: closedT ? new Date(ct).toISOString() : null, open_price: nOr(v("open_price")), close_price: nOr(v("close_price")), sl: nOr(v("sl")), tp: nOr(v("tp")), risk_pct: nOr(v("risk_pct")), r: closedT ? r : null, status: closedT ? "closed" : "open", review: v("why") ? { why: v("why") } : {} };
+      const btn = f.querySelector("[type=submit]"); btn.disabled = true;
+      const res = await insertManual([rec]); btn.disabled = false;
+      if (res.error) { toast("No se pudo guardar: " + res.error.message); return; }
+      close(); toast("Operación añadida"); S.lastView = null; render();
+    };
+    document.addEventListener("keydown", ek); document.body.appendChild(box); setTimeout(() => f.elements.symbol.focus(), 30);
+  }
+  /* importar CSV (el de Tickora o uno genérico con columnas parecidas) */
+  function parseCsv(text) {
+    text = text.replace(/^﻿/, ""); const first = text.split(/\r?\n/)[0] || "", sep = (first.match(/;/g) || []).length >= (first.match(/,/g) || []).length ? ";" : ",";
+    const rows = []; let row = [], cur = "", q = false;
+    for (let i = 0; i < text.length; i++) { const c = text[i]; if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; } else if (c === '"') q = true; else if (c === sep) { row.push(cur); cur = ""; } else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cur); rows.push(row); row = []; cur = ""; } else cur += c; }
+    if (cur || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(r => r.some(x => x.trim()));
+  }
+  function importCsv() {
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".csv,text/csv";
+    inp.onchange = async () => {
+      const fl = inp.files[0]; if (!fl) return; const rows = parseCsv(await fl.text()); if (rows.length < 2) { toast("El archivo está vacío"); return; }
+      const H = rows[0].map(h => norm(h).replace(/[^a-z0-9%]/g, ""));
+      const col = (...names) => H.findIndex(h => names.some(n => h === n || h.startsWith(n)));
+      const ix = { ot: col("fechaentrada", "opentime", "fecha", "date", "entrytime"), ct: col("fechasalida", "closetime", "exittime"), sym: col("simbolo", "symbol", "instrumento", "mercado"), side: col("direccion", "side", "tipo", "type"), r: col("r", "resultador", "rmultiple"), risk: col("riesgo", "risk"), e: col("entrada", "openprice", "entry", "precioentrada"), x: col("salida", "closeprice", "exit", "preciosalida"), sl: col("stop", "sl", "stoploss"), tp: col("objetivo", "tp", "takeprofit") };
+      if (ix.ot < 0 || ix.sym < 0 || ix.side < 0) { toast("No encuentro las columnas de fecha, símbolo y dirección"); return; }
+      const out = [];
+      rows.slice(1).forEach(c => {
+        const g = i => i >= 0 ? (c[i] || "").trim() : "", d = new Date(g(ix.ot)); if (isNaN(d)) return;
+        const sd = /^(c|b|long|compra)/i.test(g(ix.side)) ? "buy" : /^(v|s|short|venta)/i.test(g(ix.side)) ? "sell" : null; if (!sd || !g(ix.sym)) return;
+        const ct = g(ix.ct) ? new Date(g(ix.ct)) : null, e = nOr(g(ix.e)), sl = nOr(g(ix.sl)), x = nOr(g(ix.x)); let r = nOr(g(ix.r)); if (r == null) r = calcR(sd, e, sl, x);
+        const cl = r != null && (ct ? !isNaN(ct) : true);
+        out.push({ symbol: g(ix.sym).toUpperCase().slice(0, 32), side: sd, open_time: d.toISOString(), close_time: cl ? (ct && !isNaN(ct) ? ct : d).toISOString() : null, open_price: e, close_price: x, sl, tp: nOr(g(ix.tp)), risk_pct: nOr(String(g(ix.risk)).replace("%", "")), r: cl ? r : null, status: cl ? "closed" : "open", account: selAcct() && selAcct().a.number || null });
+      });
+      if (!out.length) { toast("No he encontrado operaciones válidas en el archivo"); return; }
+      if (!confirm(`He encontrado ${out.length} operaciones. Se añadirán como «a mano»${selAcct() ? " a " + acctName(selAcct().a) : ""}. ¿Seguir?`)) return;
+      const res = await insertManual(out); if (res.error) { toast("No se pudo importar: " + res.error.message); return; }
+      toast(res.n + " operaciones importadas"); S.lastView = null; render();
+    };
+    inp.click();
   }
   V.historial = {
     view() {
       const h = histState(), L = histRows();
       return `<div class="stack" style="gap:18px">
-        <div class="xhead"><div><h1>Historial</h1><div class="small muted">Todas tus operaciones${selAcct() ? " de " + esc(acctName(selAcct().a)) : ""}, en una tabla que puedes filtrar y ordenar</div></div><button type="button" class="btn2" id="hCsv" style="height:38px">${I(IC.down, 16)} Exportar CSV</button></div>
+        <div class="xhead"><div><h1>Operaciones</h1><div class="small muted">Todas tus operaciones${selAcct() ? " de " + esc(acctName(selAcct().a)) : ""}, en una tabla que puedes filtrar y ordenar</div></div>
+          <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn2" id="hImp" style="height:38px">${I('<path d="M10 17V7M6 11l4-4 4 4M4 3h12"/>', 16)} Importar CSV</button><button type="button" class="btn2" id="hCsv" style="height:38px">${I(IC.down, 16)} Exportar CSV</button><button type="button" class="btn" data-hadd style="height:38px">${I(IC.plus, 16, 2)} Operación</button></div></div>
         <div id="hCards">${histCards(L)}</div>
         <div class="card xcard">
           <div class="xtools">
@@ -104,34 +195,49 @@
               <select class="xsel" id="hSide" aria-label="Dirección"><option value="">Compras y ventas</option><option value="buy" ${h.side === "buy" ? "selected" : ""}>Solo compras</option><option value="sell" ${h.side === "sell" ? "selected" : ""}>Solo ventas</option></select>
               <select class="xsel" id="hSt" aria-label="Estado"><option value="">Todas</option><option value="closed" ${h.st === "closed" ? "selected" : ""}>Cerradas</option><option value="open" ${h.st === "open" ? "selected" : ""}>Abiertas</option></select>
               <select class="xsel" id="hPlan" aria-label="Plan"><option value="">Con y sin plan</option><option value="in" ${h.plan === "in" ? "selected" : ""}>Dentro del plan</option><option value="out" ${h.plan === "out" ? "selected" : ""}>Fuera del plan</option></select>
+              <div class="xpop"><button type="button" class="xib" id="hColsB" aria-haspopup="true" aria-expanded="false" title="Columnas" aria-label="Elegir columnas">${I('<rect x="3" y="4" width="14" height="12" rx="2"/><path d="M8 4v12M12.5 4v12"/>', 18)}</button>
+                <div class="xpopm" id="hCols" hidden>${HGROUPS.map(([g, ks]) => `<div class="xpoph">${g}</div>${ks.filter(k => k !== "feel" || healthOk()).map(k => `<label class="xpopi"><input type="checkbox" data-hcol="${k}" ${h.hide.includes(k) ? "" : "checked"}> ${HLABEL[k]}</label>`).join("")}`).join("")}</div></div>
               <button type="button" class="link small" id="hReset">Quitar filtros</button>
             </div>
           </div>
+          <div id="hSel">${selBar()}</div>
           <div id="hTable">${histTable(L)}</div>
         </div></div>`;
     },
     bind() {
       const h = histState();
-      const paint = () => { const L = histRows(); $("#hCards").innerHTML = histCards(L); $("#hTable").innerHTML = histTable(L); bindTable(); };
+      const paint = () => { const L = histRows(); $("#hCards").innerHTML = histCards(L); $("#hTable").innerHTML = histTable(L); $("#hSel").innerHTML = selBar(); bindTable(); };
       const bindTable = () => {
         $$("[data-hsort]").forEach(b => b.onclick = () => { const k = b.dataset.hsort; if (h.sort === k) h.dir = -h.dir; else { h.sort = k; h.dir = k === "symbol" || k === "account" ? 1 : -1; } paint(); });
         $$("[data-hpage]").forEach(b => b.onclick = () => { h.page += +b.dataset.hpage; paint(); });
-        $$("[data-hop]").forEach(tr => { tr.onclick = () => location.hash = "#op/" + encodeURIComponent(tr.dataset.hop); tr.onkeydown = e => { if (e.key === "Enter") tr.click(); }; });
+        $$("[data-hop]").forEach(tr => { tr.onclick = e => { if (e.target.closest(".xcb")) return; location.hash = "#op/" + encodeURIComponent(tr.dataset.hop); }; tr.onkeydown = e => { if (e.key === "Enter") tr.click(); }; });
+        $$("[data-hsel]").forEach(c => c.onchange = () => { c.checked ? h.sel.add(c.dataset.hsel) : h.sel.delete(c.dataset.hsel); paint(); });
+        const all = $("[data-hselall]"); if (all) all.onchange = () => { const L = histRows().slice(h.page * h.per, (h.page + 1) * h.per); L.forEach(t => all.checked ? h.sel.add(t.id) : h.sel.delete(t.id)); paint(); };
         const per = $("#hPer"); if (per) per.onchange = () => { h.per = +per.value; h.page = 0; lsSet("tk-hist-per", h.per); paint(); };
+        $$("[data-hadd]").forEach(b => b.onclick = addTradeModal);
+        const sc = $("[data-hselcsv]"); if (sc) sc.onclick = () => download("tickora-operaciones-" + todayKey() + ".csv", csvOf(S.trades.filter(t => h.sel.has(t.id))));
+        const sx = $("[data-hselclear]"); if (sx) sx.onclick = () => { h.sel.clear(); paint(); };
+        const sd = $("[data-hseldel]"); if (sd) sd.onclick = async () => {
+          const ids = S.allTrades.filter(t => h.sel.has(t.id) && t.source === "manual").map(t => t.id);
+          if (!confirm(`¿Borrar ${ids.length} operación${ids.length > 1 ? "es" : ""} añadida${ids.length > 1 ? "s" : ""} a mano? No se puede deshacer.`)) return;
+          const { error } = await sb.from("trades").delete().in("id", ids).eq("source", "manual"); if (error) { toast("No se pudieron borrar"); return; }
+          S.allTrades = S.allTrades.filter(t => !ids.includes(t.id)); ids.forEach(i => h.sel.delete(i)); window.TKAPP.applyAcct(); toast("Borradas"); paint();
+        };
       };
       const on = (id, k) => { const x = $(id); x.oninput = x.onchange = () => { h[k] = x.value; h.page = 0; paint(); }; };
       on("#hQ", "q"); on("#hFrom", "from"); on("#hTo", "to"); on("#hSide", "side"); on("#hSt", "st"); on("#hPlan", "plan");
       $("#hReset").onclick = () => { Object.assign(h, { q: "", from: "", to: "", side: "", st: "", plan: "", page: 0 }); S.lastView = null; render(); };
-      $("#hCsv").onclick = () => {
-        const L = histRows(), q = v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
-        const head = ["Fecha entrada", "Fecha salida", "Símbolo", "Cuenta", "Dirección", "Estado", "R", "Riesgo %", "Entrada", "Salida", "Stop", "Objetivo", "Dentro del plan"].concat(healthOk() ? ["Emoción", "Intensidad"] : []);
-        const rows = L.map(t => [t.open_time, t.close_time, t.symbol, acctLabel(t.account), t.side === "buy" ? "Compra" : "Venta", t.status === "closed" ? "Cerrada" : "Abierta", t.r, t.risk_pct, t.open_price, t.close_price, t.sl, t.tp, t.status === "closed" ? (evaluate(t).good ? "Sí" : "No") : ""].concat(healthOk() ? [(t.review || {}).feel, (t.review || {}).int] : []));
-        download("tickora-historial-" + todayKey() + ".csv", "﻿" + [head].concat(rows).map(r => r.map(q).join(";")).join("\n"));
-      };
+      $("#hCsv").onclick = () => download("tickora-operaciones-" + todayKey() + ".csv", csvOf(histRows()));
+      $("#hImp").onclick = importCsv;
+      const cb = $("#hColsB"), cm = $("#hCols");
+      cb.onclick = e => { e.stopPropagation(); cm.hidden = !cm.hidden; cb.setAttribute("aria-expanded", String(!cm.hidden)); };
+      cm.onclick = e => e.stopPropagation();
+      document.addEventListener("click", function off() { if (!document.body.contains(cm)) return document.removeEventListener("click", off); cm.hidden = true; cb.setAttribute("aria-expanded", "false"); });
+      $$("[data-hcol]").forEach(c => c.onchange = () => { const k = c.dataset.hcol; h.hide = c.checked ? h.hide.filter(x => x !== k) : h.hide.concat([k]); if (visCols().flatMap(g => g[1]).length === 0) { h.hide = h.hide.filter(x => x !== k); c.checked = true; return; } lsSet("tk-hcols-off", h.hide); paint(); });
       bindTable();
     }
   };
-
+  window.tkAddTrade = addTradeModal;
   /* ======================= EMOCIONES ======================= */
   function emoStats(L) {
     const by = {};
@@ -143,44 +249,89 @@
     const mx = Math.max(0.5, ...E.map(e => Math.abs(e.avg))), sorted = E.slice().sort((a, b) => b.avg - a.avg);
     return `<div class="xbars" role="img" aria-label="Resultado medio por emoción">${sorted.map(e => { const w = Math.abs(e.avg) / mx * 50; return `<div class="xbar"><span class="xbar-l">${esc(e.f)}</span><div class="xbar-t"><span class="xbar-z"></span><i class="${e.avg < 0 ? "neg" : ""}" style="${e.avg < 0 ? `right:50%;width:${w}%` : `left:50%;width:${w}%`}"></i></div><span class="xbar-v mono">${fmtR(e.avg)}</span><span class="xbar-n muted">${e.n} op.</span></div>`; }).join("")}</div>`;
   }
+  /* registro de emociones sin operación (chequeos), guardado en docs «emo» */
+  const MOMENTS = [["antes", "Antes de operar"], ["durante", "Durante la sesión"], ["despues", "Después de operar"], ["fuera", "Fuera del mercado"]];
+  async function loadEmo() { if (S.emoLoaded) return; const { data, error } = await sb.from("docs").select("id,data").eq("col", "emo"); if (!error) { S.emoLog = (data || []).map(d => Object.assign({ id: d.id }, d.data)); S.emoLoaded = true; } }
+  function emoModal(preset) {
+    if (!healthOk()) { location.hash = "#emociones"; return; }
+    const d = { feel: preset || "", int: 3, when: "antes", note: "" };
+    const box = document.createElement("div"); box.className = "xmodal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Registrar emoción");
+    const paint = () => { box.innerHTML = `<div class="xmodal-card" style="max-width:560px">
+      <div class="xmodal-h"><b>Registrar emoción</b><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
+      <div class="xmodal-b stack" style="gap:14px">
+        <div class="field"><span>¿Cómo te sientes ahora?</span><div class="row" style="gap:6px;flex-wrap:wrap">${FEELS.map(f => `<button type="button" class="chip" data-ef="${esc(f)}" aria-pressed="${d.feel === f}">${esc(f)}</button>`).join("")}</div></div>
+        <div class="field"><span>Intensidad</span><div class="row" style="gap:6px">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="chipb" data-ei="${n}" aria-pressed="${d.int === n}" style="min-width:42px">${n}</button>`).join("")}<span class="small muted" style="margin-left:6px">${["", "muy suave", "suave", "media", "fuerte", "muy fuerte"][d.int]}</span></div></div>
+        <div class="field"><span>Momento</span><div class="xseg" role="group">${MOMENTS.map(([k, l]) => `<button type="button" data-ew="${k}" aria-pressed="${d.when === k}">${l}</button>`).join("")}</div></div>
+        <label class="field"><span>Nota (opcional)</span><textarea class="input" data-en rows="2" maxlength="400" placeholder="Qué lo ha provocado, qué vas a hacer…">${esc(d.note)}</textarea></label>
+      </div>
+      <div class="xmodal-f"><button type="button" class="btn2" data-x style="height:40px">Cancelar</button><button type="button" class="btn" data-esave style="height:40px" ${d.feel ? "" : "disabled"}>Guardar</button></div></div>`; };
+    const close = () => { box.remove(); document.removeEventListener("keydown", ek); }, ek = e => { if (e.key === "Escape") close(); };
+    box.addEventListener("input", e => { if (e.target.matches("[data-en]")) d.note = e.target.value; });
+    box.addEventListener("click", async e => {
+      if (e.target === box || e.target.closest("[data-x]")) return close();
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.ef) { d.feel = b.dataset.ef; paint(); } else if (b.dataset.ei) { d.int = +b.dataset.ei; paint(); } else if (b.dataset.ew) { d.when = b.dataset.ew; paint(); }
+      else if (b.hasAttribute("data-esave")) {
+        const x = { id: "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), feel: d.feel, int: d.int, when: d.when, note: d.note.trim(), ts: Date.now() };
+        const { id, ...data } = x; b.disabled = true;
+        const { error } = await sb.from("docs").upsert({ user_id: S.user.id, col: "emo", id, data, updated_at: new Date().toISOString() });
+        if (error) { b.disabled = false; toast("No se pudo guardar"); return; }
+        (S.emoLog = S.emoLog || []).push(x); close(); toast("Emoción registrada"); if (location.hash.startsWith("#emociones")) { S.lastView = null; render(); }
+      }
+    });
+    document.addEventListener("keydown", ek); paint(); document.body.appendChild(box);
+  }
+  window.tkEmoModal = emoModal;
+  const ESORT = [["n", "Más registros"], ["best", "Mejor R por operación"], ["worst", "Peor R por operación"], ["int", "Más intensidad"]];
   V.emociones = {
     view() {
       if (!healthOk()) return `<div class="stack" style="gap:18px"><div class="xhead"><div><h1>Emociones</h1><div class="small muted">Qué emociones te ayudan y cuáles te cuestan</div></div></div>
         <div class="card stack" style="gap:10px;max-width:640px"><b>Necesitamos tu permiso para guardar cómo te sientes</b><span class="small muted">Las emociones son datos sensibles. Solo se guardan si lo activas, solo los ves tú y puedes retirarlo cuando quieras.</span><a class="btn" href="#plan" style="align-self:flex-start;height:40px">Activar en Mi plan → Permisos</a></div></div>`;
+      if (!S.emoLoaded) loadEmo().then(() => { if (location.hash.startsWith("#emociones")) { S.lastView = null; render(); } });
       const per = S.emoPer || "all", from = per === "all" ? null : Date.now() - (+per) * 864e5;
       const L = S.trades.filter(t => !from || new Date(t.open_time) >= from), E = emoStats(L), C = closed(L);
       const ok = E.filter(e => e.n >= 2), best = ok.slice().sort((a, b) => b.avg - a.avg)[0], worst = ok.slice().sort((a, b) => a.sum - b.sum)[0], freq = E.slice().sort((a, b) => b.n - a.n)[0];
       const tagged = C.filter(t => (t.review || {}).feel).length, untag = S.trades.filter(t => t.status === "closed" && !(t.review || {}).feel).sort((a, b) => new Date(b.open_time) - new Date(a.open_time)).slice(0, 5);
       const insight = worst && worst.avg < 0 ? `Cuando operas <b>${esc(worst.f.toLowerCase())}</b>, cumples el plan el ${num(worst.gp, 0)} % de las veces y pierdes ${fmtR(worst.avg)} de media. La próxima vez que lo notes, para cinco minutos antes de entrar.` : best ? `Tu mejor estado es <b>${esc(best.f.toLowerCase())}</b>: ${fmtR(best.avg)} de media y ${num(best.gp, 0)} % dentro del plan. Fíjate en qué haces esos días.` : "";
+      const so = S.emoSort || "n", sorter = { n: (a, b) => b.n - a.n, best: (a, b) => b.avg - a.avg, worst: (a, b) => a.avg - b.avg, int: (a, b) => (b.ai || 0) - (a.ai || 0) }[so];
+      const log = (S.emoLog || []).filter(x => !from || x.ts >= from).sort((a, b) => b.ts - a.ts);
+      const logCount = {}; log.forEach(x => logCount[x.feel] = (logCount[x.feel] || 0) + 1);
       return `<div class="stack" style="gap:18px">
         <div class="xhead"><div><h1>Emociones</h1><div class="small muted">Qué emociones te ayudan y cuáles te cuestan · ${tagged} de ${C.length} operaciones anotadas</div></div>
-          <div class="pseg" role="group" aria-label="Periodo">${[["30", "30 días"], ["90", "90 días"], ["all", "Todo"]].map(([k, l]) => `<button type="button" data-eper="${k}" aria-pressed="${per === k}">${l}</button>`).join("")}</div></div>
+          <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="eNew" style="height:38px">${I('<circle cx="10" cy="10" r="7.5"/><path d="M7 12a4 4 0 006 0M7.5 8h.01M12.5 8h.01"/>', 16)} Registrar emoción</button>
+          <select class="xsel" id="ePer" aria-label="Periodo">${[["30", "Últimos 30 días"], ["90", "Últimos 90 días"], ["all", "Todo el tiempo"]].map(([k, l]) => `<option value="${k}" ${per === k ? "selected" : ""}>${l}</option>`).join("")}</select></div></div>
         <div class="xkgrid x3">${statCard("La emoción más rentable", best ? esc(best.f) : "—", best ? fmtR(best.avg) + " por operación · " + best.n + " op." : "Necesita 2 operaciones o más")}
           ${statCard("La emoción que más te cuesta", worst && worst.sum < 0 ? esc(worst.f) : "—", worst && worst.sum < 0 ? fmtR(worst.sum) + " en total · " + worst.n + " op." : "Nada en negativo")}
           ${statCard("La más frecuente", freq ? esc(freq.f) : "—", freq ? freq.n + " de " + tagged + " operaciones anotadas" : "")}</div>
         ${insight ? `<div class="card xinsight">${I('<path d="M10 2.5a5.5 5.5 0 00-3.2 10l.2 2.5h6l.2-2.5A5.5 5.5 0 0010 2.5zM7.5 17.5h5"/>', 20)}<div>${insight}</div></div>` : ""}
-        <div class="card stack" style="gap:12px"><div class="between"><h2 class="h2b">Resultado medio por emoción</h2><span class="small muted">en R por operación</span></div>${emoBars(E)}</div>
-        <div class="card stack" style="gap:10px"><h2 class="h2b">Desglose</h2>
-          <div class="xtablewrap"><table class="xtable"><thead><tr><th>Emoción</th><th>Registros</th><th>Intensidad media</th><th>Acierto</th><th>Dentro del plan</th><th>R total</th><th>R por operación</th></tr></thead><tbody>
-          ${E.length ? E.sort((a, b) => b.n - a.n).map(e => `<tr><td><b>${esc(e.f)}</b></td><td class="mono">${e.n}</td><td class="mono">${e.ai == null ? "—" : num(e.ai, 1) + " / 5"}</td><td class="mono">${num(e.wr, 0)} %</td><td class="mono">${num(e.gp, 0)} %</td><td class="mono"><b>${fmtR(e.sum)}</b></td><td class="mono">${fmtR(e.avg)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted" style="padding:16px">Sin datos todavía.</td></tr>`}
+        <div class="card stack" style="gap:12px"><div class="between"><h2 class="h2b">Métricas emocionales</h2><span class="small muted">resultado medio en R por operación</span></div>${emoBars(E)}</div>
+        <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Desglose de las emociones</h2><select class="xsel" id="eSort" aria-label="Ordenar">${ESORT.map(([k, l]) => `<option value="${k}" ${so === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          <div class="xtablewrap"><table class="xtable"><thead><tr><th>Emoción</th><th>Registros</th><th>Intensidad media</th><th>Acierto</th><th>Dentro del plan</th><th>R total</th><th>R por operación</th><th>Chequeos</th></tr></thead><tbody>
+          ${E.length ? E.sort(sorter).map(e => `<tr><td><b>${esc(e.f)}</b></td><td class="mono">${e.n}</td><td class="mono">${e.ai == null ? "—" : num(e.ai, 1) + " / 5"}</td><td class="mono">${num(e.wr, 0)} %</td><td class="mono">${num(e.gp, 0)} %</td><td class="mono"><b>${fmtR(e.sum)}</b></td><td class="mono">${fmtR(e.avg)}</td><td class="mono">${logCount[e.f] || 0}</td></tr>`).join("") : `<tr><td colspan="8" class="muted" style="padding:16px">Sin datos todavía.</td></tr>`}
           </tbody></table></div></div>
+        <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Registro de emociones</h2><span class="small muted">${log.length} chequeo${log.length === 1 ? "" : "s"}</span></div>
+          ${log.length ? `<div class="elog">${log.slice(0, 12).map(x => `<div class="elogi"><span class="elogd">${new Date(x.ts).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span><b>${esc(x.feel)}</b><span class="xtag">${x.int}/5</span><span class="small muted">${(MOMENTS.find(m => m[0] === x.when) || ["", ""])[1]}</span>${x.note ? `<span class="small elogn">${esc(x.note)}</span>` : ""}<button type="button" class="xib" data-edel="${esc(x.id)}" aria-label="Borrar" title="Borrar">${I(IC.trash, 15)}</button></div>`).join("")}</div>` : `<div class="small muted">Registra cómo te sientes antes, durante o después de operar, aunque no abras ninguna operación. Con el tiempo verás qué estados se repiten.</div>`}</div>
         ${untag.length ? `<div class="card stack" style="gap:12px"><div class="between"><h2 class="h2b">Sin anotar</h2><span class="small muted">toca cómo te sentías al entrar</span></div>
           ${untag.map(t => `<div class="xtagrow" data-tid="${esc(t.id)}"><div class="xtagrow-h"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"} · ${fmtDT(t.open_time)} · <span class="mono">${fmtR(t.r)}</span></div><div class="row" style="gap:6px;flex-wrap:wrap">${FEELS.map(f => `<button type="button" class="chip" data-qfeel="${esc(f)}">${esc(f)}</button>`).join("")}</div></div>`).join("")}</div>` : ""}
       </div>`;
     },
     bind() {
-      $$("[data-eper]").forEach(b => b.onclick = () => { S.emoPer = b.dataset.eper; S.lastView = null; render(); });
+      if (!healthOk()) return;
+      const re = () => { S.lastView = null; render(); };
+      $("#ePer").onchange = e => { S.emoPer = e.target.value; re(); };
+      $("#eSort").onchange = e => { S.emoSort = e.target.value; re(); };
+      $("#eNew").onclick = () => emoModal();
+      $$("[data-edel]").forEach(b => b.onclick = async () => { if (!confirm("¿Borrar este registro?")) return; const { error } = await sb.from("docs").delete().eq("col", "emo").eq("id", b.dataset.edel); if (error) { toast("No se pudo borrar"); return; } S.emoLog = S.emoLog.filter(x => x.id !== b.dataset.edel); re(); });
       $$("[data-qfeel]").forEach(b => b.onclick = async () => {
         const row = b.closest("[data-tid]"), t = S.allTrades.find(x => x.id === row.dataset.tid); if (!t) return;
         t.review = Object.assign({}, t.review || {}, { feel: b.dataset.qfeel });
         const { error } = await sb.from("trades").update({ review: t.review }).eq("id", t.id);
         if (error) { toast("No se pudo guardar"); return; }
-        toast("Anotado: " + b.dataset.qfeel); S.lastView = null; render();
+        toast("Anotado: " + b.dataset.qfeel); re();
       });
     }
   };
-
-  window.TK_X = { $, $$, I, IC, norm, closed, fmtDT, fmtD, statCard, empty, ring, download, healthOk };
+  window.TK_X = { $, $$, I, IC, norm, closed, fmtDT, fmtD, statCard, empty, ring, download, healthOk, px, dur, acctLabel, nOr, calcR, loadEmo };
 })();
 
 /* ======================= DIARIO ======================= */
@@ -197,7 +348,7 @@
     oro: "linear-gradient(120deg,#78350f 0%,#b45309 45%,#fbbf24 100%)",
     grafito: "linear-gradient(135deg,#111827 0%,#334155 60%,#64748b 100%)"
   };
-  const CATS = [["todo", "Todo"], ["plan", "Planificación"], ["rev", "Revisión"], ["mente", "Mentalidad"], ["anal", "Análisis"]];
+  const CATS = [["todo", "Todo"], ["plan", "Planificación"], ["rev", "Revisión"], ["mente", "Mentalidad"], ["anal", "Análisis"], ["reto", "Fondeo"]];
   const todo = items => `<ul class="todo">${items.map(x => `<li>${x}</li>`).join("")}</ul>`;
   const ul = items => `<ul>${items.map(x => `<li>${x}</li>`).join("")}</ul>`;
   const TPL = () => {
@@ -217,6 +368,8 @@
         html: `<h2>Mercados</h2><p></p><h2>Horario</h2><p>${p.start || "…"} – ${p.end || "…"}</p><h2>Setups</h2>${ul(["Setup A: ", "Setup B: "])}<h2>Gestión del riesgo</h2>${ul([`Riesgo por operación: ${p.riskPct != null ? String(p.riskPct).replace(".", ",") + " %" : "…"}`, `Límite del día: ${p.dayLimitR != null ? String(p.dayLimitR).replace(".", ",") + " R" : "…"}`, `Máximo de operaciones: ${p.maxTrades || "…"}`])}<h2>Si pasa esto → hago esto</h2>${ul((p.rules || []).map(r => `Si ${r.si} → ${r.entonces}`).concat(p.rules && p.rules.length ? [] : ["Si … → …"]))}` },
       { id: "perdida", cat: "mente", cover: "oro", title: "Después de una pérdida", desc: "Protocolo para no entrar en venganza.",
         html: `<h2>Para</h2>${todo(["Me he levantado de la silla", "He respirado diez veces despacio", "He mirado si la pérdida respetó el plan"])}<h2>¿Fue una pérdida buena?</h2><p>Si cumplí el plan, es una pérdida buena. El mercado me ha quitado 1 R, nada más.</p><h2>¿Sigo?</h2>${ul(["Si es la primera pérdida y estoy tranquilo: sigo con el plan.", "Si siento ganas de recuperar: cierro por hoy."])}` },
+      { id: "reto", cat: "reto", cover: "oro", title: "Reto de fondeo", desc: "Reglas del reto, cuánto puedes perder hoy y cómo vas a pasarlo sin prisas.",
+        html: `<h2>El reto</h2>${ul(["Empresa y tamaño: ", "Objetivo: ", "Pérdida diaria máxima: ", "Pérdida total máxima: ", "Días mínimos / plazo: "])}<h2>En R, con mi riesgo</h2>${ul([`Riesgo por operación: ${p.riskPct != null ? String(p.riskPct).replace(".", ",") + " %" : "…"}`, "Objetivo en R: ", "Límite diario en R: ", "Límite total en R: "])}<h2>Mi forma de pasarlo</h2>${todo(["No subo el riesgo para acabar antes", "Paro el día al llegar a la mitad del límite diario", "Solo mis setups A", "Reviso cada viernes cómo voy"])}<h2>Antes de cada operación</h2>${todo(["¿Me deja dentro del límite diario si pierdo?", "¿Está en mi horario?", "¿Hay noticias fuertes cerca?"])}` },
       { id: "bt", cat: "anal", cover: "mar", title: "Diario de backtesting", desc: "Hipótesis, condiciones y conclusiones de una sesión de práctica.",
         html: `<h2>Hipótesis</h2><p></p><h2>Condiciones</h2>${ul(["Mercado y marco: ", "Periodo: ", "Reglas de entrada: ", "Reglas de salida: "])}<h2>Resultados</h2>${ul(["Operaciones: ", "Acierto: ", "Resultado en R: ", "Peor racha: "])}<h2>Conclusión</h2><blockquote></blockquote>` }
     ];
@@ -231,7 +384,7 @@
         if (c.nodeType !== 1 || !OKTAG.has(c.tagName)) { if (c.nodeType === 1 && !["SCRIPT", "STYLE", "IFRAME", "OBJECT"].includes(c.tagName)) { walk(c); while (c.firstChild) n.insertBefore(c.firstChild, c); } c.remove(); return; }
         Array.from(c.attributes).forEach(a => {
           const k = a.name.toLowerCase(), v = a.value;
-          const keep = (c.tagName === "A" && k === "href" && /^(https?:|#)/i.test(v)) || (c.tagName === "IMG" && (k === "src" && /^(data:image\/(png|jpe?g|webp|gif);base64,|https:)/i.test(v) || k === "alt")) || (k === "class" && /^(todo|done)$/.test(v)) || (k === "data-done" && c.tagName === "LI");
+          const keep = (c.tagName === "A" && k === "href" && /^(https?:|#)/i.test(v)) || (c.tagName === "IMG" && (k === "src" && /^(data:image\/(png|jpe?g|webp|gif);base64,|https:)/i.test(v) || k === "alt")) || (k === "class" && (/^(todo|done)$/.test(v) || (c.tagName === "IMG" && /^isz-[smlf]( ial-c)?$/.test(v)))) || (k === "data-done" && c.tagName === "LI");
           if (!keep) c.removeAttribute(a.name);
         });
         if (c.tagName === "A") { c.setAttribute("target", "_blank"); c.setAttribute("rel", "noopener noreferrer"); }
@@ -259,45 +412,64 @@
   }
   const txt = h => { const d = document.createElement("div"); d.innerHTML = h || ""; return d.textContent || ""; };
   function pageCard(p) {
-    return `<a class="pgcard" href="#diario/${encodeURIComponent(p.id)}"><span class="pgcover" style="background:${COVERS[p.cover] || COVERS.cobalto}"></span><span class="pgbody"><b>${esc(p.title || "Sin título")}</b><small>${esc(txt(p.html).slice(0, 90)) || "Página vacía"}</small><span class="pgdate">Editada ${new Date(p.updated).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span></span></a>`;
+    return `<a class="pgcard" href="#diario/${encodeURIComponent(p.id)}"><span class="pgcover" style="background:${COVERS[p.cover] || COVERS.cobalto}"></span><span class="pgbody"><b>${esc(p.title || "Sin título")}</b><small>${esc(txt(p.html).slice(0, 90)) || "Página vacía"}</small><span class="pgdate">${p.isTpl ? "Plantilla · " : p.day ? "Diario del " + new Date(p.day + "T12:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" }) + " · " : ""}Editada ${new Date(p.updated).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span></span></a>`;
   }
   /* -------- lista -------- */
   function listView() {
-    const q = norm(S.pgQ || ""), L = pages().filter(p => !q || norm(p.title + " " + txt(p.html)).includes(q));
+    const q = norm(S.pgQ || ""), A = pages().filter(p => !q || norm(p.title + " " + txt(p.html)).includes(q)), L = A.filter(p => !p.isTpl), TP = A.filter(p => p.isTpl);
     return `<div class="stack" style="gap:20px">
       <div class="pghero"><div class="pghero-in"><h1>${greet()}, ${esc((S.name || "").split(" ")[0])}</h1><label class="pgsearch">${I(IC.search, 17)}<input id="pgQ" placeholder="Buscar en tu diario" value="${esc(S.pgQ || "")}" aria-label="Buscar en tu diario"></label></div></div>
       <div class="between"><h2 class="h2b">Mis páginas</h2><span class="small muted">${(S.pages || []).length} página${(S.pages || []).length === 1 ? "" : "s"}</span></div>
       <div class="pggrid"><button type="button" class="pgcard pgnew" id="pgNew"><span class="pgplus">${I(IC.plus, 22, 2)}</span><span class="pgbody"><b>Nueva página</b><small>En blanco o desde una plantilla</small></span></button>${L.map(pageCard).join("")}</div>
+      ${TP.length ? `<div class="between"><h2 class="h2b">Mis plantillas</h2><span class="small muted">${TP.length}</span></div><div class="pggrid">${TP.map(pageCard).join("")}</div>` : ""}
       ${!S.pagesLoaded ? `<div class="small muted">Cargando tus páginas…</div>` : !L.length && q ? `<div class="small muted">Nada coincide con «${esc(S.pgQ)}».</div>` : ""}
     </div>`;
   }
   /* -------- plantillas -------- */
-  function tplModal(onUse) {
-    const T = TPL(); let cat = "todo", sel = T[0].id, q = "";
+  const userTpls = () => pages().filter(p => p.isTpl).map(p => ({ id: "u:" + p.id, pid: p.id, cat: "tuya", cover: p.cover || "cobalto", title: p.title || "Plantilla sin título", desc: txt(p.html).slice(0, 120) || "Plantilla tuya", html: p.html }));
+  function tplModal(onUse, ctx) {
+    ctx = ctx || {};
+    const T = TPL().concat(userTpls()); let tab = "todo", cat = "todo", sel = T[0].id, q = "", det = false;
+    let pins = lsGet("tk-tplpin", []);
     const box = document.createElement("div"); box.className = "xmodal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Plantillas");
     const paint = () => {
-      const t = T.find(x => x.id === sel), L = T.filter(x => (cat === "todo" || x.cat === cat) && (!q || norm(x.title + " " + x.desc).includes(norm(q))));
+      const base = tab === "fij" ? T.filter(x => pins.includes(x.id)) : tab === "tuya" ? T.filter(x => x.cat === "tuya") : T.filter(x => x.cat !== "tuya");
+      const L = base.filter(x => (cat === "todo" || x.cat === cat) && (!q || norm(x.title + " " + x.desc).includes(norm(q))));
+      if (!T.find(x => x.id === sel)) sel = T[0].id;
+      const t = T.find(x => x.id === sel), catsHere = tab === "todo" ? CATS : [];
       box.innerHTML = `<div class="xmodal-card tplm">
         <div class="xmodal-h"><b>Plantillas</b><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
+        <div class="tplm-top"><b>Seleccionar plantilla</b><div class="pseg" role="group" aria-label="Plantillas">${[["todo", "Todas"], ["fij", "Fijadas"], ["tuya", "Tuyas"]].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div></div>
         <div class="tplm-b">
-          <div class="tplm-prev"><div class="tplm-mini"><span class="pgcover" style="background:${COVERS[t.cover]}"></span><div class="tplm-mini-t"><b>${esc(t.title)}</b><div class="tplm-mini-c">${t.html}</div></div></div>
-            <div class="between" style="margin-top:10px"><b style="font-size:14px">${esc(t.title)}</b><span class="xtag">${CATS.find(c => c[0] === t.cat)[1]}</span></div><p class="small muted" style="margin:6px 0 0">${esc(t.desc)}</p>
-            <button type="button" class="tplm-blank" data-blank>${I(IC.plus, 16, 2)} Página en blanco</button></div>
+          <div class="tplm-prev"><div class="tplm-mini"><span class="pgcover" style="background:${COVERS[t.cover] || COVERS.cobalto}"></span><div class="tplm-mini-t"><b>${esc(t.title)}</b><div class="tplm-mini-c">${clean(t.html)}</div></div></div>
+            <div class="between" style="margin-top:10px;gap:8px"><b style="font-size:14px">${esc(t.title)}</b><button type="button" class="link small" data-det>${det ? "Ocultar" : "Detalles"}</button></div>
+            ${det ? `<p class="small muted" style="margin:6px 0 0">${esc(t.desc)}</p><div class="small muted" style="margin-top:4px">Categoría: ${t.cat === "tuya" ? "tuya" : (CATS.find(c => c[0] === t.cat) || ["", ""])[1]}</div>` : ""}
+            <div class="tplm-acts">
+              <button type="button" class="tplm-blank" data-blank>${I(IC.plus, 16, 2)} Página en blanco</button>
+              ${ctx.page ? `<button type="button" class="tplm-blank" data-saveas>${I('<path d="M5 3h8l3 3v11H5z"/><path d="M8 3v4h5M8 12h5"/>', 16)} Guardar esta página como plantilla</button>` : `<button type="button" class="tplm-blank" data-create>${I('<path d="M4 4h12v12H4z"/><path d="M10 7v6M7 10h6"/>', 16)} Crear plantilla</button>`}
+              ${t.cat === "tuya" ? `<button type="button" class="tplm-blank" data-edittpl>${I('<path d="M4 16l1-4 8-8 3 3-8 8z"/>', 16)} Editar esta plantilla</button>` : ""}
+            </div></div>
           <div class="tplm-list"><label class="xsearch">${I(IC.search, 16)}<input data-q placeholder="Buscar plantillas" value="${esc(q)}" aria-label="Buscar plantillas"></label>
-            <div class="pills" role="group" aria-label="Categoría">${CATS.map(([k, l]) => `<button type="button" data-cat="${k}" aria-pressed="${cat === k}">${l} <span class="muted">${k === "todo" ? T.length : T.filter(x => x.cat === k).length}</span></button>`).join("")}</div>
-            <div class="tplgrid">${L.map(x => `<button type="button" class="tplc" data-t="${x.id}" aria-pressed="${x.id === sel}"><span class="pgcover" style="background:${COVERS[x.cover]}"></span><b>${esc(x.title)}</b><small>${esc(x.desc)}</small></button>`).join("") || `<div class="small muted">Ninguna plantilla coincide.</div>`}</div></div>
+            ${catsHere.length ? `<div class="pills" role="group" aria-label="Categoría">${catsHere.map(([k, l]) => `<button type="button" data-cat="${k}" aria-pressed="${cat === k}">${l} <span class="muted">${k === "todo" ? base.length : base.filter(x => x.cat === k).length}</span></button>`).join("")}</div>` : ""}
+            <div class="tplgrid">${L.map(x => `<div class="tplc" data-t="${x.id}" role="button" tabindex="0" aria-pressed="${x.id === sel}"><button type="button" class="tplpin" data-pin="${x.id}" aria-pressed="${pins.includes(x.id)}" aria-label="${pins.includes(x.id) ? "Quitar de fijadas" : "Fijar"}" title="${pins.includes(x.id) ? "Quitar de fijadas" : "Fijar"}">${I('<path d="M10 2.8l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 8.1l5-.7z"/>', 15)}</button><span class="pgcover" style="background:${COVERS[x.cover] || COVERS.cobalto}"></span><b>${esc(x.title)}</b><small>${esc(x.desc)}</small></div>`).join("") || `<div class="small muted">${tab === "fij" ? "Aún no has fijado plantillas: pulsa la estrella de una plantilla." : tab === "tuya" ? "Aún no tienes plantillas propias. Crea una o guarda una página como plantilla." : "Ninguna plantilla coincide."}</div>`}</div></div>
         </div>
         <div class="xmodal-f"><button type="button" class="btn2" data-x style="height:40px">Cancelar</button><button type="button" class="btn" data-use style="height:40px">Usar plantilla</button></div></div>`;
-      const qi = box.querySelector("[data-q]"); if (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.q !== undefined) { }
+      const qi = box.querySelector("[data-q]");
       qi.oninput = () => { q = qi.value; const pos = qi.selectionStart; paint(); const n = box.querySelector("[data-q]"); n.focus(); n.setSelectionRange(pos, pos); };
     };
     const close = () => { box.remove(); document.removeEventListener("keydown", esc_); };
-    const esc_ = e => { if (e.key === "Escape") close(); };
-    box.addEventListener("click", e => {
+    const esc_ = e => { if (e.key === "Escape") close(); if (e.key === "Enter" && e.target.closest && e.target.closest("[data-t]")) { sel = e.target.closest("[data-t]").dataset.t; paint(); } };
+    box.addEventListener("click", async e => {
       if (e.target === box || e.target.closest("[data-x]")) return close();
+      const pn = e.target.closest("[data-pin]"); if (pn) { const id = pn.dataset.pin; pins = pins.includes(id) ? pins.filter(x => x !== id) : pins.concat([id]); lsSet("tk-tplpin", pins); paint(); return; }
+      const tb = e.target.closest("[data-tab]"); if (tb) { tab = tb.dataset.tab; cat = "todo"; paint(); return; }
       const c = e.target.closest("[data-cat]"); if (c) { cat = c.dataset.cat; paint(); return; }
       const t = e.target.closest("[data-t]"); if (t) { sel = t.dataset.t; paint(); return; }
+      if (e.target.closest("[data-det]")) { det = !det; paint(); return; }
       if (e.target.closest("[data-blank]")) { close(); onUse(null); return; }
+      if (e.target.closest("[data-create]")) { close(); const p = newPage(null); p.isTpl = true; p.title = "Nueva plantilla"; await savePage(p); location.hash = "#diario/" + encodeURIComponent(p.id); return; }
+      if (e.target.closest("[data-edittpl]")) { const x = T.find(y => y.id === sel); close(); location.hash = "#diario/" + encodeURIComponent(x.pid); return; }
+      if (e.target.closest("[data-saveas]")) { const src = ctx.page; close(); const p = newPage(null); Object.assign(p, { isTpl: true, title: (src.title || "Plantilla") + " (plantilla)", cover: src.cover, html: src.html }); await savePage(p); toast("Guardada en «Tuyas»"); return; }
       if (e.target.closest("[data-use]")) { close(); onUse(T.find(x => x.id === sel)); }
     });
     document.addEventListener("keydown", esc_);
@@ -306,15 +478,26 @@
   /* -------- editor -------- */
   const SLASH = [["h1", "Título grande", "H1"], ["h2", "Título", "H2"], ["p", "Texto", "¶"], ["ul", "Lista", "•"], ["ol", "Lista numerada", "1."], ["todo", "Lista de tareas", "☐"], ["quote", "Cita", "❝"], ["hr", "Separador", "—"], ["img", "Imagen", "▣"]];
   function editorView(p) {
-    return `<div class="pged">
-      <div class="pgbar"><a href="#diario" class="row" style="gap:6px;text-decoration:none;font-weight:600;font-size:14px">${I(IC.left, 16, 2)} Diario</a><span class="muted small">/</span><span class="small" style="max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title || "Sin título")}</span>
+    const day = p.day || null;
+    return `<div class="pged ${S.pgRead ? "reading" : ""}">
+      <div class="pgbar"><a href="#diario" class="row" style="gap:6px;text-decoration:none;font-weight:600;font-size:14px">${I(IC.left, 16, 2)} Diario</a><span class="muted small">/</span><span class="small" style="max-width:30vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title || "Sin título")}</span>
         <span style="flex:1"></span><span class="small muted" id="pgSaved">${I(IC.check, 14, 2.2)} Guardado</span>
-        <button type="button" class="btn2" id="pgTpl" style="height:34px">Plantilla</button><button type="button" class="xib" id="pgDel" title="Borrar página" aria-label="Borrar página">${I(IC.trash, 17)}</button></div>
+        ${p.isTpl ? "" : `<button type="button" class="chipb" id="pgDay" aria-pressed="${!!day}" title="Une esta página al informe de ese día">${I(IC.check, 13, 2.4)} ${day ? "Diario del " + new Date(day + "T12:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : "Añadir al diario del día"}</button>`}
+        <button type="button" class="btn2" id="pgRead" style="height:34px" aria-pressed="${!S.pgRead}">${S.pgRead ? I('<path d="M4 16l1-4 8-8 3 3-8 8z"/>', 15) + " Editar" : I('<path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/><circle cx="10" cy="10" r="2.5"/>', 15) + " Leer"}</button>
+        <button type="button" class="xib" id="pgDel" title="Borrar página" aria-label="Borrar página">${I(IC.trash, 17)}</button></div>
+      ${p.isTpl ? `<div class="callout" style="margin-bottom:10px">${I('<path d="M4 4h12v12H4z"/><path d="M4 8h12"/>', 18)}<div><b>Estás editando una plantilla tuya.</b> Aparece en Plantillas → Tuyas y la puedes usar en cualquier página nueva.</div></div>` : ""}
       <div class="pgcoverbig" style="background:${COVERS[p.cover] || COVERS.cobalto}"><div class="pgcovers" role="group" aria-label="Portada">${Object.keys(COVERS).map(k => `<button type="button" data-cover="${k}" aria-pressed="${p.cover === k}" style="background:${COVERS[k]}" aria-label="Portada ${k}"></button>`).join("")}</div></div>
-      <div class="pgwho"><span class="pgav">${esc(initials())}</span><div><b>${esc(S.name || "")}</b><div class="small muted">Creada el ${fmtD(p.created)}</div></div></div>
-      <input class="pgtitle" id="pgTitle" placeholder="Sin título" value="${esc(p.title || "")}" aria-label="Título de la página" maxlength="120">
-      <div class="pgdoc" id="pgDoc" contenteditable="true" data-ph="Escribe, o pulsa «/» para comandos" spellcheck="true">${clean(p.html)}</div>
+      <div class="pgwho"><span class="pgav">${esc(initials())}</span><div><b>${esc(S.name || "")}</b><div class="small muted">Creada el ${fmtD(p.created)}${p.isTpl ? " · plantilla" : ""}</div></div><span style="flex:1"></span>
+        <div class="row pgtools" style="gap:6px"><button type="button" class="btn2" id="pgTpl" style="height:34px">${I('<rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 8h14M8 8v9"/>', 15)} Plantilla</button><button type="button" class="btn2" id="pgBlocks" style="height:34px">${I('<rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><path d="M14 11v6M11 14h6"/>', 15)} Bloques</button></div></div>
+      <input class="pgtitle" id="pgTitle" placeholder="Sin título" value="${esc(p.title || "")}" aria-label="Título de la página" maxlength="120" ${S.pgRead ? "readonly" : ""}>
+      <div class="pgdoc" id="pgDoc" contenteditable="${S.pgRead ? "false" : "true"}" data-ph="Escribe, o pulsa «/» para comandos" spellcheck="true">${clean(p.html)}</div>
       <div class="slash" id="pgSlash" hidden role="listbox" aria-label="Comandos"></div>
+      <div class="imgbar" id="pgImgBar" hidden role="toolbar" aria-label="Imagen">
+        ${[["s", "Pequeña", "S"], ["m", "Mediana", "M"], ["l", "Grande", "L"], ["f", "Ancho completo", '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7V3h4M17 7V3h-4M3 13v4h4M17 13v4h-4"/></svg>']].map(([k, l, t]) => `<button type="button" data-isz="${k}" title="${l}" aria-label="${l}">${t}</button>`).join("")}<span class="imgsep"></span>
+        <button type="button" data-ial title="Centrar" aria-label="Centrar">${I('<path d="M4 5h12M6 10h8M4 15h12"/>', 15)}</button>
+        <button type="button" data-icopy title="Copiar imagen" aria-label="Copiar imagen">${I('<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V4a1 1 0 00-1-1H4a1 1 0 00-1 1v8a1 1 0 001 1h3"/>', 15)}</button>
+        <button type="button" data-idown title="Descargar" aria-label="Descargar">${I(IC.down, 15)}</button>
+        <button type="button" data-idel class="imgdel" title="Borrar imagen" aria-label="Borrar imagen">${I(IC.trash, 15)}</button></div>
       <input type="file" id="pgImg" accept="image/*" hidden>
     </div>`;
   }
@@ -327,15 +510,16 @@
     const doc = $("#pgDoc"), title = $("#pgTitle"), saved = $("#pgSaved"), slash = $("#pgSlash"), file = $("#pgImg");
     let t = null, dirty = false;
     const mark = () => { dirty = true; saved.innerHTML = "Guardando…"; clearTimeout(t); t = setTimeout(flush, 700); };
-    const flush = async () => { if (!dirty) return; dirty = false; p.title = title.value.trim(); p.html = clean(doc.innerHTML); const ok = await savePage(p); saved.innerHTML = ok ? `${I(IC.check, 14, 2.2)} Guardado` : "No se pudo guardar"; };
+    const flush = async () => { if (!dirty) return; dirty = false; p.title = title.value.trim(); p.html = clean(doc.innerHTML).replace(/ imgsel"/g, '"'); const ok = await savePage(p); saved.innerHTML = ok ? `${I(IC.check, 14, 2.2)} Guardado` : "No se pudo guardar"; };
     S.pgFlush = flush;
     title.oninput = mark; title.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); doc.focus(); } };
     doc.addEventListener("input", () => { mark(); checkSlash(); });
     const exec = (c, v) => document.execCommand(c, false, v);
-    function block(kind) {
+    function block(kind, fromMenu) {
+      if (fromMenu) restoreRange();
       const sel = getSelection(); if (!sel.rangeCount) return;
       // borra la «/» escrita
-      const r = sel.getRangeAt(0), n = r.startContainer; if (n.nodeType === 3) { const i = n.textContent.lastIndexOf("/", r.startOffset); if (i >= 0) { n.textContent = n.textContent.slice(0, i) + n.textContent.slice(r.startOffset); const rr = document.createRange(); rr.setStart(n, i); rr.collapse(true); sel.removeAllRanges(); sel.addRange(rr); } }
+      const r = sel.getRangeAt(0), n = r.startContainer; if (!fromMenu && n.nodeType === 3) { const i = n.textContent.lastIndexOf("/", r.startOffset); if (i >= 0) { n.textContent = n.textContent.slice(0, i) + n.textContent.slice(r.startOffset); const rr = document.createRange(); rr.setStart(n, i); rr.collapse(true); sel.removeAllRanges(); sel.addRange(rr); } }
       if (kind === "h1" || kind === "h2" || kind === "p") exec("formatBlock", kind === "p" ? "P" : kind.toUpperCase());
       else if (kind === "ul") exec("insertUnorderedList"); else if (kind === "ol") exec("insertOrderedList");
       else if (kind === "todo") {
@@ -361,11 +545,23 @@
     }
     const paintSlash = () => { slash.innerHTML = sList.map((x, i) => `<button type="button" role="option" data-cmd="${x[0]}" aria-selected="${i === sIdx}"><span class="slash-i">${x[2]}</span>${x[1]}</button>`).join(""); };
     const hideSlash = () => { slash.hidden = true; };
-    slash.addEventListener("mousedown", e => { const b = e.target.closest("[data-cmd]"); if (b) { e.preventDefault(); hideSlash(); block(b.dataset.cmd); } });
+    let fromMenu = false, saved_ = null;
+    const saveRange = () => { const sel = getSelection(); if (sel.rangeCount && doc.contains(sel.anchorNode)) saved_ = sel.getRangeAt(0).cloneRange(); };
+    function restoreRange() { doc.focus(); const sel = getSelection(); sel.removeAllRanges(); if (saved_) sel.addRange(saved_); else { const r = document.createRange(); r.selectNodeContents(doc); r.collapse(false); sel.addRange(r); } }
+    document.addEventListener("selectionchange", function sc() { if (!document.body.contains(doc)) return document.removeEventListener("selectionchange", sc); saveRange(); });
+    slash.addEventListener("mousedown", e => { const b = e.target.closest("[data-cmd]"); if (b) { e.preventDefault(); hideSlash(); block(b.dataset.cmd, fromMenu); fromMenu = false; } });
+    $("#pgBlocks").onclick = e => {
+      if (S.pgRead) { toast("Pulsa «Editar» para cambiar la página"); return; }
+      e.stopPropagation(); if (!slash.hidden && fromMenu) { hideSlash(); fromMenu = false; return; }
+      fromMenu = true; sList = SLASH.slice(); sIdx = 0; paintSlash();
+      const br = e.currentTarget.getBoundingClientRect(), host = $(".pged").getBoundingClientRect();
+      slash.style.left = Math.max(0, br.right - host.left - 220) + "px"; slash.style.top = (br.bottom - host.top + 6) + "px"; slash.hidden = false;
+    };
+    document.addEventListener("click", function off(e) { if (!document.body.contains(slash)) return document.removeEventListener("click", off); if (fromMenu && !e.target.closest("#pgSlash,#pgBlocks")) { hideSlash(); fromMenu = false; } });
     doc.addEventListener("keydown", e => {
       if (!slash.hidden) {
         if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sIdx = (sIdx + (e.key === "ArrowDown" ? 1 : -1) + sList.length) % sList.length; paintSlash(); return; }
-        if (e.key === "Enter") { e.preventDefault(); const c = sList[sIdx][0]; hideSlash(); block(c); return; }
+        if (e.key === "Enter") { e.preventDefault(); const c = sList[sIdx][0]; hideSlash(); block(c, fromMenu); fromMenu = false; return; }
         if (e.key === "Escape") { hideSlash(); return; }
       }
       const mod = e.metaKey || e.ctrlKey;
@@ -381,7 +577,26 @@
     async function insertImg(fl) { if (!fl) return; try { const src = await compress(fl); doc.focus(); exec("insertHTML", `<img src="${src}" alt="Imagen"><p><br></p>`); mark(); } catch (x) { toast("No se pudo añadir la imagen"); } }
     file.onchange = () => { insertImg(file.files[0]); file.value = ""; };
     $$("[data-cover]").forEach(b => b.onclick = () => { p.cover = b.dataset.cover; $(".pgcoverbig").style.background = COVERS[p.cover]; $$("[data-cover]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); dirty = true; flush(); });
-    $("#pgTpl").onclick = () => tplModal(tpl => { if (!tpl) return; if (txt(doc.innerHTML).trim() && !confirm("La plantilla se añadirá al final de la página. ¿Seguir?")) return; doc.insertAdjacentHTML("beforeend", tpl.html); if (!title.value.trim()) title.value = tpl.title; mark(); });
+    const rd = $("#pgRead"); rd.onclick = () => { flush(); S.pgRead = !S.pgRead; S.lastView = null; render(); };
+    const dy = $("#pgDay"); if (dy) dy.onclick = () => { p.day = p.day ? null : dayKey(p.created || Date.now()); dirty = true; flush(); S.lastView = null; render(); };
+    /* barra de la imagen */
+    const bar = $("#pgImgBar"); let imgSel = null;
+    const placeBar = () => { if (!imgSel || !doc.contains(imgSel)) { bar.hidden = true; imgSel = null; return; } const r = imgSel.getBoundingClientRect(), host = $(".pged").getBoundingClientRect(); bar.style.left = Math.max(0, r.left - host.left + r.width / 2 - 150) + "px"; bar.style.top = Math.max(0, r.top - host.top - 46) + "px"; bar.hidden = false; };
+    const selImg = im => { doc.querySelectorAll("img.imgsel").forEach(x => x.classList.remove("imgsel")); imgSel = im; if (im) { im.classList.add("imgsel"); placeBar(); } else bar.hidden = true; };
+    const setCls = (sz, al) => { const cur = (imgSel.getAttribute("class") || "").replace("imgsel", "").trim(); let z = (cur.match(/isz-([smlf])/) || [])[1] || "f", c = /ial-c/.test(cur); if (sz) z = sz; if (al != null) c = al; imgSel.setAttribute("class", "isz-" + z + (c ? " ial-c" : "") + " imgsel"); mark(); placeBar(); };
+    doc.addEventListener("click", e => { const im = e.target.closest("img"); if (im && doc.contains(im)) { if (S.pgRead) return; selImg(im); } else selImg(null); });
+    bar.addEventListener("mousedown", e => e.preventDefault());
+    bar.addEventListener("click", async e => {
+      const b = e.target.closest("button"); if (!b || !imgSel) return;
+      if (b.dataset.isz) setCls(b.dataset.isz);
+      else if (b.hasAttribute("data-ial")) setCls(null, !/ial-c/.test(imgSel.getAttribute("class") || ""));
+      else if (b.hasAttribute("data-idown")) { const a = document.createElement("a"); a.href = imgSel.src; a.download = (title.value.trim() || "imagen").replace(/[^\wáéíóúñ -]/gi, "") + ".jpg"; document.body.appendChild(a); a.click(); a.remove(); }
+      else if (b.hasAttribute("data-icopy")) { try { const bl = await (await fetch(imgSel.src)).blob(), png = bl.type === "image/png" ? bl : await new Promise(res => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext("2d").drawImage(im, 0, 0); c.toBlob(res, "image/png"); }; im.src = imgSel.src; }); await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]); toast("Imagen copiada"); } catch (x) { toast("Tu navegador no deja copiar imágenes"); } }
+      else if (b.hasAttribute("data-idel")) { const im = imgSel; selImg(null); im.remove(); mark(); }
+    });
+    window.addEventListener("resize", placeBar); $("#main") && $("#main").addEventListener("scroll", placeBar, { passive: true }); window.addEventListener("scroll", placeBar, { passive: true });
+    doc.addEventListener("keydown", e => { if (imgSel && (e.key === "Delete" || e.key === "Backspace")) { e.preventDefault(); const im = imgSel; selImg(null); im.remove(); mark(); } });
+    $("#pgTpl").onclick = () => tplModal(tpl => { if (!tpl) return; if (txt(doc.innerHTML).trim() && !confirm("La plantilla se añadirá al final de la página. ¿Seguir?")) return; doc.insertAdjacentHTML("beforeend", tpl.html); if (!title.value.trim()) title.value = tpl.title; mark(); }, { page: Object.assign({}, p, { title: title.value.trim(), html: clean(doc.innerHTML) }) });
     $("#pgDel").onclick = async () => {
       if (!confirm("¿Borrar esta página? No se puede deshacer.")) return;
       const { error } = await sb.from("docs").delete().eq("col", "page").eq("id", p.id); if (error) { toast("No se pudo borrar"); return; }
@@ -390,6 +605,7 @@
     window.addEventListener("hashchange", function h() { window.removeEventListener("hashchange", h); flush(); });
     if (!p.title) title.focus(); else if (!txt(p.html).trim()) doc.focus();
   }
+  window.TK_DIARIO = { newPage, savePage, loadPages, tplModal, pages, COVERS, txt, TPL };
   V.diario = {
     view(r) {
       if (!S.pagesLoaded) { loadPages().then(() => { if (location.hash.startsWith("#diario")) { S.lastView = null; render(); } }); }
@@ -398,6 +614,7 @@
     },
     bind(r) {
       if (r.id) { const p = (S.pages || []).find(x => x.id === r.id); if (p) bindEditor(p); return; }
+      S.pgRead = false;
       const q = $("#pgQ"); if (q) q.oninput = () => { S.pgQ = q.value; const pos = q.selectionStart; S.lastView = null; render(); const n = $("#pgQ"); n.focus(); n.setSelectionRange(pos, pos); };
       const nb = $("#pgNew"); if (nb) nb.onclick = () => tplModal(async tpl => { const p = newPage(tpl); await savePage(p); location.hash = "#diario/" + encodeURIComponent(p.id); });
     }
@@ -414,13 +631,15 @@
   const k = n => n >= 1000 ? (n / 1000).toLocaleString("es-ES") + " mil" : String(n);
   const symList = () => { const mine = symbolsInfo().map(x => x.s); return Array.from(new Set(mine.concat(MARKETS.flatMap(g => g[1])))); };
   async function loadSessions() {
-    const [a, b] = await Promise.all([sb.from("docs").select("id,data").eq("col", "bts"), sb.from("sim_trades").select("session_id,r,exit_time,symbol").not("session_id", "is", null)]);
+    const [a, b] = await Promise.all([sb.from("docs").select("id,data").eq("col", "bts"), sb.from("sim_trades").select("id,session_id,symbol,tf,side,entry_time,entry,stop,tp,exit_time,exit,r,created_at").order("created_at", { ascending: false }).limit(3000)]);
     if (!a.error) S.bts = (a.data || []).map(d => Object.assign({ id: d.id }, d.data));
     if (!b.error) S.btTrades = b.data || [];
     S.btLoaded = true;
   }
   async function saveSession(x) { const { id, ...data } = x; const { error } = await sb.from("docs").upsert({ user_id: S.user.id, col: "bts", id, data, updated_at: new Date().toISOString() }); return !error; }
   const sessTrades = id => (S.btTrades || []).filter(t => t.session_id === id && t.r != null).map(t => ({ r: +t.r, status: "closed", open_time: t.exit_time }));
+  const hms = s => { s = Math.round(s || 0); if (s < 60) return s ? s + " s" : "0 min"; const m = Math.round(s / 60); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; };
+  const CHALL = [[25000, 6, 5, 10], [50000, 6, 5, 10], [100000, 6, 5, 10], [150000, 6, 5, 10]];
   function rulesBars(x, st) {
     if (x.mode !== "fondeo") return "";
     const rp = x.risk || 0.5, tg = x.target / rp, dl = x.daily / rp, ml = x.max / rp;
@@ -437,9 +656,17 @@
         <div class="row" style="gap:6px"><span class="tag">${x.mode === "fondeo" ? "Reto " + k(x.size) : "Clásico"}</span><button type="button" class="xib" data-bsdel="${esc(x.id)}" aria-label="Borrar sesión" title="Borrar sesión">${I(IC.trash, 16)}</button></div></div>
       <div class="pbar"><div class="between small"><span class="muted">Avance del periodo</span><span class="mono">${num(prog * 100, 0)} % · ${new Date(at).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span></div><div class="pbt"><i style="width:${(prog * 100).toFixed(1)}%"></i></div></div>
       <div class="anums"><div><span>Operaciones</span><b>${st.n}</b></div><div><span>Acierto</span><b>${st.win == null ? "—" : num(st.win, 0) + " %"}</b></div><div><span>Resultado</span><b>${st.n ? fmtR(st.tot) : "—"}</b></div><div><span>Caída máx.</span><b>${st.n ? fmtR(st.dd) : "—"}</b></div></div>
+      <div class="small muted row" style="gap:14px">${I(IC.clock, 14)} ${hms(x.secs)} de estudio · ${(x.bars || 0).toLocaleString("es-ES")} velas repasadas</div>
       ${rulesBars(x, st)}
       <div class="row" style="gap:8px"><button type="button" class="btn" data-bsgo="${esc(x.id)}" style="height:38px;font-size:13.5px">${I(IC.play, 13)} ${x.lastTs ? "Continuar" : "Empezar"}</button>${(x.syms || []).length > 1 ? `<select class="xsel" data-bssym="${esc(x.id)}" aria-label="Mercado">${x.syms.map(s => `<option>${esc(s)}</option>`).join("")}</select>` : ""}</div>
     </article>`;
+  }
+  function heroRing() {
+    const st = [["Fase 1", "objetivo +8 %", 36, 112], ["Fase 2", "objetivo +5 %", 120, 78], ["Fondeada", "sin objetivo", 204, 40]];
+    return `<svg viewBox="0 0 240 160" class="bsart" aria-hidden="true"><defs><linearGradient id="bsr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fbd38d"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs>
+      <path d="M36 112 C78 112 84 78 120 78 S168 40 204 40" fill="none" stroke="#fde68a" stroke-opacity=".22" stroke-width="10" stroke-linecap="round"/>
+      <path d="M36 112 C78 112 84 78 120 78 S168 40 204 40" fill="none" stroke="url(#bsr)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 6"/>
+      ${st.map(([t, g, x, y], i) => `<g><circle cx="${x}" cy="${y}" r="${i === 2 ? 15 : 12}" fill="#2a1d06" stroke="#fbbf24" stroke-width="2"/>${i === 2 ? `<path d="M${x - 6} ${y}l4 4 8-8" fill="none" stroke="#fde68a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` : `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="#fde68a" font-family="Inter,sans-serif">${i + 1}</text>`}<text x="${x}" y="${y + (i === 2 ? 31 : 28)}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Inter,sans-serif">${t}</text><text x="${x}" y="${y + (i === 2 ? 43 : 40)}" text-anchor="middle" font-size="9" fill="#fcd34d" fill-opacity=".85" font-family="Inter,sans-serif">${g}</text></g>`).join("")}</svg>`;
   }
   function heroArt() {
     const c = [[30, 70, 40, 92, 58], [52, 62, 34, 80, 44], [74, 48, 28, 70, 36], [96, 56, 40, 76, 46], [118, 40, 22, 60, 30], [140, 34, 16, 52, 24]];
@@ -455,18 +682,25 @@
       const f = S.bsF || "todas", L = (S.bts || []).filter(x => f === "todas" || x.mode === f).sort((a, b) => (b.updated || b.created || 0) - (a.updated || a.created || 0));
       const all = (S.bts || []).flatMap(x => sessTrades(x.id)), st = tradeStats(all);
       return `<div class="stack" style="gap:20px">
-        <div class="bshero"><div class="bshero-t"><div class="lbl" style="color:#a9bcff">Backtesting</div><h1>Practica en el pasado.</h1><p>Elige un mercado y unas fechas, avanza vela a vela y opera como si fuera en vivo. Prueba también un reto de fondeo con sus límites, sin arriesgar nada.</p>
-          <div class="row" style="gap:10px;flex-wrap:wrap"><button type="button" class="btn" id="bsNew">${I(IC.plus, 16, 2)} Nueva sesión</button><a class="btn2 bsghost" href="#analizar" id="bsFree">Practicar sin sesión</a></div></div>${heroArt()}</div>
+        ${(() => { const sl = S.bsSlide || 0, SL = [["clasico", "Modo clásico", "Repasa cualquier mercado.", "Avanza vela a vela por el precio real y opera tu estrategia como si fuera en directo, sin arriesgar nada."], ["fondeo", "Reto de fondeo", "Practica el reto antes de pagarlo.", "Opera con el objetivo y los límites de una empresa de fondeo y pasa el reto aquí primero."]];
+          return `<div class="bshero bscar s${sl}" id="bsCar" aria-roledescription="carrusel">${SL.map(([m, lb, h, p], i) => `<div class="bsslide ${i === sl ? "on" : ""}" aria-hidden="${i !== sl}"><div class="bshero-t"><div class="lbl" style="color:#a9bcff">${lb}</div><h1>${h}</h1><p>${p}</p>
+            <div class="row" style="gap:10px;flex-wrap:wrap"><button type="button" class="btn" data-bsnewm="${m}" ${i !== sl ? 'tabindex="-1"' : ""}>${I(IC.plus, 16, 2)} Nueva sesión</button><button type="button" class="btn2 bsghost" data-bsview ${i !== sl ? 'tabindex="-1"' : ""}>Ver sesiones</button>${i === 0 ? `<a class="btn2 bsghost" href="#analizar" id="bsFree" ${i !== sl ? 'tabindex="-1"' : ""}>Practicar sin sesión</a>` : ""}</div></div>${m === "fondeo" ? heroRing() : heroArt()}</div>`).join("")}
+            <div class="bsdots" role="tablist" aria-label="Modos">${SL.map((x, i) => `<button type="button" role="tab" data-bsdot="${i}" aria-selected="${i === sl}" aria-label="${x[1]}"></button>`).join("")}</div></div>`; })()}
         ${all.length ? `<div class="xkgrid">${statCard("Sesiones", (S.bts || []).length, "", "")}${statCard("Operaciones simuladas", st.n, "", "")}${statCard("Acierto", st.win == null ? "—" : num(st.win, 0) + " %", "", ring(st.win))}${statCard("Resultado", fmtR(st.tot), "todas las sesiones", spark(st.curve, 96, 40))}</div>` : ""}
         <div class="row" style="gap:14px;flex-wrap:wrap"><h2 class="h2b">Sesiones</h2><span class="small muted">${(S.bts || []).length} en total</span><div class="pills" role="group" aria-label="Filtrar sesiones" style="margin-left:auto">${[["todas", "Todas"], ["clasico", "Clásico"], ["fondeo", "Reto de fondeo"]].map(([a, b]) => `<button type="button" data-bsf="${a}" aria-pressed="${f === a}">${b}</button>`).join("")}</div></div>
-        ${!S.btLoaded ? `<div class="small muted">Cargando…</div>` : L.length ? `<div class="agrid">${L.map(sessCard).join("")}</div>` : `<div class="card">${empty("Aún no hay sesiones", "Crea una sesión para practicar un mercado en unas fechas concretas, en modo clásico o como un reto de fondeo.", `<button type="button" class="btn" data-bsnew2 style="height:38px">Nueva sesión</button>`)}</div>`}
+        ${!S.btLoaded ? `<div class="agrid" id="bsList" aria-busy="true">${[0, 1, 2].map(() => `<div class="card bsskel"><i style="width:60%"></i><i style="width:40%"></i><i style="height:8px"></i><i style="width:80%"></i><i style="width:50%;height:34px"></i></div>`).join("")}</div>` : L.length ? `<div class="agrid" id="bsList">${L.map(sessCard).join("")}</div>` : `<div class="card bsempty">${empty("Aún no hay sesiones", "Crea una sesión para practicar un mercado en unas fechas concretas, en modo clásico o como un reto de fondeo.", `<button type="button" class="btn" data-bsnew2 style="height:38px">Nueva sesión</button>`)}</div>`}
       </div>`;
     },
     bind() {
       $$("[data-bsf]").forEach(b => b.onclick = () => { S.bsF = b.dataset.bsf; S.lastView = null; render(); });
-      const nb = $("#bsNew"); if (nb) nb.onclick = () => drawer();
+      $$("[data-bsnewm]").forEach(b => b.onclick = () => drawer(b.dataset.bsnewm));
+      $$("[data-bsview]").forEach(b => b.onclick = () => { const l = $("#bsList") || $(".bsempty"); if (l) l.scrollIntoView({ behavior: "smooth", block: "start" }); });
+      const car = $("#bsCar"), go = i => { S.bsSlide = i; car.className = "bshero bscar s" + i; $$(".bsslide").forEach((x, j) => { x.classList.toggle("on", j === i); x.setAttribute("aria-hidden", String(j !== i)); x.querySelectorAll("button,a").forEach(y => j === i ? y.removeAttribute("tabindex") : y.setAttribute("tabindex", "-1")); }); $$("[data-bsdot]").forEach((d, j) => d.setAttribute("aria-selected", String(j === i))); };
+      $$("[data-bsdot]").forEach(d => d.onclick = () => go(+d.dataset.bsdot));
+      clearInterval(S.bsTimer); let hover = false; car.onmouseenter = () => hover = true; car.onmouseleave = () => hover = false;
+      S.bsTimer = setInterval(() => { if (!document.body.contains(car)) return clearInterval(S.bsTimer); if (!hover && !document.hidden && !matchMedia("(prefers-reduced-motion: reduce)").matches) go(((S.bsSlide || 0) + 1) % 2); }, 7000);
       $$("[data-bsnew2]").forEach(b => b.onclick = () => drawer());
-      $("#bsFree").onclick = () => { S.btRun = null; };
+      const fr = $("#bsFree"); if (fr) fr.onclick = () => { S.btRun = null; };
       $$("[data-bsgo]").forEach(b => b.onclick = () => { const x = S.bts.find(y => y.id === b.dataset.bsgo), sel = $(`[data-bssym="${x.id}"]`); run(x, sel ? sel.value : null); });
       $$("[data-bsdel]").forEach(b => b.onclick = async () => {
         if (!confirm("¿Borrar esta sesión? Sus operaciones simuladas dejarán de contar en ella.")) return;
@@ -481,13 +715,13 @@
     location.hash = "#analizar";
   }
   /* -------- panel «Nueva sesión» -------- */
-  function drawer() {
-    const d = { tab: "crear", mode: "clasico", name: "", syms: [symList()[0] || "EURUSD"], range: "1m", from: "", to: "", balance: 10000, size: 100000, target: 10, daily: 5, max: 10, risk: S.plan && S.plan.riskPct || 0.5 };
+  function drawer(mode0) {
+    const d = { tab: "crear", mode: mode0 === "fondeo" ? "fondeo" : "clasico", chal: "100000", note: "", name: "", syms: [symList()[0] || "EURUSD"], range: "1m", from: "", to: "", balance: 10000, size: 100000, target: 10, daily: 5, max: 10, risk: S.plan && S.plan.riskPct || 0.5 };
     const setRange = key => { const r = RANGES.find(x => x[0] === key); const end = new Date(); end.setDate(end.getDate() - 1); const st = new Date(end); st.setDate(st.getDate() - r[2] + 1); d.range = key; d.to = dayKey(end); d.from = dayKey(st); };
-    setRange("1m");
+    setRange("1m"); if (d.mode === "fondeo") { d.size = 100000; d.target = 6; d.daily = 5; d.max = 10; }
     const box = document.createElement("div"); box.className = "xdrawer"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Nueva sesión de backtesting");
     const art = mode => mode === "fondeo"
-      ? `<div class="bsban fondeo"><div class="bsring">${SIZES.slice(1, 5).map((n, i) => `<span class="bsnode n${i}">${n >= 1e5 ? n / 1000 + "k" : n / 1000 + "k"}</span>`).join("")}<span class="bscore">${I(IC.trophy, 26)}</span></div><b>Reto de fondeo</b><small>Objetivo, límite diario y límite total, como en una prueba real</small></div>`
+      ? `<div class="bsban fondeo"><div class="bsring"><span class="bscore">${I(IC.trophy, 26)}</span></div><div class="bsphases"><span>Fase 1</span><i></i><span>Fase 2</span><i></i><span>Fondeada</span></div><b>Reto de fondeo</b><small>Objetivo, límite diario y límite total, como en una prueba real</small></div>`
       : `<div class="bsban"><div class="bsring"><span class="bscore">${I('<path d="M3 10a7 7 0 1 0 2.3-5.2"/><path d="M3 4v3.5h3.5"/><path d="M10 6.5V10l2.5 1.6"/>', 26)}</span></div><b>Modo clásico</b><small>Practica libremente con un saldo inicial</small></div>`;
     const paint = () => {
       const syms = symList();
@@ -508,8 +742,10 @@
           <div class="row" style="gap:10px"><label class="field" style="flex:1"><span>Fecha de inicio</span><input class="input" type="date" data-k="from" value="${d.from}" max="${dayKey(new Date())}"></label><label class="field" style="flex:1"><span>Fecha final</span><input class="input" type="date" data-k="to" value="${d.to}" max="${dayKey(new Date())}"></label></div>
           <div class="row" style="gap:6px;flex-wrap:wrap">${RANGES.map(([key, l]) => `<button type="button" class="chipb" data-range="${key}" aria-pressed="${d.range === key}">${l}</button>`).join("")}</div>
           <div class="xsec">${d.mode === "fondeo" ? "Reglas del reto" : "Cuenta"}</div>
-          ${d.mode === "fondeo" ? `<div class="row" style="gap:6px;flex-wrap:wrap">${SIZES.map(n => `<button type="button" class="chipb" data-size="${n}" aria-pressed="${d.size === n}">${k(n)}</button>`).join("")}</div>
-            <div class="fgrid"><label class="field"><span>Objetivo (%)</span><input class="input" data-k="target" inputmode="decimal" value="${d.target}"></label><label class="field"><span>Pérdida diaria máx. (%)</span><input class="input" data-k="daily" inputmode="decimal" value="${d.daily}"></label><label class="field"><span>Pérdida total máx. (%)</span><input class="input" data-k="max" inputmode="decimal" value="${d.max}"></label></div>`
+          ${d.mode === "fondeo" ? `<div class="bschal" role="radiogroup" aria-label="Seleccionar desafío">${CHALL.map(([n, tg]) => `<button type="button" role="radio" data-chal="${n}" aria-checked="${d.chal === String(n)}"><span class="bschal-i">${I(IC.trophy, 16)}</span><span><b>Reto de ${n.toLocaleString("es-ES")}</b><small>Objetivo de ${(n * tg / 100).toLocaleString("es-ES")} · ${tg} %</small></span></button>`).join("")}
+              <button type="button" role="radio" data-chal="custom" aria-checked="${d.chal === "custom"}" class="wide"><span class="bschal-i">${I(IC.plus, 16, 2)}</span><span><b>Crear reto personalizado</b><small>Tú pones el tamaño, el objetivo y los límites</small></span></button></div>
+            ${d.chal === "custom" ? `<div class="row" style="gap:6px;flex-wrap:wrap">${SIZES.map(n => `<button type="button" class="chipb" data-size="${n}" aria-pressed="${d.size === n}">${k(n)}</button>`).join("")}</div>
+            <div class="fgrid"><label class="field"><span>Objetivo (%)</span><input class="input" data-k="target" inputmode="decimal" value="${d.target}"></label><label class="field"><span>Pérdida diaria máx. (%)</span><input class="input" data-k="daily" inputmode="decimal" value="${d.daily}"></label><label class="field"><span>Pérdida total máx. (%)</span><input class="input" data-k="max" inputmode="decimal" value="${d.max}"></label></div>` : `<div class="small muted">Objetivo ${d.target} % · pérdida diaria máx. ${d.daily} % · pérdida total máx. ${d.max} %. Para cambiarlos, elige «personalizado».</div>`}`
           : `<label class="field"><span>Saldo inicial</span><input class="input" data-k="balance" inputmode="decimal" value="${d.balance}"></label>`}
           <label class="field"><span>Riesgo por operación (%)</span><input class="input" data-k="risk" inputmode="decimal" value="${d.risk}"></label>
           <div class="small muted">Con ${String(d.risk).replace(".", ",")} % por operación${d.mode === "fondeo" ? `, el objetivo son ${num(d.target / d.risk, 1)} R y el límite diario ${num(d.daily / d.risk, 1)} R` : ""}.</div>`}
@@ -525,9 +761,10 @@
       if (e.target === box || e.target.closest("[data-x]")) return close();
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.tab) { d.tab = b.dataset.tab; paint(); return; }
-      if (b.dataset.mode) { d.mode = b.dataset.mode; paint(); return; }
+      if (b.dataset.mode) { d.mode = b.dataset.mode; if (d.mode === "fondeo" && d.chal !== "custom") { const c = CHALL.find(x => String(x[0]) === d.chal); d.size = c[0]; d.target = c[1]; d.daily = c[2]; d.max = c[3]; } paint(); return; }
       if (b.dataset.range) { setRange(b.dataset.range); paint(); return; }
       if (b.dataset.size) { d.size = +b.dataset.size; paint(); return; }
+      if (b.dataset.chal) { d.chal = b.dataset.chal; if (d.chal !== "custom") { const c = CHALL.find(x => String(x[0]) === d.chal); d.size = c[0]; d.target = c[1]; d.daily = c[2]; d.max = c[3]; } paint(); return; }
       if (b.dataset.rmsym) { d.syms = d.syms.filter(s => s !== b.dataset.rmsym); paint(); return; }
       if (b.hasAttribute("data-go")) {
         if (!d.from || !d.to || d.from > d.to) { toast("Revisa las fechas: la de inicio tiene que ser anterior a la final"); return; }
@@ -550,12 +787,22 @@
       ${x ? `<div style="margin-top:10px">${rulesBars(x, st)}</div>` : ""}</div>`;
   };
   window.tkSessionHooks = {
-    saved(rec) { if (!S.btRun) return; (S.btTrades = S.btTrades || []).push({ session_id: S.btRun.id, r: rec.r, exit_time: rec.exit_time, symbol: rec.symbol }); const b = document.getElementById("bsBand"); if (b) b.outerHTML = window.tkSessionBand(), bindBand(); },
-    step(ts) { const r = S.btRun; if (!r) return; r.at = ts; clearTimeout(r.t); r.t = setTimeout(async () => { const x = (S.bts || []).find(y => y.id === r.id); if (!x) return; x.lastTs = r.at; x.updated = Date.now(); await saveSession(x); }, 1500); },
+    saved(rec) { if (!S.btRun) { if (S.btTrades) S.btTrades.unshift(Object.assign({ session_id: null, created_at: new Date().toISOString() }, rec)); return; } (S.btTrades = S.btTrades || []).unshift(Object.assign({ session_id: S.btRun.id, created_at: new Date().toISOString() }, rec)); const b = document.getElementById("bsBand"); if (b) b.outerHTML = window.tkSessionBand(), bindBand(); },
+    step(ts) {
+      const r = S.btRun; if (!r) return; r.at = ts;
+      const x = (S.bts || []).find(y => y.id === r.id); if (!x) return;
+      const now = Date.now(); x.bars = (x.bars || 0) + 1; if (r.lastNow) x.secs = (x.secs || 0) + Math.min(120, (now - r.lastNow) / 1000); r.lastNow = now;
+      const d = dayKey(now); x.study = x.study || {}; if (r.lastNow2) x.study[d] = (x.study[d] || 0) + Math.min(120, (now - r.lastNow2) / 1000); r.lastNow2 = now;
+      clearTimeout(r.t); r.t = setTimeout(async () => { x.lastTs = r.at; x.updated = Date.now(); await saveSession(x); }, 1500);
+    },
     bind: bindBand
   };
-  function bindBand() { const e = document.getElementById("bsEnd"); if (e) e.onclick = () => { const m = window.TkChart && TkChart.all.find(c => c.key === "main"); if (m) m.stopBacktest(); S.btRun = null; const b = document.getElementById("bsBand"); if (b) b.remove(); toast("Sesión guardada. La retomas desde Backtesting."); }; }
+  async function flushRun() { const r = S.btRun; if (!r || !r.t) return; clearTimeout(r.t); r.t = null; const x = (S.bts || []).find(y => y.id === r.id); if (!x) return; if (r.at) x.lastTs = r.at; x.updated = Date.now(); await saveSession(x); }
+  window.addEventListener("hashchange", () => { if (!location.hash.startsWith("#analizar")) flushRun(); });
+  window.addEventListener("pagehide", flushRun);
+  function bindBand() { const e = document.getElementById("bsEnd"); if (e) e.onclick = () => { flushRun(); const m = window.TkChart && TkChart.all.find(c => c.key === "main"); if (m) m.stopBacktest(); S.btRun = null; const b = document.getElementById("bsBand"); if (b) b.remove(); toast("Sesión guardada. La retomas desde Backtesting."); }; }
   window.tkLoadSessions = loadSessions;
+  window.TK_BT = { loadSessions, sessTrades, drawer, run, saveSession, hms, k };
 })();
 
 /* ======================= NOTICIAS (calendario económico) ======================= */
@@ -577,33 +824,46 @@
     }).catch(() => { loading = null; S.news = Object.assign(S.news || { events: [] }, { got: Date.now(), err: true }); });
     return loading;
   }
-  const hm = ts => new Date(ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  const TZS = [["", "Tu hora"], ["America/New_York", "Nueva York"], ["Europe/London", "Londres"], ["UTC", "UTC"], ["Asia/Tokyo", "Tokio"], ["Australia/Sydney", "Sídney"]];
+  const tz = () => lsGet("tk-ntz", "") || undefined;
+  const hm = ts => new Date(ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: tz() });
+  const dK = ts => new Date(ts).toLocaleDateString("en-CA", { timeZone: tz() });
+  const wkOf = k => { const d = new Date(k + "T12:00:00Z"), w = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - w); return d.toISOString().slice(0, 10); };
+  const sessionOf = ts => { const h = new Date(ts).getUTCHours(); return h >= 21 ? "Sídney" : h < 7 ? "Tokio" : h < 12 ? "Londres" : h < 16 ? "Londres · NY" : "Nueva York"; };
+  const numOf = v => { const m = String(v || "").trim().match(/^(-?[\d.,]+)\s*([%KMBT]?)$/i); if (!m) return null; return { n: parseFloat(m[1].replace(",", ".")), u: m[2] }; };
+  const surprise = e => { const a = numOf(e.actual), f = numOf(e.forecast); if (!a || !f || a.u.toUpperCase() !== f.u.toUpperCase()) return "—"; const d = Math.round((a.n - f.n) * 1000) / 1000; return (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d).toLocaleString("es-ES", { maximumFractionDigits: 3 }) + a.u; };
   const inPlan = ts => { const p = S.plan || {}, m = minOfDate(ts), a = minOf(p.start), b = minOf(p.end); return a != null && b != null && m >= a - 15 && m <= b; };
   const until = ts => { const m = Math.round((ts - Date.now()) / 6e4); if (m < 0) return "ya ha salido"; if (m < 60) return "en " + m + " min"; const h = Math.floor(m / 60); return h < 24 ? `en ${h} h ${m % 60} min` : `en ${Math.floor(h / 24)} d ${h % 24} h`; };
   const impBadge = i => { const x = IMP[i] || ["—", 0]; return `<span class="nimp i${x[1]}" title="Impacto ${x[0].toLowerCase()}"><span class="nbars"><i></i><i></i><i></i></span>${x[0]}</span>`; };
-  function nf() { return S.nf || (S.nf = { q: "", imp: { High: true, Medium: true, Low: true, Holiday: false }, cur: [], day: "week", mine: false }); }
+  function nf() { return S.nf || (S.nf = { q: "", imp: { High: true, Medium: true, Low: true, Holiday: false }, cur: [], day: "week", mine: false, page: 0, per: lsGet("tk-nper", 25) }); }
   function filtered() {
-    const f = nf(), E = (S.news && S.news.events) || [], q = norm(f.q), today = todayKey(), tm = new Date(); tm.setDate(tm.getDate() + 1); const tomorrow = dayKey(tm);
-    return E.filter(e => f.imp[e.impact] !== false && (IMP[e.impact] ? f.imp[e.impact] : true) && (!f.cur.length || f.cur.includes(e.country)) && (!q || norm(e.title + " " + e.country).includes(q)) && (f.day === "week" || dayKey(e.ts) === (f.day === "today" ? today : tomorrow)) && (!f.mine || inPlan(e.ts)));
+    const f = nf(), E = (S.news && S.news.events) || [], q = norm(f.q), today = dK(Date.now()), tomorrow = dK(Date.now() + 864e5), wk = wkOf(today);
+    const dayOk = e => { const k = dK(e.ts); return f.day === "all" ? true : f.day === "today" ? k === today : f.day === "tomorrow" ? k === tomorrow : f.day === "next" ? wkOf(k) > wk : wkOf(k) === wk; };
+    return E.filter(e => f.imp[e.impact] !== false && (IMP[e.impact] ? f.imp[e.impact] : true) && (!f.cur.length || f.cur.includes(e.country)) && (!q || norm(e.title + " " + e.country).includes(q)) && dayOk(e) && (!f.mine || inPlan(e.ts)));
   }
   function tableHtml(L) {
     if (!L.length) return empty(S.news && S.news.err ? "No se pudo cargar el calendario" : "No hay noticias con estos filtros", S.news && S.news.err ? "Vuelve a intentarlo en un momento." : "Prueba a activar más niveles de impacto o divisas.");
-    const now = Date.now(), next = L.find(e => e.ts > now); let lastDay = "";
-    return `<div class="xtablewrap"><table class="xtable ntable"><thead><tr><th>Día</th><th>Hora</th><th>Divisa</th><th>Impacto</th><th>Evento</th><th>Real</th><th>Previsión</th><th>Anterior</th><th></th></tr></thead><tbody>
-      ${L.map(e => { const d = dayKey(e.ts), first = d !== lastDay; lastDay = d; const past = e.ts < now - 30 * 6e4, isNext = next && e === next;
-        return `<tr class="${past ? "past" : ""} ${isNext ? "next" : ""} ${first ? "dayfirst" : ""}"><td>${first ? `<b>${new Date(e.ts).toLocaleDateString("es-ES", { weekday: "short" })}</b><div class="small muted">${new Date(e.ts).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>` : ""}</td>
+    const f = nf(), now = Date.now(), next = L.find(e => e.ts > now), pages = Math.max(1, Math.ceil(L.length / f.per)); if (f.page >= pages) f.page = pages - 1; let lastDay = "";
+    const P = L.slice(f.page * f.per, (f.page + 1) * f.per);
+    return `<div class="xtablewrap"><table class="xtable ntable"><thead><tr class="xgrp"><th colspan="5"><span>Información del evento</span></th><th colspan="3"><span>Publicación</span></th><th colspan="1"><span>Comparación</span></th><th colspan="2"><span>Nota</span></th></tr><tr><th>Día</th><th>Hora</th><th>Divisa</th><th>Impacto</th><th>Evento</th><th>Real</th><th>Previsión</th><th>Anterior</th><th>Sorpresa</th><th>Sesión</th><th></th></tr></thead><tbody>
+      ${P.map(e => { const d = dK(e.ts), first = d !== lastDay; lastDay = d; const past = e.ts < now - 30 * 6e4, isNext = next && e === next;
+        return `<tr class="${past ? "past" : ""} ${isNext ? "next" : ""} ${first ? "dayfirst" : ""}"><td>${first ? `<b>${new Date(e.ts).toLocaleDateString("es-ES", { weekday: "short", timeZone: tz() })}</b><div class="small muted">${new Date(e.ts).toLocaleDateString("es-ES", { day: "numeric", month: "short", timeZone: tz() })}</div>` : ""}</td>
           <td class="mono">${/T00:00:00/.test(e.date) && e.impact === "Holiday" ? "Todo el día" : hm(e.ts)}</td><td><span class="nflag">${FLAG[e.country] || "🏳️"}</span> ${esc(e.country)}</td><td>${impBadge(e.impact)}</td>
-          <td><b>${esc(e.title)}</b>${isNext ? ` <span class="xtag">Próxima · ${until(e.ts)}</span>` : ""}</td><td class="mono">${esc(e.actual || "—")}</td><td class="mono">${esc(e.forecast || "—")}</td><td class="mono">${esc(e.previous || "—")}</td>
-          <td>${inPlan(e.ts) ? `<span class="nmine" title="Cae dentro de tu horario de operativa">${I(IC.clock, 14)} Tu horario</span>` : ""}</td></tr>`; }).join("")}</tbody></table></div>`;
+          <td><b>${esc(e.title)}</b>${isNext ? ` <span class="xtag">Próxima · ${until(e.ts)}</span>` : ""}</td><td class="mono">${esc(e.actual || "—")}</td><td class="mono">${esc(e.forecast || "—")}</td><td class="mono">${esc(e.previous || "—")}</td><td class="mono">${esc(surprise(e))}</td><td class="small">${e.impact === "Holiday" ? "—" : sessionOf(e.ts)}</td>
+          <td>${inPlan(e.ts) ? `<span class="nmine" title="Cae dentro de tu horario de operativa">${I(IC.clock, 14)} Tu horario</span>` : ""}</td></tr>`; }).join("")}</tbody></table></div>
+      <div class="xfoot"><span class="muted small">Mostrando ${L.length ? f.page * f.per + 1 : 0}–${Math.min(L.length, (f.page + 1) * f.per)} de ${L.length} eventos</span>
+        <div class="xpager"><button type="button" class="xpb" data-npage="-1" ${f.page ? "" : "disabled"} aria-label="Página anterior">${I(IC.left, 16, 2)}</button><span class="xpn">${f.page + 1} / ${pages}</span><button type="button" class="xpb" data-npage="1" ${f.page < pages - 1 ? "" : "disabled"} aria-label="Página siguiente">${I(IC.right, 16, 2)}</button></div>
+        <label class="small muted">Por página <select class="xsel" id="nPer">${[10, 25, 50, 100].map(n => `<option ${n === f.per ? "selected" : ""}>${n}</option>`).join("")}</select></label></div>`;
   }
   V.noticias = {
     view() {
       if (!S.news || Date.now() - S.news.got > 20 * 60 * 1000) loadNews().then(() => { if (location.hash.startsWith("#noticias")) { S.lastView = null; render(); } });
-      const f = nf(), E = (S.news && S.news.events) || [], today = todayKey(), L = filtered();
-      const todayE = E.filter(e => dayKey(e.ts) === today), hiToday = todayE.filter(e => e.impact === "High"), nextHi = E.find(e => e.impact === "High" && e.ts > Date.now());
+      const f = nf(), E = (S.news && S.news.events) || [], today = dK(Date.now()), L = filtered();
+      const todayE = E.filter(e => dK(e.ts) === today), hiToday = todayE.filter(e => e.impact === "High"), nextHi = E.find(e => e.impact === "High" && e.ts > Date.now());
       const curs = Array.from(new Set(E.map(e => e.country))).filter(Boolean).sort();
       return `<div class="stack" style="gap:18px">
-        <div class="xhead"><div><h1>Noticias</h1><div class="small muted">Calendario económico de esta semana y la siguiente · horas en ${esc(TZ.replace("_", " ") || "tu zona")}</div></div><button type="button" class="btn2" id="nRef" style="height:38px">Actualizar</button></div>
+        <div class="xhead"><div><h1>Calendario económico</h1><div class="small muted">Noticias de esta semana y la siguiente · horas en ${esc(tz() ? TZS.find(x => x[0] === tz())[1] : (TZ.split("/").pop() || "tu zona").replace("_", " "))}</div></div>
+          <div class="row" style="gap:8px"><label class="xtz">${I(IC.clock, 15)}<select class="xsel" id="nTz" aria-label="Zona horaria">${TZS.map(([k, l]) => `<option value="${k}" ${(tz() || "") === k ? "selected" : ""}>${k ? "Horas de " + l : "Tu hora (" + esc((TZ.split("/").pop() || "local").replace("_", " ")) + ")"}</option>`).join("")}</select></label><button type="button" class="btn2" id="nRef" style="height:38px">Actualizar</button></div></div>
         <div class="xkgrid">${statCard("Eventos esta semana", S.news ? E.length : "…", todayE.length + " hoy")}
           ${statCard("Alto impacto hoy", S.news ? hiToday.length : "…", hiToday.length ? hiToday.map(e => hm(e.ts) + " " + e.country).slice(0, 3).join(" · ") : "Día tranquilo")}
           ${statCard("Divisas", curs.length || "…", curs.slice(0, 6).join(" · "))}
@@ -612,7 +872,7 @@
         <div class="card xcard"><div class="xtools">
           <label class="xsearch">${I(IC.search, 16)}<input id="nQ" placeholder="Buscar eventos…" value="${esc(f.q)}" aria-label="Buscar eventos"></label>
           <div class="xfil">
-            <div class="pseg" role="group" aria-label="Día">${[["today", "Hoy"], ["tomorrow", "Mañana"], ["week", "Todo"]].map(([k, l]) => `<button type="button" data-nday="${k}" aria-pressed="${f.day === k}">${l}</button>`).join("")}</div>
+            <div class="pseg" role="group" aria-label="Día">${[["today", "Hoy"], ["tomorrow", "Mañana"], ["week", "Esta semana"], ["next", "Próxima"], ["all", "Todo"]].map(([k, l]) => `<button type="button" data-nday="${k}" aria-pressed="${f.day === k}">${l}</button>`).join("")}</div>
             <div class="pills" role="group" aria-label="Impacto">${Object.entries(IMP).map(([k, [l]]) => `<button type="button" data-nimp="${k}" aria-pressed="${!!f.imp[k]}">${l}</button>`).join("")}</div>
             <button type="button" class="chipb" data-nmine aria-pressed="${f.mine}">${I(IC.clock, 13)} Solo en mi horario</button>
           </div></div>
@@ -623,8 +883,11 @@
     },
     bind() {
       const f = nf(), re = () => { S.lastView = null; render(); };
-      const q = $("#nQ"); q.oninput = () => { f.q = q.value; $("#nTable").innerHTML = tableHtml(filtered()); };
-      $$("[data-nday]").forEach(b => b.onclick = () => { f.day = b.dataset.nday; re(); });
+      const bindT = () => { $$("[data-npage]").forEach(b => b.onclick = () => { f.page += +b.dataset.npage; $("#nTable").innerHTML = tableHtml(filtered()); bindT(); }); const pp = $("#nPer"); if (pp) pp.onchange = () => { f.per = +pp.value; f.page = 0; lsSet("tk-nper", f.per); $("#nTable").innerHTML = tableHtml(filtered()); bindT(); }; };
+      bindT();
+      $("#nTz").onchange = e => { lsSet("tk-ntz", e.target.value); re(); };
+      const q = $("#nQ"); q.oninput = () => { f.q = q.value; f.page = 0; $("#nTable").innerHTML = tableHtml(filtered()); bindT(); };
+      $$("[data-nday]").forEach(b => b.onclick = () => { f.day = b.dataset.nday; f.page = 0; re(); });
       $$("[data-nimp]").forEach(b => b.onclick = () => { f.imp[b.dataset.nimp] = !f.imp[b.dataset.nimp]; re(); });
       $$("[data-ncur]").forEach(b => b.onclick = () => { const c = b.dataset.ncur; if (!c) f.cur = []; else f.cur = f.cur.includes(c) ? f.cur.filter(x => x !== c) : f.cur.concat([c]); re(); });
       const m = $("[data-nmine]"); m.onclick = () => { f.mine = !f.mine; re(); };
@@ -715,33 +978,53 @@
     if (!L.length) return `${month ? "Este mes" : "Esta semana"} aún no has cerrado operaciones.`;
     return `${month ? "Este mes" : "Esta semana"}: <b>${st.n}</b> operaciones, <b>${fmtR(st.tot)}</b>, ${num(st.win, 0)} % de acierto y <b>${good} de ${st.n}</b> dentro del plan.${st.dd < 0 ? ` Peor caída: ${fmtR(st.dd)}.` : ""}`;
   }
+  const CMDS = [["semana", "Cómo voy esta semana", "¿Cómo voy esta semana?"], ["mes", "Resumen del mes", "Resumen del mes"], ["hora", "Mi mejor hora", "¿A qué hora opero mejor?"], ["dia", "Mejor y peor día", "¿Qué día de la semana me va peor?"], ["mercado", "Mi mejor mercado", "¿Cuál es mi mejor mercado?"], ["normas", "Qué norma rompo más", "¿Qué norma rompo más?"], ["perdida", "Después de una pérdida", "¿Qué hago después de una pérdida?"], ["emocion", "La emoción que más me cuesta", "¿Qué emoción me cuesta más?"], ["sobreoperar", "¿Opero demasiado?", "¿Opero demasiado?"], ["direccion", "Compras o ventas", "¿Compras o ventas?"], ["backtesting", "Mi backtesting", "¿Cómo va mi backtesting?"]];
+  const chats = () => lsGet("tk-chats", []), saveChats = L => lsSet("tk-chats", L.slice(0, 30));
+  const curChat = () => { const L = chats(); return L.find(c => c.id === S.chatId) || null; };
   V.asistente = {
     view() {
-      const th = S.chat || [];
-      return `<div class="aswrap">
-        <div class="ashead"><span class="asorb">${SVG('<path d="M10 2.5l1.6 3.7 3.7 1.6-3.7 1.6L10 13.1 8.4 9.4 4.7 7.8l3.7-1.6z"/><path d="M15.5 12.5l.7 1.5 1.5.7-1.5.7-.7 1.5-.7-1.5-1.5-.7 1.5-.7z"/>', 26)}</span>
-          <h1>Hola, ${esc((S.name || "").split(" ")[0])}.</h1><p class="muted">¿Qué quieres saber de tu trading? Respondo con tus operaciones${selAcct() ? " de " + esc(acctName(selAcct().a)) : ""}, en R.</p></div>
+      const c = curChat(), th = c ? c.msgs : [], L = chats();
+      return `<div class="aslay">
+        <aside class="asside"><button type="button" class="btn2" id="asNewC" style="height:38px;width:100%;justify-content:flex-start">${I(IC.plus, 16, 2)} Nuevo chat</button>
+          <div class="lbl" style="margin:14px 4px 6px">Chats</div>
+          ${L.length ? `<div class="aschats">${L.map(x => `<div class="aschat ${c && c.id === x.id ? "on" : ""}"><button type="button" data-chat="${esc(x.id)}">${esc(x.title)}</button><button type="button" class="xib" data-chatdel="${esc(x.id)}" aria-label="Borrar chat" title="Borrar chat">${I(IC.x, 13, 2)}</button></div>`).join("")}</div>` : `<div class="small muted" style="padding:0 4px">Aún no hay conversaciones.</div>`}
+          <div class="small muted" style="margin-top:auto;padding:12px 4px 0">Los chats se guardan solo en este dispositivo.</div></aside>
+        <div class="aswrap ${th.length ? "has" : ""}">
+        ${th.length ? "" : `<div class="ashead"><span class="asorb">${SVG('<path d="M10 2.5l1.6 3.7 3.7 1.6-3.7 1.6L10 13.1 8.4 9.4 4.7 7.8l3.7-1.6z"/><path d="M15.5 12.5l.7 1.5 1.5.7-1.5.7-.7 1.5-.7-1.5-1.5-.7 1.5-.7z"/>', 26)}</span>
+          <h1><span class="muted" style="font-weight:600">Hola, ${esc((S.name || "").split(" ")[0])}.</span><br>¿En qué puedo ayudarte hoy?</h1><p class="muted">Respondo con tus operaciones${selAcct() ? " de " + esc(acctName(selAcct().a)) : ""}, en R.</p></div>`}
         <div class="asthread" id="asT" aria-live="polite">${th.map(m => `<div class="asmsg ${m.me ? "me" : ""}">${m.me ? esc(m.t) : m.t}</div>`).join("")}</div>
-        <form class="asbox" id="asF"><textarea id="asQ" rows="1" placeholder="Pregunta sobre tus operaciones…" aria-label="Pregunta"></textarea><button type="submit" class="btn" style="height:40px;width:40px;padding:0" aria-label="Enviar">${I(IC.send, 18)}</button></form>
+        <form class="asbox" id="asF"><div class="ascmd" id="asCmd" hidden role="listbox" aria-label="Comandos"></div><textarea id="asQ" rows="1" placeholder="Pregunta sobre tus operaciones, o escribe / para comandos" aria-label="Pregunta"></textarea><button type="submit" class="btn" style="height:40px;width:40px;padding:0" aria-label="Enviar">${I(IC.send, 18)}</button></form>
         <div class="assug">${SUG.slice(0, 6).map(s => `<button type="button" class="chipb" data-ask="${esc(s)}">${esc(s)}</button>`).join("")}</div>
         <div class="small muted" style="text-align:center">Las respuestas salen de tus datos guardados en Tickora; no es una IA externa y no da consejos de inversión.</div>
-      </div>`;
+      </div></div>`;
     },
     bind() {
-      const f = $("#asF"), q = $("#asQ"), T = $("#asT");
+      const f = $("#asF"), q = $("#asQ"), T = $("#asT"), cm = $("#asCmd");
+      const re = () => { S.lastView = null; render(); setTimeout(() => { const n = $("#asQ"); n && n.focus(); const t = $("#asT"); t && t.lastElementChild && t.lastElementChild.scrollIntoView({ block: "nearest" }); }, 0); };
       const ask = text => {
         text = String(text || "").trim(); if (!text) return;
-        (S.chat = S.chat || []).push({ me: true, t: text }, { me: false, t: answer(text) }); if (S.chat.length > 40) S.chat = S.chat.slice(-40);
-        T.innerHTML = S.chat.map(m => `<div class="asmsg ${m.me ? "me" : ""}">${m.me ? esc(m.t) : m.t}</div>`).join(""); bindAsk(); T.lastElementChild && T.lastElementChild.scrollIntoView({ behavior: "smooth", block: "nearest" }); q.value = ""; q.style.height = "";
+        const L = chats(); let c = L.find(x => x.id === S.chatId);
+        if (!c) { c = { id: "c" + Date.now().toString(36), title: text.slice(0, 48), msgs: [], ts: Date.now() }; L.unshift(c); S.chatId = c.id; }
+        c.msgs.push({ me: true, t: text }, { me: false, t: answer(text) }); c.msgs = c.msgs.slice(-40); c.ts = Date.now();
+        saveChats([c].concat(L.filter(x => x.id !== c.id))); re();
       };
+      let ci = 0, CL = [];
+      const paintCmd = () => { cm.innerHTML = CL.map((x, i) => `<button type="button" role="option" data-cmd="${x[0]}" aria-selected="${i === ci}"><span class="mono">/${x[0]}</span> ${esc(x[1])}</button>`).join(""); };
+      const checkCmd = () => { const m = q.value.match(/^\/(\w*)$/); if (!m) { cm.hidden = true; return; } CL = CMDS.filter(x => x[0].startsWith(norm(m[1]))); if (!CL.length) { cm.hidden = true; return; } ci = 0; paintCmd(); cm.hidden = false; };
+      const runCmd = k => { const c = CMDS.find(x => x[0] === k); cm.hidden = true; q.value = ""; if (c) ask(c[2]); };
+      cm.addEventListener("mousedown", e => { const b = e.target.closest("[data-cmd]"); if (b) { e.preventDefault(); runCmd(b.dataset.cmd); } });
       const bindAsk = () => $$("[data-ask]").forEach(b => b.onclick = () => ask(b.dataset.ask));
-      f.onsubmit = e => { e.preventDefault(); ask(q.value); };
-      q.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(q.value); } };
-      q.oninput = () => { q.style.height = "auto"; q.style.height = Math.min(160, q.scrollHeight) + "px"; };
+      f.onsubmit = e => { e.preventDefault(); const m = q.value.trim().match(/^\/(\w+)$/); if (m && CMDS.some(x => x[0] === norm(m[1]))) return runCmd(norm(m[1])); ask(q.value); };
+      q.onkeydown = e => {
+        if (!cm.hidden) { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); ci = (ci + (e.key === "ArrowDown" ? 1 : -1) + CL.length) % CL.length; paintCmd(); return; } if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); runCmd(CL[ci][0]); return; } if (e.key === "Escape") { cm.hidden = true; return; } }
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); f.onsubmit(e); }
+      };
+      q.oninput = () => { q.style.height = "auto"; q.style.height = Math.min(160, q.scrollHeight) + "px"; checkCmd(); };
+      $("#asNewC").onclick = () => { S.chatId = null; re(); };
+      $$("[data-chat]").forEach(b => b.onclick = () => { S.chatId = b.dataset.chat; re(); });
+      $$("[data-chatdel]").forEach(b => b.onclick = () => { saveChats(chats().filter(x => x.id !== b.dataset.chatdel)); if (S.chatId === b.dataset.chatdel) S.chatId = null; re(); });
       bindAsk();
+      if (T.lastElementChild) T.lastElementChild.scrollIntoView({ block: "nearest" });
     }
   };
 })();
-
-/* si la página ya se pintó antes de cargar este archivo, la repinto con las secciones nuevas */
-(function () { const A = window.TKAPP; if (A && A.S && A.S.loaded && window.TK_VIEWS[(location.hash.replace(/^#/, "").split("/")[0])]) { A.S.lastView = null; A.render(); } })();
