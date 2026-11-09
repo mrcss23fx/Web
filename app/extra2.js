@@ -58,24 +58,24 @@
     return { today, st, p, C90, s90, good, nextHigh: ev && ev.find(e => e.impact === "High"), todayEv, sess, pages, phase, a, b, now };
   }
   /* portada: 8 aplicaciones en cuadros vivos; al entrar en una ves sus categorías */
-  const HAPPS = ["hoy", "analizar", "backtest", "resultados", "diario", "cartera", "asistente", "recursos"];
+  const HAPPS = ["hoy", "analizar", "backtest", "resultados", "diario", "cartera", "plan", "asistente"];
   const appDef = k => NAV_APPS.find(a => a[0] === k);
   const APPDESC = {
-    hoy: "Tu día de trading: lo que llevas hoy, tu plan y tu grupo.",
+    hoy: "Tu sesión de hoy: lo que llevas, tus límites, tu horario y las noticias.",
     analizar: "El gráfico en directo con todas tus herramientas.",
     backtest: "Practica con el mercado real, vela a vela, en sesiones o retos de fondeo.",
-    resultados: "Cómo te va: tus números, tu progreso, tus emociones y cada operación.",
-    diario: "Páginas para preparar y revisar tus sesiones.",
+    resultados: "Cómo te va: tus números, tu disciplina, tus emociones y cada operación.",
+    diario: "Tu cuaderno para apuntarlo todo.",
     cartera: "Tus cuentas de demo, fondeo y capital propio, y lo que gastas y cobras.",
+    plan: "Tus normas, tus límites y tu horario.",
     asistente: "Pregunta por tus números y te respondo con tus datos.",
-    recursos: "Calendario económico y aprendizaje."
+    ajustes: "Tu cuenta, MetaTrader, permisos y apariencia."
   };
   const CATDESC = {
-    hoy: "Lo que llevas hoy y tus normas", plan: "Tu horario, tus límites y tus normas", grupo: "Disciplina compartida, nunca dinero",
-    analizar: "Gráfico en directo", backtest: "Crea y continúa tus sesiones", btanalisis: "Tus estadísticas de práctica", btops: "Todo lo que has operado practicando", btcal: "Resultado simulado por día", btnotas: "Notas de cada sesión",
-    rendimiento: "Tus números en R", progreso: "Cuánto cumples tu plan", emociones: "Qué emociones te ayudan y cuáles te cuestan", historial: "Todas tus operaciones en una tabla", calendario: "Tu resultado de cada día", informe: "El resumen completo de un día",
-    diario: "Tus páginas y plantillas", cuentas: "Demo, fondeo y capital propio", finanzas: "Lo que pagas y cobras", asistente: "Pregunta por tus números",
-    noticias: "Noticias que mueven el mercado", aprender: "Lecciones del bootcamp"
+    hoy: "Lo que llevas hoy, tus límites y tu horario", noticias: "Noticias que mueven el mercado esta semana", plan: "Tus normas, tus límites y tu horario",
+    analizar: "Gráfico en directo", backtest: "Crea y continúa tus sesiones", btanalisis: "Tus estadísticas de práctica", btops: "Todo lo que has operado practicando", btnotas: "Tus notas de cada sesión",
+    rendimiento: "Todos tus números en R", progreso: "Cuánto cumples tu plan y qué normas rompes", emociones: "Qué emociones te ayudan y cuáles te cuestan", historial: "Todas tus operaciones en una tabla", calendario: "Tu resultado de cada día; toca uno para ver su informe",
+    diario: "Tus páginas", cuentas: "Demo, fondeo y capital propio", finanzas: "Lo que pagas y cobras", asistente: "Pregunta por tus números"
   };
   const appHref = k => { const a = appDef(k); return a[2].length > 1 ? "#app/" + k : "#" + a[2][0][0]; };
   const rbtn = (href, label) => `<a class="hb-go" href="${href}" aria-label="Entrar en ${esc(label)}" title="Entrar en ${esc(label)}" data-stop>${I(ARW, 16, 2)}</a>`;
@@ -88,7 +88,7 @@
         const used = D.today.length, mx = p.maxTrades || 3, f = Math.min(1, used / mx), tf = D.phase === "antes" ? 0 : D.phase === "despues" ? 1 : (D.now - D.a) / Math.max(1, D.b - D.a);
         return `<div class="hb-w">${cats}<div class="hb-bar" role="img" aria-label="${used} de ${mx} operaciones"><i style="left:${(f * 100).toFixed(1)}%"></i></div>
           <div class="hb-sbar" role="img" aria-label="Horario ${esc(p.start)} a ${esc(p.end)}"><span>${esc(p.start)}</span><div><em style="width:${(tf * 100).toFixed(1)}%"></em></div><span>${esc(p.end)}</span></div></div>
-          ${tFoot(name, D.st.n ? fmtR(D.st.tot) + " · " + used + " de " + mx + " operaciones" : used + " de " + mx + " operaciones hoy", href)}`;
+          ${tFoot(name, (D.st.n ? fmtR(D.st.tot) + " · " : "") + used + " de " + mx + " operaciones" + (D.nextHigh && dayKey(D.nextHigh.ts) === todayKey() ? " · noticia " + hhmm(D.nextHigh.ts) : ""), href)}`;
       }
       case "analizar": {
         const sym = (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD", tf = lsGet("tk-tf", "5m");
@@ -120,10 +120,9 @@
         const q = ["¿A qué hora opero mejor?", "¿Qué norma rompo más?", "¿Cómo voy esta semana?", "¿Cuál es mi mejor mercado?"][new Date().getDate() % 4];
         return `<div class="hb-w"><a class="hb-q" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 14)}</span></a></div>${tFoot(name, "Pregunta por tus números", href)}`;
       }
-      case "recursos": {
-        const e = D.nextHigh;
-        return `<div class="hb-w">${cats}${e ? `<div class="hb-ev"><b class="mono">${dayKey(e.ts) === todayKey() ? hhmm(e.ts) : new Date(e.ts).toLocaleDateString("es-ES", { weekday: "short" }) + " " + hhmm(e.ts)}</b><span>${esc(e.country)} · alto impacto</span><small>${esc(e.title)}</small></div>` : `<div class="hb-ev"><b>—</b><small>${S.news ? "Sin noticias fuertes pendientes" : "Cargando noticias…"}</small></div>`}</div>
-          ${tFoot(name, "Calendario económico", href)}`;
+      case "plan": {
+        return `<div class="hb-w"><div class="hb-chips"><span>Máx. ${p.maxTrades} op.</span><span>${esc(p.start)}–${esc(p.end)}</span><span>Límite ${num(p.dayLimitR, 1)} R</span>${p.riskPct != null ? `<span>Riesgo ${num(p.riskPct, 2).replace(/,?0+$/, "")} %</span>` : ""}</div></div>
+          ${tFoot(name, (p.rules || []).length ? (p.rules || []).length + ((p.rules || []).length === 1 ? " norma" : " normas") + " · cambios desde mañana" : "Añade tus normas", href)}`;
       }
     }
     return "";
@@ -145,7 +144,7 @@
       btnotas: [String((S.pages || []).filter(x => !x.isTpl && (x.bt || x.tpl === "bt")).length), "notas", null],
       rendimiento: [D.s90.n ? fmtR(D.s90.tot) : "—", "en 90 días", D.s90.win != null ? D.s90.win / 100 : null],
       progreso: [D.C90.length ? Math.round(D.good / D.C90.length * 100) + " %" : "—", "dentro del plan", D.C90.length ? D.good / D.C90.length : null],
-      emociones: [healthOk() ? (topF ? esc(topF[0]) : "—") : "Desactivado", healthOk() ? "la más frecuente" : "actívalo en Mi plan", null],
+      emociones: [healthOk() ? (topF ? esc(topF[0]) : "—") : "Desactivado", healthOk() ? "la más frecuente" : "actívalo en Ajustes", null],
       historial: [String(S.allTrades.length), "operaciones", null],
       calendario: [w.n ? fmtR(w.tot) : "—", "últimos 7 días", null],
       informe: [D.st.n ? fmtR(D.st.tot) : "—", "hoy", null],
@@ -257,7 +256,7 @@
   /* ======================= RUTA, PESTAÑAS Y BOTÓN + ======================= */
   window.tkCrumb = function (view) {
     const app = appOf(view === "op" ? "historial" : view), many = app && app[2].length > 1;
-    const back = !app ? ["#inicio", "Inicio"] : many && view !== "op" ? ["#app/" + app[0], app[1]] : view === "op" ? ["#historial", "Operaciones"] : ["#inicio", "Inicio"];
+    const back = view === "informe" ? ["#calendario", "Calendario"] : !app ? ["#inicio", "Inicio"] : many && view !== "op" ? ["#app/" + app[0], app[1]] : view === "op" ? ["#historial", "Operaciones"] : ["#inicio", "Inicio"];
     return `<div class="pgbar"><a class="hb-back" href="${back[0]}">${I('<path d="M12 5l-5 5 5 5"/>', 16, 2.2)} ${esc(back[1])}</a>
       ${many && view !== "op" ? `<nav class="pgtabs" aria-label="${esc(app[1])}">${app[2].map(([k, l]) => `<a href="#${k}" ${k === view ? 'aria-current="page"' : ""}>${ico(k, 16)}<span>${esc(l)}</span></a>`).join("")}</nav>` : `<span class="pgtabs-sp"></span>`}
       <div class="xpop pgadd"><button type="button" class="hbtb" data-plus aria-haspopup="true" aria-expanded="false" title="Crear" aria-label="Crear">${I(IC.plus, 18, 2.2)}</button><div class="xpopm right" id="plusM" hidden>${actions().slice(0, 5).map((a, i) => `<button type="button" class="xpopb" data-pa="${i}">${esc(a[0])}</button>`).join("")}</div></div></div>`;
@@ -283,9 +282,9 @@
     const done = lsGet("tk-guide-ok", {});
     const st = [
       ["acct", "Añade tu primera cuenta", "#cuentas", (S.accts || []).length > 0],
-      ["mt5", "Conecta MetaTrader 5", "#plan", (S.bridges || []).length > 0],
+      ["mt5", "Conecta MetaTrader 5", "#ajustes", (S.bridges || []).length > 0],
       ["plan", "Completa tu plan", "#plan", !!(S.planDoc && S.planDoc.current)],
-      ["emo", "Activa el registro de emociones", "#plan", healthOk()],
+      ["emo", "Activa el registro de emociones", "#ajustes", healthOk()],
       ["bt", "Crea una sesión de backtesting", "#backtest", (S.bts || []).length > 0],
       ["page", "Escribe tu primera página", "#diario", (S.pages || []).some(p => !p.isTpl)]
     ];
@@ -381,11 +380,12 @@
   const perFilter = (L, per, key) => per === "all" ? L : L.filter(t => new Date(t[key || "open_time"]) >= Date.now() - (+per) * 864e5);
   V.rendimiento = {
     view() {
-      const per = S.rendPer || "90", L = perFilter(S.trades, per), C = closed(L).sort((a, b) => new Date(a.open_time) - new Date(b.open_time)), st = tradeStats(L), sc = score(L);
+      const per = S.rendPer || "90", L = perFilter(S.trades, per), C = closed(L).sort((a, b) => new Date(a.open_time) - new Date(b.open_time)), st = tradeStats(L);
       const best = C.length ? C.reduce((a, b) => b.r > a.r ? b : a) : null, worst = C.length ? C.reduce((a, b) => b.r < a.r ? b : a) : null;
       const rr = st.avgW != null && st.avgL ? Math.abs(st.avgW / st.avgL) : null, wins = C.filter(t => t.r > 0).length, losses = C.filter(t => t.r < 0).length;
       let cum = 0, peak = 0; const curve = [0], ddc = [0]; C.forEach(t => { cum += t.r; peak = Math.max(peak, cum); curve.push(cum); ddc.push(cum - peak); });
       const f0 = C.length ? fmtD(C[0].open_time) : "", f1 = C.length ? fmtD(C[C.length - 1].open_time) : "";
+      const byMonth = []; for (let i = 11; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); const l = closed(S.trades).filter(t => { const x = new Date(t.open_time); return x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth(); }); byMonth.push({ l: d.toLocaleDateString("es-ES", { month: "short" }).replace(".", ""), v: l.reduce((a, t) => a + t.r, 0), n: l.length }); }
       const byDow = DOW.map((l, i) => { const x = C.filter(t => (new Date(t.open_time).getDay() + 6) % 7 === i); return { l, v: x.reduce((a, t) => a + t.r, 0), n: x.length }; });
       const hrs = {}; C.forEach(t => { const h = new Date(t.open_time).getHours(); (hrs[h] = hrs[h] || []).push(t); });
       const byHr = Object.keys(hrs).map(Number).sort((a, b) => a - b).map(h => ({ l: h + "h", v: hrs[h].reduce((a, t) => a + t.r, 0), n: hrs[h].length }));
@@ -401,7 +401,7 @@
           ${kpi("Ganancia media", st.avgW != null ? fmtR(st.avgW) : "—", wins + " ganadoras", "", "Lo que ganas de media en cada operación ganadora")}
           ${kpi("Relación ganancia / pérdida", rr != null ? num(rr, 2) : "—", st.avgL != null ? "pérdida media " + fmtR(st.avgL) : "", ring(rr == null ? 0 : Math.min(100, rr / 3 * 100)), "Ganancia media dividida entre la pérdida media")}
           ${kpi("Esperanza", st.exp != null ? fmtR(st.exp) : "—", "por operación", "", "Lo que ganas o pierdes de media por operación")}
-          ${kpi("Puntuación Tickora", sc == null ? "—" : sc + " / 100", sc == null ? "Necesita 5 operaciones" : "acierto, beneficio, relación, plan y caída", ring(sc || 0), "Mezcla tu acierto (20 %), factor de beneficio (25 %), relación ganancia/pérdida (15 %), cumplimiento del plan (25 %) y caída máxima (15 %)")}
+          ${kpi("Peor caída", st.n ? fmtR(st.dd) : "—", "desde el máximo", "", "Lo máximo que has bajado desde tu mejor momento en el periodo")}
           ${kpi("Ganadoras frente a perdedoras", st.win == null ? "—" : num(st.win, 0) + " %", "", C.length ? meter(wins, losses, wins + " ganadoras", losses + " perdedoras") : "", "Porcentaje de operaciones ganadoras")}
         </div>
         <div class="xg3">
@@ -410,6 +410,7 @@
           <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Crecimiento de las cuentas</h2><a class="btn2" href="#cuentas" style="height:32px">${I(IC.plus, 14, 2)} Añadir cuenta</a></div>
             ${accts.length ? `<div class="stack" style="gap:10px">${accts.map(x => `<a class="racc" href="#cuentas"><div class="between"><b>${esc(acctName(x.a))}</b><span class="mono">${fmtR(x.st.tot)}</span></div>${spark(x.st.curve, 260, 34)}<span class="small muted">${x.st.n} op. · ${num(x.st.win, 0)} % acierto</span></a>`).join("")}</div>` : `<div class="xchart-empty">${(S.accts || []).length ? "Tus cuentas aún no tienen operaciones en este periodo." : "Aún no hay cuentas. Añade una para ver cómo crece cada una."}</div>`}</div>
         </div>
+        <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Resultado por mes</h2><span class="small muted">últimos 12 meses</span></div>${barsV(byMonth, { label: "Resultado por mes" })}</div>
         <div class="xg2">
           <div class="card stack" style="gap:10px"><h2 class="h2b">Resultado por día de la semana</h2>${barsV(byDow, { label: "Resultado por día" })}</div>
           <div class="card stack" style="gap:10px"><h2 class="h2b">Resultado por hora de entrada</h2>${barsV(byHr, { label: "Resultado por hora" })}</div>
@@ -422,56 +423,88 @@
     bind() { $$("[data-rper]").forEach(b => b.onclick = () => { S.rendPer = b.dataset.rper; re(); }); }
   };
 
-  /* ======================= CALENDARIO (real y de backtesting) ======================= */
+  /* ======================= CALENDARIO: real o práctica, en grande; al tocar un día se abre su informe ======================= */
+  const cR = v => `<b class="mono ${v > 0 ? "cpos" : v < 0 ? "cneg" : ""}">${fmtR(v)}</b>`;
+  const calSrcL = () => S.calSrc === "bt" ? simAll() : closed(S.trades);
   function calendar(key, L, opts) {
     const st = S[key] || (S[key] = { y: new Date().getFullYear(), m: new Date().getMonth(), mode: "mes" });
     const byDay = {}; L.forEach(t => { const d = dayKey(dateOf(t)); (byDay[d] = byDay[d] || []).push(t); });
-    const dayStats = l => tradeStats(l);
+    const src = `<div class="pseg calsrc" role="group" aria-label="Qué operaciones"><button type="button" data-csrc="real" aria-pressed="${S.calSrc !== "bt"}">Real</button><button type="button" data-csrc="bt" aria-pressed="${S.calSrc === "bt"}">Práctica</button></div>`;
+    const modeB = `<div class="pseg" role="group" aria-label="Vista"><button type="button" data-cmode="mes" aria-pressed="${st.mode !== "anio"}">Mes</button><button type="button" data-cmode="anio" aria-pressed="${st.mode === "anio"}">Año</button></div>`;
+    const leg = `<div class="cleg"><span><i class="pos"></i>Día positivo</span><span><i class="neg"></i>Día negativo</span><span><i></i>Sin operar</span><span class="muted">Más intenso = más R</span></div>`;
     if (st.mode === "anio") {
       const months = MESES_L.map((ml, m) => { const l = L.filter(t => { const d = new Date(dateOf(t)); return d.getFullYear() === st.y && d.getMonth() === m; }); return { m, ml, st: tradeStats(l) }; });
-      const tot = months.reduce((a, x) => a + x.st.tot, 0), n = months.reduce((a, x) => a + x.st.n, 0);
-      return `<div class="card stack" style="gap:14px"><div class="calh"><div><h2 class="h2b">${opts.title}</h2><div class="calbig mono">${n ? fmtR(tot) : "0,0 R"}</div><div class="small muted">${n} operaciones en ${st.y}</div></div>
-        <div class="row" style="gap:8px;flex-wrap:wrap"><div class="pseg" role="group"><button type="button" data-cmode="mes" aria-pressed="false">Mensual</button><button type="button" data-cmode="anio" aria-pressed="true">Anual</button></div>
-        <div class="calnav"><button type="button" class="xpb" data-cnav="-1" aria-label="Año anterior">${I(IC.left, 16, 2)}</button><b>${st.y}</b><button type="button" class="xpb" data-cnav="1" aria-label="Año siguiente">${I(IC.right, 16, 2)}</button></div></div></div>
-        <div class="calyear">${months.map(x => `<button type="button" class="calm ${x.st.n ? "has" : ""}" data-cmonth="${x.m}"><b>${cap(x.ml)}</b><span class="mono">${x.st.n ? fmtR(x.st.tot) : "—"}</span><small>${x.st.n ? x.st.n + " op. · " + num(x.st.win, 0) + " %" : "sin operaciones"}</small></button>`).join("")}</div></div>`;
+      const tot = months.reduce((a, x) => a + x.st.tot, 0), n = months.reduce((a, x) => a + x.st.n, 0), mx = Math.max(.5, ...months.map(x => Math.abs(x.st.tot)));
+      return `<div class="card stack calcard" style="gap:16px"><div class="calh"><div><div class="calbig">${n ? cR(tot) : `<b class="mono">0,0 R</b>`}</div><div class="small muted">${n} operaciones en ${st.y}</div></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap">${src}${modeB}<div class="calnav"><button type="button" class="xpb" data-cnav="-1" aria-label="Año anterior">${I(IC.left, 16, 2)}</button><b>${st.y}</b><button type="button" class="xpb" data-cnav="1" aria-label="Año siguiente">${I(IC.right, 16, 2)}</button></div></div></div>
+        <div class="calyear">${months.map(x => `<button type="button" class="calm ${x.st.n ? (x.st.tot < 0 ? "neg" : "pos") : ""}" style="--a:${x.st.n ? (.15 + Math.abs(x.st.tot) / mx * .55).toFixed(2) : 0}" data-cmonth="${x.m}"><b>${cap(x.ml)}</b><span class="mono">${x.st.n ? fmtR(x.st.tot) : "—"}</span><small>${x.st.n ? x.st.n + " op. · " + num(x.st.win, 0) + " % acierto" : "sin operaciones"}</small></button>`).join("")}</div>${leg}</div>`;
     }
     const first = new Date(st.y, st.m, 1), off = (first.getDay() + 6) % 7, days = new Date(st.y, st.m + 1, 0).getDate(), weeks = Math.ceil((off + days) / 7);
     const monthL = L.filter(t => { const d = new Date(dateOf(t)); return d.getFullYear() === st.y && d.getMonth() === st.m; }), mst = tradeStats(monthL);
-    const mxAbs = Math.max(0.5, ...Object.entries(byDay).filter(([k]) => k.startsWith(st.y + "-" + String(st.m + 1).padStart(2, "0"))).map(([, l]) => Math.abs(dayStats(l).tot)));
+    const inMonth = Object.entries(byDay).filter(([k]) => k.startsWith(st.y + "-" + String(st.m + 1).padStart(2, "0"))), mxAbs = Math.max(.5, ...inMonth.map(([, l]) => Math.abs(tradeStats(l).tot)));
+    const pos = inMonth.filter(([, l]) => tradeStats(l).tot > 0).length, neg = inMonth.filter(([, l]) => tradeStats(l).tot < 0).length;
     let grid = DOW.map(d => `<div class="calwd">${d}</div>`).join("") + `<div class="calwd">Semana</div>`;
     const W = [];
     for (let w = 0; w < weeks; w++) {
       const wl = [];
       for (let c = 0; c < 7; c++) {
-        const dn = w * 7 + c - off + 1, dt = new Date(st.y, st.m, dn), k = dayKey(dt), inM = dn >= 1 && dn <= days, l = byDay[k] || [], s = dayStats(l);
-        if (inM) wl.push(...l);
-        const a = s.n ? Math.min(1, Math.abs(s.tot) / mxAbs) : 0;
-        grid += `<${s.n && opts.click ? "button type=\"button\"" : "div"} class="calc ${inM ? "" : "out"} ${s.n ? "has" : ""} ${s.tot < 0 ? "neg" : ""} ${k === todayKey() ? "today" : ""}" ${s.n && opts.click ? `data-cday="${k}"` : ""} style="${s.n && s.tot >= 0 ? `--a:${(.12 + a * .5).toFixed(2)}` : ""}"><span class="cald">${dt.getDate()}</span>${s.n ? `<b class="mono">${fmtR(s.tot)}</b><small>${s.n} op.${s.n ? " · " + num(s.win, 0) + " %" : ""}</small>` : ""}</${s.n && opts.click ? "button" : "div"}>`;
+        const dn = w * 7 + c - off + 1, dt = new Date(st.y, st.m, dn), k = dayKey(dt), inM = dn >= 1 && dn <= days, l = inM ? byDay[k] || [] : [], s = tradeStats(l);
+        wl.push(...l);
+        const a = s.n ? (.18 + Math.min(1, Math.abs(s.tot) / mxAbs) * .62).toFixed(2) : 0, cls = s.n ? (s.tot > 0 ? "pos" : s.tot < 0 ? "neg" : "zero") : "";
+        grid += `<${s.n ? `button type="button" data-cday="${k}" aria-label="${dt.getDate()}: ${fmtR(s.tot)}, ${s.n} operaciones. Ver informe"` : "div"} class="calc ${inM ? "" : "out"} ${cls} ${k === todayKey() ? "today" : ""} ${S.calSel === k ? "sel" : ""}" style="--a:${a}"><span class="cald">${dt.getDate()}</span>${s.n ? `<b class="mono">${fmtR(s.tot)}</b><small>${s.n} op.${s.win != null ? " · " + num(s.win, 0) + " %" : ""}</small>` : ""}</${s.n ? "button" : "div"}>`;
       }
       const ws = tradeStats(wl); W.push({ w: w + 1, l: wl, st: ws });
-      grid += `<div class="calc calw"><span class="cald">Semana ${w + 1}</span>${ws.n ? `<b class="mono">${fmtR(ws.tot)}</b><small>${ws.n} op.</small>` : `<small>—</small>`}</div>`;
+      grid += `<div class="calc calw"><span class="cald">Semana ${w + 1}</span>${ws.n ? `${cR(ws.tot)}<small>${(n => n + (n === 1 ? " día" : " días"))(new Set(wl.map(t => dayKey(dateOf(t)))).size)} · ${ws.n} op.</small>` : `<small>—</small>`}</div>`;
     }
-    const wkRows = W.map(x => { const dd = {}; x.l.forEach(t => { const k = dayKey(dateOf(t)); dd[k] = (dd[k] || 0) + t.r; }); const vals = Object.entries(dd), b = vals.sort((a, c) => c[1] - a[1])[0], wv = vals.sort((a, c) => a[1] - c[1])[0];
-      const fd = k => k ? new Date(k + "T12:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric" }) : "";
-      return `<tr><td><b>Semana ${x.w}</b></td><td class="mono">${x.st.n || "—"}</td><td class="mono">${x.st.win == null ? "—" : num(x.st.win, 0) + " %"}</td><td class="mono">${x.st.avgW != null ? fmtR(x.st.avgW) : "—"}</td><td class="mono">${x.st.avgL != null ? fmtR(x.st.avgL) : "—"}</td><td class="mono">${b ? fmtR(b[1]) + ` <span class="muted small">${fd(b[0])}</span>` : "—"}</td><td class="mono">${wv ? fmtR(wv[1]) + ` <span class="muted small">${fd(wv[0])}</span>` : "—"}</td><td class="mono"><b>${x.st.n ? fmtR(x.st.tot) : "—"}</b></td></tr>`; }).join("");
-    return `<div class="card stack" style="gap:14px"><div class="calh"><div><h2 class="h2b">${opts.title}</h2><div class="calbig mono">${mst.n ? fmtR(mst.tot) : "0,0 R"}</div><div class="small muted">${mst.n} operaciones · ${mst.win == null ? "—" : num(mst.win, 0) + " % de acierto"}</div></div>
-        <div class="row" style="gap:8px;flex-wrap:wrap"><div class="pseg" role="group"><button type="button" data-cmode="mes" aria-pressed="true">Mensual</button><button type="button" data-cmode="anio" aria-pressed="false">Anual</button></div>
-        <div class="calnav"><button type="button" class="xpb" data-cnav="-1" aria-label="Mes anterior">${I(IC.left, 16, 2)}</button><b>${cap(MESES_L[st.m])} de ${st.y}</b><button type="button" class="xpb" data-cnav="1" aria-label="Mes siguiente">${I(IC.right, 16, 2)}</button></div>
-        <button type="button" class="btn2" data-ctoday style="height:34px">Hoy</button></div></div>
-      <div class="calwrap"><div class="calgrid">${grid}</div></div></div>
-      <div class="card stack" style="gap:10px"><h2 class="h2b">Información mensual</h2><div class="xtablewrap"><table class="xtable"><thead><tr><th>Semana</th><th>Operaciones</th><th>% de acierto</th><th>Ganancia media</th><th>Pérdida media</th><th>Mejor día</th><th>Peor día</th><th>Resultado</th></tr></thead><tbody>${wkRows}</tbody></table></div></div>`;
+    const wkRows = W.map(x => `<tr><td><b>Semana ${x.w}</b></td><td class="mono">${x.st.n || "—"}</td><td class="mono">${x.st.win == null ? "—" : num(x.st.win, 0) + " %"}</td><td class="mono">${x.st.avgW != null ? fmtR(x.st.avgW) : "—"}</td><td class="mono">${x.st.avgL != null ? fmtR(x.st.avgL) : "—"}</td><td>${x.st.n ? cR(x.st.tot) : "—"}</td></tr>`).join("");
+    return `<div class="card stack calcard" style="gap:16px"><div class="calh"><div><div class="calbig">${mst.n ? cR(mst.tot) : `<b class="mono">0,0 R</b>`}</div><div class="small muted">${cap(MESES_L[st.m])} de ${st.y} · ${inMonth.length} días operados · <span class="cpos">${pos} positivos</span>, <span class="cneg">${neg} negativos</span></div></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap">${src}${modeB}<div class="calnav"><button type="button" class="xpb" data-cnav="-1" aria-label="Mes anterior">${I(IC.left, 16, 2)}</button><b>${cap(MESES_L[st.m])} ${st.y}</b><button type="button" class="xpb" data-cnav="1" aria-label="Mes siguiente">${I(IC.right, 16, 2)}</button></div><button type="button" class="btn2" data-ctoday style="height:34px">Hoy</button></div></div>
+      <div class="calwrap"><div class="calgrid big">${grid}</div></div>${leg}</div>
+      <div class="card stack" style="gap:10px"><h2 class="h2b">Resumen por semanas</h2><div class="xtablewrap"><table class="xtable"><thead><tr><th>Semana</th><th>Operaciones</th><th>Acierto</th><th>Ganancia media</th><th>Pérdida media</th><th>Resultado</th></tr></thead><tbody>${wkRows}</tbody></table></div></div>`;
   }
   function bindCal(key, onDay) {
     const st = S[key];
+    $$("[data-csrc]").forEach(b => b.onclick = () => { S.calSrc = b.dataset.csrc === "bt" ? "bt" : ""; if (S.calSrc === "bt" && !S.btLoaded && BT()) BT().loadSessions().then(re); re(); });
     $$("[data-cmode]").forEach(b => b.onclick = () => { st.mode = b.dataset.cmode; re(); });
     $$("[data-cnav]").forEach(b => b.onclick = () => { const d = +b.dataset.cnav; if (st.mode === "anio") st.y += d; else { st.m += d; if (st.m < 0) { st.m = 11; st.y--; } if (st.m > 11) { st.m = 0; st.y++; } } re(); });
     const t = $("[data-ctoday]"); if (t) t.onclick = () => { const n = new Date(); st.y = n.getFullYear(); st.m = n.getMonth(); re(); };
     $$("[data-cmonth]").forEach(b => b.onclick = () => { st.m = +b.dataset.cmonth; st.mode = "mes"; re(); });
     $$("[data-cday]").forEach(b => b.onclick = () => onDay && onDay(b.dataset.cday));
   }
+  /* informe del día en un panel lateral */
+  function dayPanel(k) {
+    S.calSel = k; $$(".calc.sel").forEach(x => x.classList.remove("sel")); const cell = $(`[data-cday="${k}"]`); if (cell) cell.classList.add("sel");
+    const bt = S.calSrc === "bt", dt = new Date(k + "T12:00");
+    const L = (bt ? simAll() : S.trades.filter(t => t.open_time)).filter(t => dayKey(dateOf(t)) === k).sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b)));
+    const C = bt ? L : closed(L), st = tradeStats(C), good = bt ? 0 : C.filter(t => evaluate(t).good).length;
+    const emo = !bt && healthOk() ? C.filter(t => (t.review || {}).feel) : [], notes = bt ? [] : (S.pages || []).filter(p => !p.isTpl && p.day === k);
+    const news = !bt && S.news ? (S.news.events || []).filter(e => dayKey(e.ts) === k && e.impact === "High") : [];
+    const rows = L.map(t => bt
+      ? `<div class="dp-op"><span><i class="dp-t"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"}</i><small>${esc(sessName(t.session_id))}${t.exit_time ? " · " + new Date(t.exit_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : ""}</small></span>${t.r != null ? cR(+t.r) : "<b>abierta</b>"}</div>`
+      : `<a class="dp-op" href="#op/${encodeURIComponent(t.id)}"><span><i class="dp-t"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"}</i><small>${new Date(t.open_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })} · ${t.status === "closed" ? (evaluate(t).good ? "dentro del plan" : evaluate(t).fail.length + " norma(s) sin cumplir") : "abierta"}</small></span>${t.status === "closed" ? cR(t.r) : "<b>abierta</b>"}</a>`).join("");
+    const box = document.createElement("div"); box.className = "xdrawer"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Informe del día");
+    box.innerHTML = `<div class="xdrawer-p dpanel"><div class="xdr-h"><div><div class="small muted">${bt ? "Práctica" : "Informe del día"}</div><b style="font-size:18px">${cap(dt.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))}</b></div><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
+      <div class="xdr-b">
+        <div class="dp-hero ${st.tot > 0 ? "pos" : st.tot < 0 ? "neg" : ""}"><span>Resultado del día</span><b class="mono">${st.n ? fmtR(st.tot) : "—"}</b><small>${st.n} operación${st.n === 1 ? "" : "es"} cerrada${st.n === 1 ? "" : "s"}${st.win != null ? " · " + num(st.win, 0) + " % acierto" : ""}</small></div>
+        <div class="dp-k">${bt ? `<div><span>Sesiones</span><b>${new Set(L.map(t => t.session_id || "")).size}</b></div><div><span>Mejor operación</span><b class="mono">${C.length ? fmtR(Math.max(...C.map(t => +t.r))) : "—"}</b></div>` : `<div><span>Dentro del plan</span><b>${C.length ? good + " de " + C.length : "—"}</b></div><div><span>Caída máxima</span><b class="mono">${st.n ? fmtR(st.dd) : "—"}</b></div>`}</div>
+        <div class="xsec">Operaciones</div><div class="stack" style="gap:6px">${rows || `<div class="small muted">Sin operaciones este día.</div>`}</div>
+        ${emo.length ? `<div class="xsec">Emociones</div><div class="stack" style="gap:6px">${emo.map(t => `<div class="dp-op"><span>${esc(t.review.feel)}<small>al entrar en ${esc(t.symbol)}</small></span></div>`).join("")}</div>` : ""}
+        ${news.length ? `<div class="xsec">Noticias fuertes</div><div class="stack" style="gap:6px">${news.map(e => `<div class="dp-op"><span>${esc(e.country)} · ${esc(e.title)}</span><b class="mono">${new Date(e.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</b></div>`).join("")}</div>` : ""}
+        ${!bt ? `<div class="xsec">Notas</div>${notes.length ? notes.map(p => `<a class="dp-op" href="#diario/${encodeURIComponent(p.id)}"><span><b>${esc(p.title || "Sin título")}</b><small>${esc(DI().txt(p.html).slice(0, 90))}</small></span></a>`).join("") : `<div class="small muted">No hay notas unidas a este día.</div>`}` : ""}
+      </div>
+      <div class="xdr-f">${bt ? `<a class="btn" href="#btops" style="flex:1;height:42px;justify-content:center">Ver operaciones simuladas</a>` : `<a class="btn" href="#informe" data-full style="flex:1;height:42px;justify-content:center">Ver informe completo</a>`}</div></div>`;
+    const close = () => { box.classList.remove("in"); setTimeout(() => box.remove(), 200); document.removeEventListener("keydown", ek); S.calSel = null; $$(".calc.sel").forEach(x => x.classList.remove("sel")); };
+    const ek = e => { if (e.key === "Escape") close(); };
+    box.addEventListener("click", e => { if (e.target === box || e.target.closest("[data-x]")) return close(); if (e.target.closest("[data-full]")) S.repDay = k; if (e.target.closest("a")) { box.remove(); document.removeEventListener("keydown", ek); } });
+    document.addEventListener("keydown", ek); document.body.appendChild(box); requestAnimationFrame(() => box.classList.add("in")); setTimeout(() => { const x = box.querySelector("[data-x]"); x && x.focus(); }, 60);
+  }
   V.calendario = {
-    view() { return `<div class="stack" style="gap:18px"><div class="xhead"><div><h1>Calendario</h1><div class="small muted">Tu resultado de cada día y cada semana, en R. Toca un día para ver su informe.</div></div></div>${calendar("calS", closed(S.trades), { title: "Calendario mensual de resultados", click: true })}</div>`; },
-    bind() { bindCal("calS", k => { S.repDay = k; location.hash = "#informe"; }); }
+    view() {
+      if (S.calSrc === "bt" && !S.btLoaded && BT()) BT().loadSessions().then(() => { if (location.hash.startsWith("#calendario")) re(); });
+      if (!S.pagesLoaded && DI()) DI().loadPages();
+      return `<div class="stack" style="gap:18px"><div class="xhead"><div><h1>Calendario</h1><div class="small muted">${S.calSrc === "bt" ? "Tus operaciones de práctica (backtesting)" : "Tus operaciones reales"} · toca un día para ver su informe</div></div></div>${calendar("calS", calSrcL(), {})}</div>`;
+    },
+    bind() { bindCal("calS", dayPanel); }
   };
 
   /* ======================= INFORME DIARIO ======================= */
@@ -587,14 +620,7 @@
       $("#btoCsv").onclick = () => { const qq = v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`; const L = bySess(S.btTrades || [], o.f); download("tickora-backtesting-" + todayKey() + ".csv", "﻿" + [["Símbolo", "Sesión", "Dirección", "Marco", "R", "Entrada", "Stop", "Objetivo", "Salida", "Fecha entrada", "Fecha salida"]].concat(L.map(t => [t.symbol, sessName(t.session_id), t.side === "buy" ? "Compra" : "Venta", t.tf, t.r, t.entry, t.stop, t.tp, t.exit, t.entry_time, t.exit_time])).map(r => r.map(qq).join(";")).join("\n")); };
     }
   };
-  V.btcal = {
-    view() {
-      if (needBt("btcal")) return `<div class="stack" style="gap:18px"><div class="xhead"><div><h1>Calendario de backtesting</h1></div></div>${loading()}</div>`;
-      const f = S.btcF || "";
-      return `<div class="stack" style="gap:18px"><div class="xhead"><div><h1>Calendario de backtesting</h1><div class="small muted">Resultado simulado por día de cierre, en R</div></div>${sessSel(f, "btcF")}</div>${calendar("calB", bySess(simAll(), f), { title: "Calendario mensual de resultados simulados" })}</div>`;
-    },
-    bind() { const s = $("#btcF"); if (s) s.onchange = () => { S.btcF = s.value; re(); }; if (S.calB) bindCal("calB"); }
-  };
+  V.btcal = { view() { S.calSrc = "bt"; setTimeout(() => { location.replace("#calendario"); }, 0); return `<div class="muted">Abriendo el calendario…</div>`; }, bind() {} };
   V.btnotas = {
     view() {
       const D = DI(); if (!S.pagesLoaded) D.loadPages().then(() => { if (location.hash.startsWith("#btnotas")) re(); }); needBt("btnotas");

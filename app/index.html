@@ -950,6 +950,7 @@ const ICON={
  seguimiento:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
  cartera:'<path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11v3"/><circle cx="16" cy="13.5" r="1.4"/>',
  recursos:'<path d="M5 4h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5"/><path d="M8 9h7M8 13h7M8 17h4"/><path d="M4 8h-1v11a2 2 0 0 0 2 2"/>',
+ ajustes:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
  resultados:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
  tu:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
  btanalisis:'<path d="M4 19V9M10 19V5M16 19v-6M3 19h18"/><circle cx="18" cy="6" r="2.5"/>',
@@ -966,17 +967,20 @@ const NAV=[["inicio","Inicio"],["hoy","Hoy"],["analizar","Analizar"],["diario","
 const OSDEF=(/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent)?"mac":"win");
 const NAV_APPS=[
  ["inicio","Inicio",[["inicio","Inicio"]]],
- ["hoy","Hoy",[["hoy","Mi día"],["plan","Mi plan"],["grupo","Grupo"]]],
+ ["hoy","Hoy",[["hoy","Mi día"],["noticias","Noticias"]]],
  ["analizar","Analizar",[["analizar","Gráfico"]]],
- ["backtest","Backtesting",[["backtest","Sesiones"],["btanalisis","Análisis"],["btops","Operaciones"],["btcal","Calendario"],["btnotas","Cuaderno"]]],
- ["resultados","Resultados",[["rendimiento","Rendimiento"],["progreso","Progreso"],["emociones","Emociones"],["historial","Operaciones"],["calendario","Calendario"],["informe","Informe diario"]]],
+ ["backtest","Backtesting",[["backtest","Sesiones"],["btanalisis","Análisis"],["btops","Operaciones simuladas"],["btnotas","Cuaderno"]]],
+ ["resultados","Resultados",[["rendimiento","Rendimiento"],["progreso","Disciplina"],["emociones","Emociones"],["historial","Historial"],["calendario","Calendario"]]],
  ["diario","Diario",[["diario","Páginas"]]],
  ["cartera","Cuentas y dinero",[["cuentas","Cuentas"],["finanzas","Finanzas"]]],
+ ["plan","Mi plan",[["plan","Mi plan"]]],
  ["asistente","Asistente",[["asistente","Asistente"]]],
- ["recursos","Noticias",[["noticias","Calendario económico"],["aprender","Aprender"]]]];
+ ["ajustes","Ajustes",[["ajustes","Ajustes"]]]];
+/* páginas que existen pero no salen en el menú (se llega desde otras) */
+const NAV_HIDDEN=["informe","btcal","grupo","aprender"];
 const NAV_GROUPS=NAV_APPS.map(a=>[a[1],a[2]]);
 const appOf=v=>NAV_APPS.find(a=>a[2].some(x=>x[0]===v));
-const NAV_SIDE=NAV_GROUPS.flatMap(g=>g[1]);
+const NAV_SIDE=NAV_GROUPS.flatMap(g=>g[1]).concat(NAV_HIDDEN.map(k=>[k,k]));
 const FEELS=["Tranquilo","Confiado","Paciente","Con prisa","Con miedo","Ansioso","Eufórico","Frustrado","Con ganas de recuperar","FOMO","Cansado","Aburrido"];
 
 /* ---------- plan (los cambios valen desde mañana) ---------- */
@@ -1159,7 +1163,7 @@ function thumb(t,w,h,kind){
 }
 function bridgeChip(){
   const b=S.bridge;
-  if(!b)return `<a href="#plan" class="small" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;color:var(--suave)"><span class="dot" style="background:var(--borde)"></span>MT5 sin conectar</a>`;
+  if(!b)return `<a href="#ajustes" class="small" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;color:var(--suave)"><span class="dot" style="background:var(--borde)"></span>MT5 sin conectar</a>`;
   const live=b.last_seen&&(Date.now()-new Date(b.last_seen))<15*60*1000;
   return `<span class="small" style="display:inline-flex;align-items:center;gap:6px;color:${live?"var(--verdeT)":"var(--suave)"}"><span class="dot" style="background:${live?"var(--verde)":"var(--ambar)"}"></span>${live?"MT5 conectado":b.last_seen?"MT5 sin señal "+ago(b.last_seen):"MT5 esperando primera señal"}</span>`;
 }
@@ -1169,7 +1173,7 @@ function initials(){const n=(S.name||"").trim().split(/\s+/);return ((n[0]||"?")
 function homeShell(content,view){
   const cv=view||"inicio",nav=NAV.map(([k,l])=>`<a href="#${k}" ${cv===k||(k==="mas"&&!NAV.some(n=>n[0]===cv))?'aria-current="page"':""}>${ico(k)}${l}</a>`).join("");
   return `<div class="hbshell"><header class="hbtop"><a class="brand2" href="#inicio" aria-label="Tickora, inicio"><svg class="tlogo" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="var(--cobalto)"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="var(--cobalto)"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="var(--cobalto2)" opacity=".8"/></svg><span>TICKORA</span></a>
-    <div class="hbtop-r">${acctSwitch("mini")}<button type="button" class="hbtb" data-pal aria-label="Buscar (Ctrl/⌘ K)" title="Buscar (Ctrl/⌘ K)">${SVG('<circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2L17 17"/>',18)}</button><button type="button" class="hbtb" data-style-open aria-label="Estilo y colores" title="Estilo y colores">${SVG('<path d="M10 2.5a7.5 7.5 0 100 15c1 0 1.5-.6 1.5-1.4 0-.9-.7-1.2-.7-2 0-.7.6-1.3 1.4-1.3h1.7a3.6 3.6 0 003.6-3.6c0-3.7-3.4-6.7-7.5-6.7z"/><circle cx="6.5" cy="9" r="1" fill="currentColor"/><circle cx="9.5" cy="6" r="1" fill="currentColor"/><circle cx="13.5" cy="7" r="1" fill="currentColor"/>',18)}</button><button type="button" class="hbtb" data-theme-toggle aria-label="Cambiar entre claro y oscuro" title="Claro u oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button><a class="avatar" href="#plan" title="${esc(S.name)} · ${esc(S.user.email||"")}">${esc(initials())}</a></div></header>
+    <div class="hbtop-r">${acctSwitch("mini")}<button type="button" class="hbtb" data-pal aria-label="Buscar (Ctrl/⌘ K)" title="Buscar (Ctrl/⌘ K)">${SVG('<circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2L17 17"/>',18)}</button><button type="button" class="hbtb" data-style-open aria-label="Estilo y colores" title="Estilo y colores">${SVG('<path d="M10 2.5a7.5 7.5 0 100 15c1 0 1.5-.6 1.5-1.4 0-.9-.7-1.2-.7-2 0-.7.6-1.3 1.4-1.3h1.7a3.6 3.6 0 003.6-3.6c0-3.7-3.4-6.7-7.5-6.7z"/><circle cx="6.5" cy="9" r="1" fill="currentColor"/><circle cx="9.5" cy="6" r="1" fill="currentColor"/><circle cx="13.5" cy="7" r="1" fill="currentColor"/>',18)}</button><button type="button" class="hbtb" data-theme-toggle aria-label="Cambiar entre claro y oscuro" title="Claro u oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button><a class="avatar" href="#ajustes" title="${esc(S.name)} · ${esc(S.user.email||"")}">${esc(initials())}</a></div></header>
   <main class="${view?"main pgmain":"hbmain"}" id="main">${content}</main><nav class="tabs" aria-label="Secciones">${nav}</nav></div>`;
 }
 function shell(view,content){
@@ -1185,7 +1189,7 @@ function shell(view,content){
     <nav class="sidenav">${side}</nav>
     ${window.tkGuide?tkGuide():""}
     <div class="themes" role="group" aria-label="Apariencia"><button type="button" data-theme-set="dark" aria-pressed="${getThemePref()==="dark"}" aria-label="Oscuro" title="Oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button><button type="button" data-theme-set="light" aria-pressed="${getThemePref()==="light"}" aria-label="Claro" title="Claro">${SVG('<circle cx="10" cy="10" r="3.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4"/>',18)}</button><button type="button" data-style-open aria-label="Estilo y colores" title="Estilo y colores">${SVG('<path d="M10 2.5a7.5 7.5 0 100 15c1 0 1.5-.6 1.5-1.4 0-.9-.7-1.2-.7-2 0-.7.6-1.3 1.4-1.3h1.7a3.6 3.6 0 003.6-3.6c0-3.7-3.4-6.7-7.5-6.7z"/><circle cx="6.5" cy="9" r="1" fill="currentColor"/><circle cx="9.5" cy="6" r="1" fill="currentColor"/><circle cx="13.5" cy="7" r="1" fill="currentColor"/>',18)}</button></div>
-    <a class="avatar" href="#plan" title="${esc(S.name)} · ${esc(S.user.email||"")}">${esc(initials())}</a>
+    <a class="avatar" href="#ajustes" title="${esc(S.name)} · ${esc(S.user.email||"")}">${esc(initials())}</a>
   </aside>
   <main class="main ${view==="analizar"?"an":""}" id="main"><div class="mtop"><a class="brand2" href="#inicio"><svg class="tlogo" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="var(--cobalto)"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="var(--cobalto)"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="var(--cobalto2)" opacity=".8"/></svg><span>TICKORA</span></a>${acctSwitch("mini")}<button type="button" class="mthemebtn" data-theme-toggle aria-label="Cambiar entre claro y oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button></div>${content}</main>
   <nav class="tabs" aria-label="Secciones">${nav}</nav>
@@ -1436,7 +1440,7 @@ function viewCuentas(){
     ${S.acctEdit?acctForm():""}
     <div class="pills" role="group" aria-label="Filtrar por tipo">${[["todas","Todas ("+all.filter(x=>x.a.status!=="archivada").length+")"],["fondeo","Fondeo ("+cnt("fondeo")+")"],["propia","Capital propio ("+cnt("propia")+")"],["demo","Demo ("+cnt("demo")+")"],["archivadas","Archivadas"]].map(([k,l])=>`<button type="button" data-acctt="${k}" aria-pressed="${f===k}">${l}</button>`).join("")}</div>
     ${show.length?`<div class="agrid">${show.map(acctCard).join("")}</div>`:`<div class="card stack" style="gap:8px;align-items:flex-start"><b>${all.length?"No hay cuentas en este filtro.":"Aún no tienes cuentas."}</b><span class="small muted">Añade tu cuenta demo, tu reto de fondeo o tu cuenta propia. Si pones el número de MetaTrader, sus operaciones se unen solas.</span></div>`}
-    <div class="small muted">Si una cuenta está conectada con el programa de MT5, sus operaciones aparecen solas. Para conectar otra cuenta, ve a <a href="#plan">Mi plan → Conectar MetaTrader 5</a> y repite el código en esa cuenta.</div>
+    <div class="small muted">Si una cuenta está conectada con el programa de MT5, sus operaciones aparecen solas. Para conectar otra cuenta, ve a <a href="#ajustes">Ajustes → Conectar MetaTrader 5</a> y repite el código en esa cuenta.</div>
   </div>`;
 }
 function acctRowsHtml(list){const p=S.plan,hide=inSession(p);return list.map(({a,b})=>{const i=(b&&b.last_info)||{},on=isLive(b),x=acctStats(a);
@@ -1455,58 +1459,51 @@ function acctRows(){
     ${all.length?(rows||`<div class="card small muted">No hay cuentas en este filtro.</div>`):`<a class="card arow" href="#cuentas" style="text-decoration:none"><div><b class="anum">Añade tus cuentas</b><div class="abro">Demo, fondeo o capital propio</div></div><span class="btn" style="height:38px">Añadir</span></a>`}</section>`;
 }
 function viewHoy(){
-  const p=S.plan, tk=todayKey(), now=new Date();
+  const p=S.plan, tk=todayKey();
   const today=S.trades.filter(t=>t.open_time&&dayKey(t.open_time)===tk).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time));
   const closedToday=today.filter(t=>t.status==="closed"), dayR=closedToday.reduce((s,t)=>s+(t.r||0),0), margin=Math.max(0,p.dayLimitR+dayR);
-  const mo=S.trades.filter(t=>{const d=new Date(t.open_time);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()});
-  const ms=tradeStats(mo), all=tradeStats(S.trades), info=dayInfo();
-  const closed=S.trades.filter(t=>t.status==="closed"&&t.r!=null).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time));
-  const bestT=closed.reduce((m,t)=>!m||t.r>m.r?t:m,null), bestD=info.days.reduce((m,d)=>!m||d.r>m.r?d:m,null);
-  const sc=scoreOf(S.trades.filter(t=>new Date(t.open_time)>=Date.now()-30*864e5));
   const bi=S.bridge&&S.bridge.last_info||{}, live=S.bridge&&S.bridge.last_seen&&(Date.now()-new Date(S.bridge.last_seen))<15*60*1000;
   let c=0;const cumToday=[0].concat(closedToday.map(t=>c+=t.r||0));
-  const moDays={};mo.filter(t=>t.status==="closed").forEach(t=>{const k=dayKey(t.open_time);moDays[k]=(moDays[k]||0)+(t.r||0)});
-  const weeks=[];for(let i=5;i>=0;i--){const a=Date.now()-(i+1)*7*864e5,b=Date.now()-i*7*864e5;weeks.push(closed.filter(t=>{const x=new Date(t.open_time);return x>=a&&x<b}).reduce((s,t)=>s+t.r,0))}
-  c=0;const cumAll=[0].concat(closed.slice(-30).map(t=>c+=t.r));c=0;const cumDays=[0].concat(info.days.slice(-20).map(d=>c+=d.r));
-  const pf=all.pf==null?"—":all.pf===Infinity?"∞":num(all.pf,2);
   const k3=(t,body,vis,cls)=>`<div class="k3 ${cls||""}"><div class="k3t">${t}</div><div class="k3m"><div class="k3x">${body}</div><div class="k3v">${vis}</div></div></div>`;
+  const seg=(n,mx)=>`<div class="hseg" role="img" aria-label="${n} de ${mx}">${Array.from({length:Math.max(1,mx)},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}</div>`;
+  const s0=minOf(p.start),e0=minOf(p.end), outH=today.some(t=>{const m=minOfDate(t.open_time);return m<s0||m>e0}), noStop=today.some(t=>t.sl==null||t.sl_moved);
+  const chk=[
+    [`Máximo ${p.maxTrades} operaciones`,today.length<=p.maxTrades,`${today.length} de ${p.maxTrades}`],
+    [`No pasar del límite del día (${num(p.dayLimitR,1)} R)`,dayR>-p.dayLimitR,closedToday.length?`te quedan ${num(margin,1)} R`:"sin pérdidas"],
+    [`Operar solo de ${esc(p.start)} a ${esc(p.end)}`,!outH,outH?"alguna fuera de horario":"bien"],
+    ["Stop puesto y sin moverlo en contra",!noStop,noStop?"revisa tus operaciones":"bien"]
+  ];
+  const normas=`<div class="card stack" style="gap:10px"><div class="between"><h2>Tus normas de hoy</h2><a class="small" href="#plan">Ver mi plan</a></div>
+    <div class="hchk">${chk.map(([l,ok,sub])=>`<div class="hchk-i ${today.length?(ok?"hk-ok":"hk-bad"):""}"><span class="hchk-c">${today.length?(ok?SVG(IC2.check,14,2.6):"!"):""}</span><span>${l}</span><small>${today.length?sub:""}</small></div>`).join("")}</div>
+    ${(p.rules||[]).length?`<div class="hrules">${(p.rules||[]).map(r=>`<div><b>Si</b> ${esc(String(r.si||"").replace(/,$/,""))} <b>→</b> ${esc(r.entonces||"")}</div>`).join("")}</div>`:""}</div>`;
   const ops=today.length?today.map(t=>{const ev=evaluate(t);return `<a class="op" href="#op/${encodeURIComponent(t.id)}">${thumb(t,72,46)}<div style="min-width:0"><div class="opname" style="font-weight:600;font-size:15px">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"}</div><div class="small muted">${hhmm(t.open_time)} · ${ev.title.toLowerCase()}${t.status==="closed"?(ev.good?", dentro del pacto":", "+ev.fail.length+" norma"+(ev.fail.length>1?"s":"")+" sin cumplir"):""}</div></div><div class="mono" style="font-weight:700;font-size:14px">${t.status==="closed"?fmtR(t.r):"abierta"}</div></a>`}).reverse().join(""):"";
   return `<div class="stack dash" style="gap:18px">
     ${S.dbMissing?`<div class="card" style="background:var(--ambarB);color:var(--ambarT)"><b>Falta preparar la base de datos.</b></div>`:""}
     <div class="hoy3">
       <div class="stack hmain" style="gap:18px">
         <div class="dtop">
-          <div class="stack" style="gap:6px"><h1 class="greet">${greet()}, ${esc((S.name||"").split(" ")[0])} 👋</h1><a class="mstat" href="#plan"><span class="dot" style="background:${live?"var(--verde)":S.bridge?"var(--ambar)":"var(--borde)"}"></span>${S.bridge?"MT5 #"+esc(bi.account||"—")+(live?" Conectado":" Sin señal"):"MT5 sin conectar · Conectar"}</a></div>
+          <div class="stack" style="gap:6px"><h1 class="greet">${greet()}, ${esc((S.name||"").split(" ")[0])}</h1><a class="mstat" href="#ajustes"><span class="dot" style="background:${live?"var(--verde)":S.bridge?"var(--ambar)":"var(--borde)"}"></span>${S.bridge?"MT5 #"+esc(bi.account||"—")+(live?" Conectado":" Sin señal"):"MT5 sin conectar · Conectar"}</a></div>
           <a class="btn btn-an" href="#analizar">Analizar ${SVG(IC2.arrow,18,2)}</a>
         </div>
         <div class="k3grid">
-          ${k3("Hoy",`<div class="k3s">${today.length} de ${p.maxTrades} operaciones</div><div class="k3s">Margen ${num(margin,1)} R</div>`,spark(cumToday,72,36))}
-          ${k3("Este mes",`<div class="k3b">${ms.n?fmtR(ms.tot):"0,0 R"}</div><div class="k3s">${ms.n?num(ms.win,0)+"% acierto":"Sin operaciones aún"}</div>`,minibars(Object.keys(moDays).sort().map(k=>moDays[k])))}
-          ${k3("Racha de días",`<div class="k3b">${info.cur} día${info.cur===1?"":"s"}</div><div class="k3s">en plan</div>`,`<span class="flame">${SVG(IC2.flame,22,1.8)}</span>`)}
-          ${k3("Factor de beneficio",`<div class="k3b">${pf}</div>`,minibars(weeks))}
-          ${k3("Mejor operación",`<div class="k3b acc">${bestT?fmtR(bestT.r):"—"}</div>`,spark(cumAll,72,36))}
-          ${k3("Mejor día",`<div class="k3b acc">${bestD?fmtR(bestD.r):"—"}</div>`,spark(cumDays,72,36))}
+          ${k3("Resultado de hoy",`<div class="k3b">${closedToday.length?fmtR(dayR):"0,0 R"}</div><div class="k3s">${closedToday.length} cerrada${closedToday.length===1?"":"s"}</div>`,spark(cumToday,72,36))}
+          ${k3("Operaciones",`<div class="k3b">${today.length} de ${p.maxTrades}</div>${seg(today.length,p.maxTrades)}`,"")}
+          ${k3("Aún puedes perder",`<div class="k3b">${num(margin,1)} R</div><div class="k3s">tu límite del día es ${num(p.dayLimitR,1)} R</div>`,"")}
         </div>
-        ${acctRows()}
+        ${normas}
+        <div class="card" style="padding:12px 16px"><div class="between" style="padding-bottom:2px"><h2>Operaciones de hoy</h2><a class="small" href="#informe">Ver informe del día</a></div>${ops||`<div class="small muted" style="padding:10px 0">Aún no has operado hoy. Llegan solas desde MetaTrader.</div>`}</div>
       </div>
       <div class="stack hmid" style="gap:16px">
         ${ticketMini(today,dayR,p)}
         ${horarioCard(p)}
-        ${window.tkNewsToday?tkNewsToday():""}
       </div>
       <div class="stack hright" style="gap:16px">
-        <div class="card stack" style="gap:4px"><b style="font-size:15px">Nota de disciplina (30 días)</b>${radarHex(sc)}</div>
-        <div class="card stack" style="gap:12px"><b style="font-size:15px">Actividad</b>
-          <div class="hleg"><span><i class="hg"></i>Dentro del plan</span><span><i class="hbad"></i>Fuera del plan</span></div>
-          ${heat7(info,10)}
-          <div class="small" style="color:var(--suave)">${info.days.length} días operados &nbsp;|&nbsp; Racha actual: ${info.cur} &nbsp;|&nbsp; Máx: ${info.best}</div>
-        </div>
+        ${window.tkNewsToday?tkNewsToday():""}
+        <a class="card hnews-all" href="#noticias">${SVG(IC2.cal,18)}<span><b>Todas las noticias</b><small>Esta semana y la siguiente</small></span>${SVG(IC2.arrow,16,2)}</a>
       </div>
     </div>
-    ${ops?`<div class="card" style="padding:12px 16px"><div class="between" style="padding-bottom:2px"><h2>Operaciones de hoy</h2><span class="small muted">llegan solas desde MT5</span></div>${ops}</div>`:""}
   </div>`;
 }
-
 function viewOp(id){
   const t=S.trades.find(x=>x.id===id);
   if(!t)return `<div class="stack"><a href="#hoy" class="row link">${ico("back",18)}Hoy</a><div class="card">No encuentro esta operación.</div></div>`;
@@ -1527,7 +1524,7 @@ function viewOp(id){
       ${t.status==="closed"&&ev.good&&t.r<0?`<div class="small muted">El precio llegó al stop. Eso también es hacerlo bien.</div>`:""}
     </div>
     ${health?`<div class="stack" style="gap:8px"><h2 style="font-size:14px">Cómo te sentías al entrar</h2><div class="row" style="flex-wrap:wrap;gap:6px">${feels.map(f=>`<button type="button" class="chip" data-feel="${esc(f)}" aria-pressed="${rv.feel===f}">${f}</button>`).join("")}</div>
-      <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><span class="small muted">Intensidad</span>${[1,2,3,4,5].map(n=>`<button type="button" class="chip" data-int="${n}" aria-pressed="${rv.int===n}" style="min-width:38px">${n}</button>`).join("")}<span class="small muted">1 = apenas · 5 = muy fuerte</span></div></div>`:`<div class="small muted">Para apuntar cómo te sentías, activa el permiso en <a href="#plan">Mi plan → Permisos</a>.</div>`}
+      <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><span class="small muted">Intensidad</span>${[1,2,3,4,5].map(n=>`<button type="button" class="chip" data-int="${n}" aria-pressed="${rv.int===n}" style="min-width:38px">${n}</button>`).join("")}<span class="small muted">1 = apenas · 5 = muy fuerte</span></div></div>`:`<div class="small muted">Para apuntar cómo te sentías, activa el permiso en <a href="#ajustes">Ajustes → Permisos</a>.</div>`}
     <label class="field"><span>Por qué entré</span><textarea class="input" id="why" rows="3" placeholder="Qué viste en el gráfico">${esc(rv.why||"")}</textarea></label>
   </div>`;
 }
@@ -1548,72 +1545,41 @@ function curveSvg(c){
 }
 function viewProgreso(){
   const now=new Date(), y=now.getFullYear(), mo=now.getMonth();
-  const month=S.trades.filter(t=>{const d=new Date(t.open_time);return d.getFullYear()===y&&d.getMonth()===mo&&t.status==="closed"}).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time));
-  const evs=month.map(t=>({t,ev:evaluate(t)}));
-  const good=evs.filter(x=>x.ev.good).length, bad=evs.length-good, badR=evs.filter(x=>!x.ev.good&&x.t.r<0).reduce((s,x)=>s+x.t.r,0);
-  const byDay={};evs.forEach(x=>{const k=dayKey(x.t.open_time);(byDay[k]=byDay[k]||[]).push(x)});
-  const first=(new Date(y,mo,1).getDay()+6)%7, days=new Date(y,mo+1,0).getDate(), tk=todayKey();
-  let cal="LMXJVSD".split("").map(d=>`<div class="lbl" style="height:auto;padding:0 7px">${d}</div>`).join("")+"<div></div>".repeat(first);
-  let okDays=0,tradeDays=0;
-  for(let d=1;d<=days;d++){
-    const k=y+"-"+String(mo+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"), list=byDay[k], wd=new Date(y,mo,d).getDay();
-    let st="border:1px solid var(--linea2);color:var(--dis)";
-    if(list){tradeDays++;const all=list.every(x=>x.ev.good);if(all)okDays++;st=all?"background:var(--tinta);color:var(--card);font-weight:700":"border:1.5px solid var(--tinta);font-weight:700;background:repeating-linear-gradient(135deg,var(--hatch) 0 3px,var(--card) 3px 7px)"}
-    else if(wd===0||wd===6)st="background:var(--weekend);color:var(--suave)";
-    if(k===tk&&!list)st="border:1.5px solid var(--cobalto);color:var(--cobalto);font-weight:700";
-    cal+=`<div style="${st}" title="${list?list.length+" operaciones":""}">${d}</div>`;
-  }
-  const bars=evs.map(x=>{const r=x.t.r||0,h=Math.max(3,Math.min(60,Math.abs(r)*26));return `<a href="#op/${encodeURIComponent(x.t.id)}" title="${esc(x.t.symbol)} ${fmtR(r)}" style="display:block;position:relative;width:12px;height:128px;flex:none"><span style="position:absolute;left:0;${r>=0?`bottom:64px`:`top:64px`};width:12px;height:${h}px;border-radius:3px;${x.ev.good?"background:var(--tinta)":"background:repeating-linear-gradient(135deg,var(--tinta) 0 1.5px,var(--card) 1.5px 4px);border:1.5px solid var(--tinta)"}"></span></a>`}).join("");
-  const list=evs.slice().reverse().slice(0,12).map(({t,ev})=>`<a class="op" href="#op/${encodeURIComponent(t.id)}">${thumb(t,72,46)}<div style="min-width:0"><div class="opname" style="font-weight:600">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"} <span class="mono small muted">${fechaCorta(t.open_time)}</span></div><div class="small" style="color:var(--tinta2)">${esc(ev.mejora?"A mejorar: "+ev.mejora.split(".")[0]:ev.checks.filter(c=>c.ok)[0]?ev.checks.filter(c=>c.ok)[0].good:"")}</div></div><div style="text-align:right"><div class="mono" style="font-weight:700">${fmtR(t.r)}</div><div class="small" style="color:var(--cobalto);font-weight:600">${ev.title}</div></div></a>`).join("");
-  const P=S.progP||"6M", nM=P==="6M"?6:P==="3M"?3:1, from=new Date(y,mo-nM+1,1);
+  const P=S.progP||"3M", nM=P==="6M"?6:P==="3M"?3:1, from=new Date(y,mo-nM+1,1);
   const per=S.trades.filter(t=>t.status==="closed"&&t.r!=null&&new Date(t.open_time)>=from).sort((a,b)=>new Date(a.open_time)-new Date(b.open_time));
-  const pst=tradeStats(per);let cc=0;const pcum=[0].concat(per.map(t=>cc+=t.r));
-  const months=[];for(let i=nM-1;i>=0;i--){const d=new Date(y,mo-i,1);const l=per.filter(t=>{const x=new Date(t.open_time);return x.getFullYear()===d.getFullYear()&&x.getMonth()===d.getMonth()});months.push({l:d.toLocaleDateString("es-ES",{month:"short"}).replace(".",""),r:l.reduce((a,t)=>a+t.r,0)})}
-  const mx=Math.max(1,...months.map(m=>Math.abs(m.r)));
-  const ring=v=>{const a=Math.max(0,Math.min(100,v||0))/100,C=2*Math.PI*20;return `<svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="20" fill="none" stroke="var(--linea)" stroke-width="6"/><circle cx="27" cy="27" r="20" fill="none" stroke="var(--cobalto)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C*a).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 27 27)" style="filter:drop-shadow(0 0 4px var(--cobalto))"/></svg>`};
-  const fpf=v=>v==null?"—":v===Infinity?"∞":num(v,2);
+  const evs=per.map(t=>({t,ev:evaluate(t)})), good=evs.filter(x=>x.ev.good).length, bad=evs.length-good, badR=evs.filter(x=>!x.ev.good&&x.t.r<0).reduce((s,x)=>s+x.t.r,0);
+  const pc=evs.length?Math.round(good/evs.length*100):null, sc=scoreOf(per), info=dayInfo();
+  const fails={};evs.forEach(x=>x.ev.fail.forEach(f=>{fails[f.bad]=(fails[f.bad]||0)+1}));
+  const FL=Object.entries(fails).sort((a,b)=>b[1]-a[1]), fmx=FL.length?FL[0][1]:1;
+  const ring=v=>{const a=Math.max(0,Math.min(100,v||0))/100,C=2*Math.PI*20;return `<svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="20" fill="none" stroke="var(--linea)" stroke-width="6"/><circle cx="27" cy="27" r="20" fill="none" stroke="var(--cobalto)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C*a).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 27 27)"/></svg>`};
+  const bars=evs.slice(-40).map(x=>{const r=x.t.r||0,h=Math.max(3,Math.min(60,Math.abs(r)*26));return `<a href="#op/${encodeURIComponent(x.t.id)}" title="${esc(x.t.symbol)} ${fmtR(r)} · ${x.ev.good?"buena":"evitable"}" style="display:block;position:relative;width:12px;height:128px;flex:none"><span style="position:absolute;left:0;${r>=0?`bottom:64px`:`top:64px`};width:12px;height:${h}px;border-radius:3px;${x.ev.good?"background:var(--cobalto)":"background:repeating-linear-gradient(135deg,var(--gris) 0 1.5px,transparent 1.5px 4px);border:1.5px solid var(--gris)"}"></span></a>`}).join("");
+  const list=evs.slice().reverse().slice(0,10).map(({t,ev})=>`<a class="op" href="#op/${encodeURIComponent(t.id)}">${thumb(t,72,46)}<div style="min-width:0"><div class="opname" style="font-weight:600">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"} <span class="mono small muted">${fechaCorta(t.open_time)}</span></div><div class="small" style="color:var(--tinta2)">${esc(ev.mejora?"A mejorar: "+ev.mejora.split(".")[0]:ev.checks.filter(c=>c.ok)[0]?ev.checks.filter(c=>c.ok)[0].good:"")}</div></div><div style="text-align:right"><div class="small" style="color:var(--cobalto);font-weight:700">${ev.title}</div></div></a>`).join("");
+  const perL=P==="1M"?"este mes":"los últimos "+nM+" meses";
   return `<div class="stack">
-    <div class="ptop"><div class="stack" style="gap:4px"><h1>Progreso</h1>${acctNote()}</div><div class="pseg" role="group" aria-label="Periodo">${["6M","3M","1M"].map(k=>`<button type="button" data-per="${k}" aria-pressed="${P===k}">${k}</button>`).join("")}</div></div>
-    <div class="pk"><div class="pkc"><b>${pst.n?fmtR(pst.tot):"0,0 R"}</b><span>Resultado total</span><div class="k3v">${spark(pcum,110,46)}</div></div><div class="pkc"><b>${pst.win==null?"—":num(pst.win,0)+"%"}</b><span>Acierto</span><div class="k3v">${ring(pst.win)}</div></div></div>
-    <div class="card"><div class="mbars" role="img" aria-label="Resultado por mes en R">${months.map(m=>`<div title="${m.l}: ${fmtR(m.r)}"><i class="${m.r<0?"neg":""}" style="height:${Math.max(4,Math.abs(m.r)/mx*110).toFixed(0)}px"></i><small>${m.l}</small></div>`).join("")}</div></div>
-    <h2 class="h2b">Resumen</h2>
-    <div class="res3"><div><b>${pst.n}</b><span>Operaciones</span></div><div><b>${pst.win==null?"—":num(pst.win,0)+"%"}</b><span>Acierto</span></div><div><b>${fpf(pst.pf)}</b><span>Factor de beneficio</span></div></div>
-    <div class="between" style="align-items:flex-end;margin-top:8px"><h2 class="h2b">${MESES_L[mo][0].toUpperCase()+MESES_L[mo].slice(1)} ${y}, en detalle</h2></div>
-    <div class="grid2 even">
-      <div class="card stack">
-        <div class="between" style="align-items:flex-end"><div><div class="lbl">Días con todas tus operaciones buenas</div><div class="mono" style="font-weight:700;font-size:26px;margin-top:2px"><span class="rot">${okDays} de ${tradeDays}</span></div><div class="small muted">días en los que operaste este mes</div></div></div>
-        <div class="cal">${cal}</div>
-        <div class="row small muted" style="flex-wrap:wrap;gap:6px 14px"><span class="row" style="gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--tinta)"></span>todas buenas</span><span class="row" style="gap:5px"><span style="width:10px;height:10px;border-radius:3px;border:1px solid var(--tinta);background:repeating-linear-gradient(135deg,var(--hatch) 0 2px,var(--card) 2px 4px)"></span>alguna evitable</span><span class="row" style="gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--weekend)"></span>fin de semana</span></div>
-      </div>
-      <div class="card stack">
-        <div class="between"><h2>Tus ${evs.length} operaciones, en R</h2><span class="small muted">rellena = buena · rayada = evitable</span></div>
-        ${evs.length?`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid var(--linea);background:linear-gradient(var(--gris),var(--gris)) 0 64px/100% 1px no-repeat">${bars}</div>`:`<div class="muted small">Este mes todavía no hay operaciones cerradas.</div>`}
-        <div class="row" style="gap:24px"><div><div class="mono" style="font-weight:700;font-size:22px">${good}</div><div class="small muted">buenas, ganando o perdiendo</div></div><div><div class="mono" style="font-weight:700;font-size:22px">${bad}</div><div class="small muted">evitables</div></div></div>
-        ${bad?`<div class="small" style="color:var(--tinta2);padding-top:8px;border-top:1px dashed var(--borde)">Las evitables te costaron <b class="mono">${num(Math.abs(badR),1)} R</b>.</div>`:""}
+    <div class="ptop"><div class="stack" style="gap:4px"><h1>Disciplina</h1><div class="small muted">Cuánto cumples tu plan en ${perL}. Se juzga el proceso, no el resultado.</div></div><div class="pseg" role="group" aria-label="Periodo">${["1M","3M","6M"].map(k=>`<button type="button" data-per="${k}" aria-pressed="${P===k}">${k}</button>`).join("")}</div></div>
+    <div class="dsc-top">
+      <div class="card stack" style="gap:4px"><b style="font-size:15px">Nota de disciplina</b><div class="small muted">Stop, riesgo, horario, paciencia, objetivo y constancia</div>${radarHex(sc)}</div>
+      <div class="dsc-k">
+        <div class="pkc"><span>Dentro del plan</span><b>${pc==null?"—":pc+" %"}</b><span>${evs.length?good+" de "+evs.length+" operaciones":"sin operaciones en "+perL}</span><div class="k3v">${ring(pc)}</div></div>
+        <div class="pkc"><span>Racha de días en plan</span><b>${info.cur} día${info.cur===1?"":"s"}</b><span>tu mejor racha: ${info.best}</span></div>
+        <div class="pkc"><span>Operaciones evitables</span><b>${bad}</b><span>${bad?"te costaron "+num(Math.abs(badR),1)+" R":"ninguna, sigue así"}</span></div>
       </div>
     </div>
-    ${(()=>{const st=tradeStats(month),fmtPF=v=>v==null?"—":v===Infinity?"∞":num(v,2);
-      const bySym={};month.forEach(t=>{(bySym[t.symbol]=bySym[t.symbol]||[]).push(t)});
-      const rows=Object.entries(bySym).map(([k,l])=>[k,tradeStats(l)]).sort((a,b)=>b[1].tot-a[1].tot);
-      return `<div class="grid2 even">
-      <div class="card stack" style="gap:14px">
-        <div class="between"><h2>Estadísticas del mes</h2><span class="small muted">${st.n} operaciones cerradas</span></div>
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 12px">
-          <div class="kpi"><span class="k">Resultado</span><span class="v">${fmtR(st.tot)}</span></div>
-          <div class="kpi"><span class="k">Esperanza</span><span class="v">${st.exp==null?"—":fmtR(st.exp)}</span><span class="small muted">por operación</span></div>
-          <div class="kpi"><span class="k">Acierto</span><span class="v">${st.win==null?"—":num(st.win,0)+" %"}</span></div>
-          <div class="kpi"><span class="k">Factor de beneficio</span><span class="v">${fmtPF(st.pf)}</span></div>
-          <div class="kpi"><span class="k">Ganancia media</span><span class="v">${st.avgW==null?"—":fmtR(st.avgW)}</span></div>
-          <div class="kpi"><span class="k">Pérdida media</span><span class="v">${st.avgL==null?"—":fmtR(st.avgL)}</span></div>
-        </div>
-        <div><div class="between" style="margin-bottom:6px"><span class="lbl">Curva en R</span><span class="small muted">Peor caída: ${fmtR(st.dd)}</span></div>${curveSvg(st.curve)}</div>
-      </div>
-      <div class="card stack" style="gap:8px">
-        <div class="between"><h2>Por mercado</h2><span class="small muted">en R, nunca en dinero</span></div>
-        ${rows.length?`<table class="table"><thead><tr><th>Mercado</th><th class="n">Ops.</th><th class="n">Acierto</th><th class="n">Esperanza</th><th class="n">Total</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td class="mono">${esc(k)}</td><td class="n">${v.n}</td><td class="n">${v.win==null?"—":num(v.win,0)+" %"}</td><td class="n">${v.exp==null?"—":fmtR(v.exp)}</td><td class="n" style="font-weight:600">${fmtR(v.tot)}</td></tr>`).join("")}</tbody></table>`:`<div class="small muted">Aún no hay operaciones cerradas este mes.</div>`}
-      </div>
-    </div>`})()}
-    <div class="card" style="padding:12px 16px"><div class="between"><h2>Repaso de tus operaciones</h2></div>${list||`<div class="muted small" style="padding:10px 0">Aquí verás cada operación con su captura y su repaso.</div>`}</div>
+    <div class="grid2 even">
+      <div class="card stack" style="gap:10px"><div class="between"><h2>Normas que más rompes</h2><span class="small muted">${perL}</span></div>
+        ${FL.length?FL.slice(0,6).map(([k,n])=>`<div class="dsc-f"><div class="between small"><span>${esc(k)}</span><b class="mono">${n} ${n===1?"vez":"veces"}</b></div><div class="dsc-b"><i style="width:${(n/fmx*100).toFixed(1)}%"></i></div></div>`).join(""):`<div class="small muted" style="padding:8px 0">No has roto ninguna norma en ${perL}.</div>`}
+        ${FL.length?`<div class="small" style="color:var(--tinta2);padding-top:6px;border-top:1px dashed var(--borde)">Trabaja solo la primera esta semana.</div>`:""}</div>
+      <div class="card stack" style="gap:12px"><div class="between"><h2>Días en plan</h2><span class="small muted">últimas 10 semanas</span></div>
+        <div class="hleg"><span><i class="hg"></i>Todo dentro del plan</span><span><i class="hbad"></i>Alguna fuera del plan</span></div>
+        ${heat7(info,10)}
+        <div class="small" style="color:var(--suave)">${info.days.length} días operados &nbsp;|&nbsp; Racha actual: ${info.cur} &nbsp;|&nbsp; Máx: ${info.best}</div></div>
+    </div>
+    <div class="card stack">
+      <div class="between"><h2>Tus operaciones: buenas y evitables</h2><span class="small muted">rellena = buena · rayada = evitable</span></div>
+      ${evs.length?`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid var(--linea);background:linear-gradient(var(--gris),var(--gris)) 0 64px/100% 1px no-repeat">${bars}</div>`:`<div class="muted small">Todavía no hay operaciones cerradas en ${perL}.</div>`}
+      <div class="row" style="gap:24px"><div><div class="mono" style="font-weight:700;font-size:22px">${good}</div><div class="small muted">buenas, ganando o perdiendo</div></div><div><div class="mono" style="font-weight:700;font-size:22px">${bad}</div><div class="small muted">evitables</div></div></div>
+    </div>
+    <div class="card" style="padding:12px 16px"><div class="between"><h2>Repaso de tus operaciones</h2><a class="small" href="#historial">Ver todas</a></div>${list||`<div class="muted small" style="padding:10px 0">Aquí verás cada operación con lo que hiciste bien y lo que puedes mejorar.</div>`}</div>
   </div>`;
 }
 
@@ -1874,13 +1840,13 @@ function viewSoon(title,text){
   return `<div class="stack"><h1>${title}</h1><div class="card stack" style="gap:10px"><div>${text}</div><div><a class="btn2" href="../">Abrir la versión anterior</a></div></div></div>`;
 }
 
-function viewPlan(){
+function viewPlan(mode){
   const p=S.basePlan||S.plan, ep=S.plan, d=S.planDoc||{}, b=S.bridge, health=S.consents.health===true;
   const live=b&&b.last_seen&&(Date.now()-new Date(b.last_seen))<15*60*1000;
   const info=b&&b.last_info||{};
   const pend=d.pending&&d.pendingFrom>todayKey()?`<div class="small" style="background:var(--cobaltoC);color:var(--cobalto);border-radius:10px;padding:8px 10px">Tienes cambios guardados que valen desde mañana.</div>`:"";
   const rules=(p.rules||[]).map((r,i)=>`<div class="si" style="gap:6px 8px"><b>SI</b><input class="input" style="height:40px" data-rule="${i}" data-part="si" value="${esc(r.si)}" aria-label="Norma ${i+1}: si"><b>→</b><input class="input" style="height:40px" data-rule="${i}" data-part="entonces" value="${esc(r.entonces)}" aria-label="Norma ${i+1}: entonces"></div>`).join("");
-  return `<div class="stack">
+  const plan=`<div class="stack">
     <div class="ptop"><div class="stack" style="gap:4px"><h1>Mi plan de hoy</h1>${ep.acct?acctNote():`<div class="small muted">Lo decides en frío, nunca en sesión</div>`}</div><a class="btn2" href="#planForm" id="planEdit" style="height:36px">Editar</a></div>
     <div class="plan5">
       <div class="pkc"><span>Riesgo</span><b>${fmtPct(ep.riskPct)}</b><span>${ep.acct&&ep.acct.risk?"de la cuenta "+esc(ep.acct.name):"= 1 R por operación"}</span></div>
@@ -1890,8 +1856,7 @@ function viewPlan(){
       <div class="pkc wide"><span>Si pasa esto → hago esto:</span>${(p.rules||[]).length?(p.rules||[]).map(r=>`<div style="font-size:14.5px;margin-top:6px">Si ${esc(r.si.replace(/,$/,""))} → ${esc(r.entonces)}</div>`).join(""):`<div class="small muted" style="margin-top:6px">Aún sin normas. Añádelas con Editar.</div>`}</div>
     </div>
     <div class="banner">${SVG(IC2.trophy,24,1.8)}Disciplina antes que dinero.</div>
-    <div class="grid2 even">
-    <form class="card stack" id="planForm">
+    <form class="card stack" id="planForm" style="max-width:900px">
       <div class="between"><h2>Tu plan de cada día</h2></div>
       ${ep.acct?`<div class="small" style="background:var(--cobaltoC);border-radius:10px;padding:8px 10px;color:var(--tinta2)">Este es tu plan general, para todas las cuentas. Lo propio de <b>${esc(ep.acct.name)}</b> (riesgo, operaciones, límites y metas) se cambia en <a href="#cuentas">Cuentas</a>.</div>`:""}
       ${pend}
@@ -1908,6 +1873,10 @@ function viewPlan(){
       <button class="btn" type="submit">Guardar</button>
       <div class="small muted">${S.planDoc&&S.planDoc.current?"Los cambios valen desde mañana. Así nunca lo decides con una operación abierta.":"Este primer plan vale desde hoy."}</div>
     </form>
+  </div>`;
+  if(mode!=="ajustes")return plan;
+  return `<div class="stack"><div class="ptop"><div class="stack" style="gap:4px"><h1>Ajustes</h1><div class="small muted">Tu cuenta, MetaTrader, permisos y apariencia</div></div></div>
+    <div class="grid2 even">
     <div class="stack">
       <div class="card stack" style="gap:12px" id="mt5">
         <div class="between"><h2>Conectar MetaTrader 5</h2>${S.bridges&&S.bridges.length?`<span class="small muted">${S.bridges.length} cuenta${S.bridges.length>1?"s":""}</span>`:""}</div>
@@ -1926,12 +1895,15 @@ function viewPlan(){
         <div class="small muted">El programa solo lee tus operaciones y hace la foto del gráfico. No abre ni cierra nada. Puedes vincular varias cuentas: repite el paso 3 en cada MetaTrader.</div>
         <details><summary class="small muted" style="cursor:pointer">Opciones avanzadas</summary><div class="stack" style="gap:8px;margin-top:10px"><div class="small muted">Si prefieres pegar una clave en el programa en vez de usar el código:</div><button type="button" class="btn2" id="newKey" style="align-self:flex-start">Crear una clave</button><a class="small" href="../mt5/Tickora.mq5" download>Descargar el programa (.mq5) para instalarlo a mano</a></div></details>
       </div>
+    </div>
+    <div class="stack">
       <div class="card stack" style="gap:10px">
         <h2>Permisos</h2>
         <div class="row" style="justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:14px">Cómo te sientes y tu sueño</div><div class="small muted">Para el semáforo y para apuntar cómo te sentías al entrar. Son datos de salud: solo los ves tú y puedes quitar el permiso cuando quieras.</div></div><button type="button" class="toggle" role="switch" aria-checked="${health}" aria-label="Permiso para datos de salud" id="healthToggle"></button></div>
       </div>
       <div class="card stack" style="gap:10px">
         <div class="between" style="align-items:center"><h2>Apariencia</h2><div class="seg" role="group" aria-label="Apariencia">${["system","light","dark"].map(t=>`<button type="button" data-theme-set="${t}" aria-pressed="${getThemePref()===t}">${{system:"Automática",light:"Clara",dark:"Oscura"}[t]}</button>`).join("")}</div></div>
+        <div class="between" style="align-items:center"><div><div style="font-weight:600;font-size:14px">Color principal</div><div class="small muted">Botones, enlaces y gráficos</div></div><button type="button" class="btn2" data-style-open style="height:36px">Cambiar color</button></div>
       </div>
       <div class="card stack" style="gap:10px">
         <h2>Tu cuenta</h2>
@@ -1993,7 +1965,7 @@ function render(){
   const XV=window.TK_VIEWS&&TK_VIEWS[r.view];
   const NEWV=["app","backtest","historial","emociones","diario","noticias","asistente","inicio","btanalisis","btops","btcal","btnotas","rendimiento","calendario","informe","finanzas"];
   if(NEWV.includes(r.view)&&!XV&&document.readyState==="complete"&&!S.loadWarn){S.loadWarn=setTimeout(()=>{S.lastView=null;render()},2500)}
-  const content=(window.tkCrumb&&!["analizar","inicio","app"].includes(r.view)?tkCrumb(r.view):"")+(XV?XV.view(r):NEWV.includes(r.view)?`<div class="stack" style="gap:12px;max-width:520px;padding:40px 0"><div class="muted">Cargando…</div>${document.readyState==="complete"?`<div class="small muted">Si tarda mucho, recarga la página sin caché: Ctrl + F5 (en Mac, ⌘ + Mayús + R).</div><button type="button" class="btn" onclick="location.replace(location.pathname+'?r='+Date.now()+location.hash)" style="height:40px;align-self:flex-start">Recargar ahora</button>`:""}</div>`:r.view==="mas"?viewMas():r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan():r.view==="cuentas"?viewCuentas():
+  const content=(window.tkCrumb&&!["analizar","inicio","app"].includes(r.view)?tkCrumb(r.view):"")+(XV?XV.view(r):NEWV.includes(r.view)?`<div class="stack" style="gap:12px;max-width:520px;padding:40px 0"><div class="muted">Cargando…</div>${document.readyState==="complete"?`<div class="small muted">Si tarda mucho, recarga la página sin caché: Ctrl + F5 (en Mac, ⌘ + Mayús + R).</div><button type="button" class="btn" onclick="location.replace(location.pathname+'?r='+Date.now()+location.hash)" style="height:40px;align-self:flex-start">Recargar ahora</button>`:""}</div>`:r.view==="mas"?viewMas():r.view==="op"?viewOp(r.id):r.view==="analizar"?viewAnalizar():r.view==="progreso"?viewProgreso():r.view==="plan"?viewPlan("plan"):r.view==="ajustes"?viewPlan("ajustes"):r.view==="cuentas"?viewCuentas():
     r.view==="grupo"?viewSoon("Grupo","Los grupos nuevos, donde solo se comparte disciplina y nunca dinero, llegan en el último paso de esta versión. Mientras tanto, tus grupos siguen en la versión anterior."):
     r.view==="aprender"?viewSoon("Aprender","Las lecciones llegarán cuando termines el bootcamp. Tus apuntes siguen en la versión anterior."):viewHoy());
   $app.innerHTML=r.view==="inicio"||r.view==="app"?homeShell(content):r.view==="analizar"?shell("analizar",content):homeShell(content,r.view==="op"?"historial":r.view);
@@ -2113,8 +2085,10 @@ function bindView(r){
     document.querySelectorAll("[data-feel]").forEach(b=>b.onclick=()=>{const f=b.dataset.feel;saveReview({feel:(t.review||{}).feel===f?null:f});document.querySelectorAll("[data-feel]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.feel===(t.review||{}).feel)))});
     const why=document.getElementById("why");if(why)why.onchange=()=>saveReview({why:why.value.slice(0,2000)});
   }
-  if(r.view==="plan"){
+  if(r.view==="plan"||r.view==="ajustes"){
+    const $i=id=>document.getElementById(id)||{};
     const f=document.getElementById("planForm");
+    if(f){
     const pe=document.getElementById("planEdit");if(pe)pe.onclick=e=>{e.preventDefault();f.scrollIntoView({behavior:"smooth",block:"start"});setTimeout(()=>{const i=f.querySelector("input");i&&i.focus()},400)};
     const readRules=()=>{const rules=[];f.querySelectorAll("[data-rule]").forEach(i=>{const k=+i.dataset.rule;rules[k]=rules[k]||{si:"",entonces:""};rules[k][i.dataset.part]=i.value.trim()});return rules.filter(x=>x&&(x.si||x.entonces))};
     document.getElementById("addRule").onclick=()=>{const p=S.plan;p.rules=readRules().concat([{si:"",entonces:""}]);render()};
@@ -2125,8 +2099,8 @@ function bindView(r){
       const first=!(S.planDoc&&S.planDoc.current&&S.planDoc.saved);
       const ok=await savePlan(Object.assign(ch),first);
       if(ok){if(first){S.planDoc.saved=true;await sb.from("docs").upsert({user_id:S.user.id,col:"v1",id:"plan",data:S.planDoc})}toast(first?"Plan guardado. Vale desde hoy.":"Guardado. Vale desde mañana.");render()}
-    };
-    document.getElementById("newKey").onclick=async()=>{
+    };}
+    $i("newKey").onclick=async()=>{
       const {data,error}=await sb.rpc("create_bridge_key");
       if(error){toast("No se pudo crear: "+error.message);return}
       S.newKey=data;await refreshBridges();S.lastView=null;render();
@@ -2134,7 +2108,7 @@ function bindView(r){
     };
     document.querySelectorAll("[data-os]").forEach(b=>b.onclick=()=>{S.os=b.dataset.os;S.lastView=null;render();document.getElementById("mt5").scrollIntoView({block:"start"})});
     document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{const t=document.getElementById(b.dataset.copy).textContent.trim();try{await navigator.clipboard.writeText(t);toast("Copiado")}catch(e){toast(t)}});
-    document.getElementById("pairForm").onsubmit=async()=>{
+    $i("pairForm").onsubmit=async()=>{
       const inp=document.getElementById("pairCode"),code=inp.value.replace(/\D/g,"");
       if(code.length!==6){toast("El código tiene 6 cifras");return}
       const {data,error}=await sb.rpc("bridge_pair_claim",{p_code:code});
@@ -2150,19 +2124,19 @@ function bindView(r){
       await refreshBridges();S.lastView=null;render();toast("Cuenta desconectada");
     });
     const ck=document.getElementById("copyKey");if(ck)ck.onclick=async()=>{try{await navigator.clipboard.writeText(S.newKey);toast("Clave copiada")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("keyText"));getSelection().removeAllRanges();getSelection().addRange(r);toast("Selecciónala y cópiala")}};
-    document.getElementById("healthToggle").onclick=async()=>{
+    $i("healthToggle").onclick=async()=>{
       const v=!(S.consents.health===true);
       const {error}=await sb.from("consents").upsert({user_id:S.user.id,kind:"health",version:LEGAL_VERSION,granted:v});
       if(error){toast("No se pudo cambiar");return}
       S.consents.health=v;toast(v?"Permiso dado":"Permiso quitado");render();
     };
-    const ni=document.getElementById("nameInput");ni.onchange=async()=>{const n=ni.value.trim().slice(0,40);if(!n)return;S.name=n;await sb.auth.updateUser({data:{name:n}});toast("Nombre guardado")};
-    document.getElementById("logoutBtn").onclick=()=>sb.auth.signOut();
-    document.getElementById("exportBtn").onclick=()=>{
+    const ni=$i("nameInput");ni.onchange=async()=>{const n=ni.value.trim().slice(0,40);if(!n)return;S.name=n;await sb.auth.updateUser({data:{name:n}});toast("Nombre guardado")};
+    $i("logoutBtn").onclick=()=>sb.auth.signOut();
+    $i("exportBtn").onclick=()=>{
       const blob=new Blob([JSON.stringify({exportado:new Date().toISOString(),plan:S.planDoc,operaciones:S.trades,permisos:S.consents},null,2)],{type:"application/json"});
       const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mis-datos-tickora.json";document.body.appendChild(a);a.click();a.remove();
     };
-    document.getElementById("delBtn").onclick=async()=>{
+    $i("delBtn").onclick=async()=>{
       if(document.getElementById("delConfirm").value.trim()!=="BORRAR"){toast("Escribe BORRAR para confirmar");return}
       // primero tus fotos (la base de datos no puede borrar archivos)
       try{
@@ -2199,8 +2173,8 @@ if(SB_OK){
 window.TKAPP={S,sb,esc,SVG,fmtR,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
 })();
 </script>
-<link rel="stylesheet" href="extra2.css?v=15">
-<script src="extra.js?v=4"></script>
-<script src="extra2.js?v=15"></script>
+<link rel="stylesheet" href="extra2.css?v=18">
+<script src="extra.js?v=5"></script>
+<script src="extra2.js?v=18"></script>
 </body>
 </html>

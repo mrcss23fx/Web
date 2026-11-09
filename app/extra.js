@@ -286,7 +286,7 @@
   V.emociones = {
     view() {
       if (!healthOk()) return `<div class="stack" style="gap:18px"><div class="xhead"><div><h1>Emociones</h1><div class="small muted">Qué emociones te ayudan y cuáles te cuestan</div></div></div>
-        <div class="card stack" style="gap:10px;max-width:640px"><b>Necesitamos tu permiso para guardar cómo te sientes</b><span class="small muted">Las emociones son datos sensibles. Solo se guardan si lo activas, solo los ves tú y puedes retirarlo cuando quieras.</span><a class="btn" href="#plan" style="align-self:flex-start;height:40px">Activar en Mi plan → Permisos</a></div></div>`;
+        <div class="card stack" style="gap:10px;max-width:640px"><b>Necesitamos tu permiso para guardar cómo te sientes</b><span class="small muted">Las emociones son datos sensibles. Solo se guardan si lo activas, solo los ves tú y puedes retirarlo cuando quieras.</span><a class="btn" href="#plan" style="align-self:flex-start;height:40px">Activar en Ajustes → Permisos</a></div></div>`;
       if (!S.emoLoaded) loadEmo().then(() => { if (location.hash.startsWith("#emociones")) { S.lastView = null; render(); } });
       const per = S.emoPer || "all", from = per === "all" ? null : Date.now() - (+per) * 864e5;
       const L = S.trades.filter(t => !from || new Date(t.open_time) >= from), E = emoStats(L), C = closed(L);
@@ -416,7 +416,7 @@
   }
   /* -------- lista -------- */
   function listView() {
-    const q = norm(S.pgQ || ""), A = pages().filter(p => !q || norm(p.title + " " + txt(p.html)).includes(q)), L = A.filter(p => !p.isTpl), TP = A.filter(p => p.isTpl);
+    const q = norm(S.pgQ || ""), A = pages().filter(p => !q || norm(p.title + " " + txt(p.html)).includes(q)), L = A.filter(p => !p.isTpl && !p.bt && p.tpl !== "bt"), TP = A.filter(p => p.isTpl);
     return `<div class="stack" style="gap:20px">
       <div class="pghero"><div class="pghero-in"><h1>${greet()}, ${esc((S.name || "").split(" ")[0])}</h1><label class="pgsearch">${I(IC.search, 17)}<input id="pgQ" placeholder="Buscar en tu diario" value="${esc(S.pgQ || "")}" aria-label="Buscar en tu diario"></label></div></div>
       <div class="between"><h2 class="h2b">Mis páginas</h2><span class="small muted">${(S.pages || []).length} página${(S.pages || []).length === 1 ? "" : "s"}</span></div>
@@ -898,7 +898,7 @@
   window.tkNewsToday = function () {
     if (!S.news) { loadNews().then(() => { if (!location.hash || location.hash === "#hoy") { S.lastView = null; render(); } }); return ""; }
     const today = todayKey(), L = (S.news.events || []).filter(e => dayKey(e.ts) === today && e.impact === "High" && e.ts > Date.now() - 30 * 6e4);
-    if (!L.length) return "";
+    if (!L.length) return `<a class="card newsmini" href="#noticias"><div class="row" style="gap:8px">${I(IC.clock, 17)}<b style="font-size:14px">Noticias fuertes hoy</b></div><div class="small muted">Hoy no hay noticias de alto impacto.</div></a>`;
     const mine = L.filter(e => inPlan(e.ts));
     return `<a class="card newsmini ${mine.length ? "warn" : ""}" href="#noticias"><div class="row" style="gap:8px">${I(IC.clock, 17)}<b style="font-size:14px">Noticias fuertes hoy</b></div>${L.slice(0, 3).map(e => `<div class="between small"><span>${FLAG[e.country] || ""} ${esc(e.country)} · ${esc(e.title)}</span><b class="mono">${hm(e.ts)}</b></div>`).join("")}${mine.length ? `<div class="small" style="color:var(--ambarT)">${mine.length === 1 ? "Una cae" : mine.length + " caen"} en tu horario: no entres 15 min antes ni después.</div>` : ""}</a>`;
   };
@@ -948,7 +948,7 @@
       return `Después de una pérdida, el mismo día, has hecho <b>${after.length}</b> operaciones: ${fmtR(st.exp)} por operación frente a ${fmtR(all.exp)} de tu media, y cumples el plan el ${num(gp, 0)} % de las veces.${st.exp < all.exp ? " <b>Te va peor tras perder.</b> Prueba la regla: tras una pérdida, cinco minutos fuera de la pantalla." : " Gestionas bien las pérdidas."}`;
     }
     if (has("emocion", "siento", "sentia", "miedo", "ansiedad", "fomo")) {
-      if (!(S.consents && S.consents.health)) return `Para responder sobre emociones tienes que activar el permiso en <a href="#plan">Mi plan → Permisos</a> y anotar cómo te sentías en cada operación.`;
+      if (!(S.consents && S.consents.health)) return `Para responder sobre emociones tienes que activar el permiso en <a href="#ajustes">Ajustes → Permisos</a> y anotar cómo te sentías en cada operación.`;
       const G = groupBy(C.filter(t => (t.review || {}).feel), t => t.review.feel), w = pick(G, 2, (a, c) => a.st.tot - c.st.tot), b = pick(G, 2, (a, c) => c.st.exp - a.st.exp);
       if (!w) return `Anota tu emoción en más operaciones (te lo pongo fácil en <a href="#emociones">Emociones</a>) y podré compararlas.`;
       return `La emoción que más te cuesta es <b>${esc(w.k.toLowerCase())}</b>: ${fmtR(w.st.tot)} en ${w.st.n} operaciones.${b && b.k !== w.k ? ` La que mejor te va: <b>${esc(b.k.toLowerCase())}</b>, ${fmtR(b.st.exp)} por operación.` : ""}`;
