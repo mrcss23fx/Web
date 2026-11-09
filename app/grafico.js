@@ -1389,6 +1389,7 @@
       begin(list, idx);
     }
     function begin(list, idx) {
+      if (R.end) { const k = list.findIndex(b => b.timestamp > R.end); if (k > 0) list = list.slice(0, k); } // la sesión no deja ver más allá de su fecha final
       R.all = list; R.idx = Math.max(1, Math.min(idx, list.length - 2)); R.picking = false;
       if (!/No hay velas tan antiguas/.test($(".gx-hint").textContent)) hint("");
       $(".gx-start").hidden = true; $(".gx-play").hidden = false;
@@ -1398,7 +1399,8 @@
     function step() {
       if (R.cut) cutMode(false);
       if (R.idx >= R.all.length - 1) { pause(); hint("Has llegado al presente."); setTimeout(() => hint(""), 2500); return false; }
-      R.idx++; const b = bar(); R.cb && R.cb(b); checkSim(b); stats(); return true;
+      if (R.end && bar() && bar().timestamp >= R.end) { pause(); hint("Has llegado al final del periodo de esta sesión."); setTimeout(() => hint(""), 3500); opts.onSessionEnd && opts.onSessionEnd(); return false; }
+      R.idx++; const b = bar(); R.cb && R.cb(b); checkSim(b); stats(); opts.onReplay && opts.onReplay(b.timestamp); return true;
     }
     function back() {
       if (R.cut) cutMode(false);
@@ -1597,6 +1599,9 @@
     me = inst = {
       el, ch, ro, onKey, key: KEY, activate, flush: () => { flushRemote(); document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", flushRemote); },
       get sym() { return st.sym; }, get tf() { return st.tf; },
+      startBacktest(ts, o) { o = o || {}; if (o.sym && o.sym !== st.sym) { st.sym = o.sym; F.hidden = true; load(); restore(); } R.end = o.end || null; R.trades = []; if (!R.on) enterReplay(); whenLoaded(() => startAt(ts)); },
+      stopBacktest() { R.end = null; if (R.on) exitReplay(); },
+      get replayTs() { return R.on && !R.picking && bar() ? bar().timestamp : null; },
       setSymbol(sym) { if (sym === st.sym) return; flushRemote(); const was = R.on; if (R.on) exitReplay(); st.sym = sym; F.hidden = true; load(); restore(); if (was) enterReplay(); },
       setTheme(dark) { DARK = !!dark; ch.setStyles(styles()); applyInd(); paintBg(); applyCursor(); },
       price: () => st.price,
