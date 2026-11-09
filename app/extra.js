@@ -1012,6 +1012,7 @@
       const paintCmd = () => { cm.innerHTML = CL.map((x, i) => `<button type="button" role="option" data-cmd="${x[0]}" aria-selected="${i === ci}"><span class="mono">/${x[0]}</span> ${esc(x[1])}</button>`).join(""); };
       const checkCmd = () => { const m = q.value.match(/^\/(\w*)$/); if (!m) { cm.hidden = true; return; } CL = CMDS.filter(x => x[0].startsWith(norm(m[1]))); if (!CL.length) { cm.hidden = true; return; } ci = 0; paintCmd(); cm.hidden = false; };
       const runCmd = k => { const c = CMDS.find(x => x[0] === k); cm.hidden = true; q.value = ""; if (c) ask(c[2]); };
+      if (S.asPrefill) { const pf = S.asPrefill; S.asPrefill = null; S.chatId = null; setTimeout(() => ask(pf), 0); }
       cm.addEventListener("mousedown", e => { const b = e.target.closest("[data-cmd]"); if (b) { e.preventDefault(); runCmd(b.dataset.cmd); } });
       const bindAsk = () => $$("[data-ask]").forEach(b => b.onclick = () => ask(b.dataset.ask));
       f.onsubmit = e => { e.preventDefault(); const m = q.value.trim().match(/^\/(\w+)$/); if (m && CMDS.some(x => x[0] === norm(m[1]))) return runCmd(norm(m[1])); ask(q.value); };
