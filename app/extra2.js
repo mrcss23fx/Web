@@ -176,10 +176,69 @@
     $$("[data-btnew]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer(), 60); });
     $$("[data-ask]").forEach(a => a.onclick = () => { S.asPrefill = a.dataset.ask; });
   }
+  /* portada en calma: cada cuadro con icono, nombre y un dato; el primer toque lo marca y enseña sus apartados, el segundo entra.
+     Para volver a la portada anterior: localStorage "tk-home" = "clasica". */
+  const CALM = () => lsGet("tk-home", "calma") !== "clasica";
+  const RARW = '<path d="M4 10h12M11 5l5 5-5 5"/>';
+  function calmLine(k, D) {
+    const p = D.p, mx = p.maxTrades || 3;
+    switch (k) {
+      case "hoy": return (D.st.n ? fmtR(D.st.tot) + " · " : "") + D.today.length + " de " + mx + " operaciones";
+      case "analizar": { const sym = (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD"; return esc(sym) + " · " + esc(TFL[lsGet("tk-tf", "5m")] || ""); }
+      case "backtest": return D.sess.length ? D.sess.length + (D.sess.length === 1 ? " sesión" : " sesiones") : "Crea tu primera sesión";
+      case "resultados": return D.C90.length ? Math.round(D.good / D.C90.length * 100) + " % dentro del plan" : "Aún sin operaciones";
+      case "diario": return D.pages.length ? D.pages.length + (D.pages.length === 1 ? " página" : " páginas") : "Escribe tu primera página";
+      case "cartera": { const n = (S.accts || []).filter(a => a.status !== "archivada").length; return n + (n === 1 ? " cuenta" : " cuentas"); }
+      case "plan": { const r = (p.rules || []).length; return r ? r + (r === 1 ? " norma" : " normas") : "Máx. " + mx + " operaciones"; }
+      case "asistente": return "Pregunta lo que quieras";
+    }
+    return "";
+  }
+  const SUN = '<circle cx="10" cy="10" r="3.2"/><path d="M10 2.5v1.6M10 15.9v1.6M2.5 10h1.6M15.9 10h1.6M4.7 4.7l1.1 1.1M14.2 14.2l1.1 1.1M4.7 15.3l1.1-1.1M14.2 5.8l1.1-1.1"/>';
+  const calmRest = (k, D) => `${k === "hoy" ? I(SUN, 20, 1.5) : ico(k, 20, 1.5)}<div><b class="hc-n">${esc(appDef(k)[1])}</b><span class="hc-d">${calmLine(k, D)}</span></div>`;
+  function calmOpen(k, D) {
+    const a = appDef(k), cats = a[2];
+    const body = cats.length > 1
+      ? `<div class="hc-cl">${cats.map(([ck, cl]) => `<a class="hc-c" href="#${ck}" data-stop><span>${esc(cl)}</span><em>${catInfo(ck, D)[0]}</em></a>`).join("")}</div>`
+      : `<p class="hc-p">${esc(APPDESC[k] || CATDESC[cats[0][0]] || "")}</p>`;
+    return `<div class="hc-in"><b class="hc-n">${esc(a[1])}</b>${body}<a class="hc-go" href="${appHref(k)}" data-stop>Abrir ${I(RARW, 15, 1.8)}</a></div>`;
+  }
+  function calmSet(k, kb) {
+    const g = document.querySelector(".hc-grid"); if (!g) { S.hcSel = null; return; }
+    const D = hData(); S.hcSel = k || null;
+    g.classList.toggle("has", !!S.hcSel);
+    g.querySelectorAll(".hc-t").forEach(t => {
+      const on = t.dataset.hc === S.hcSel, was = t.classList.contains("sel");
+      if (on === was) return;
+      t.classList.toggle("sel", on); t.setAttribute("aria-expanded", on);
+      t.innerHTML = on ? calmOpen(t.dataset.hc, D) : calmRest(t.dataset.hc, D);
+      if (on && kb) { const f = t.querySelector(".hc-c,.hc-go"); f && f.focus({ preventScroll: true }); }
+    });
+  }
+  function bindCalm() {
+    $$(".hc-t").forEach(t => {
+      const act = kb => { if (S.hcSel === t.dataset.hc) location.hash = appHref(t.dataset.hc); else calmSet(t.dataset.hc, kb); };
+      t.addEventListener("click", e => { if (e.target.closest("[data-stop]")) return; act(false); });
+      t.addEventListener("keydown", e => { if (e.target === t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); act(true); } });
+    });
+    if (!window.__tkCalm) {
+      window.__tkCalm = true;
+      document.addEventListener("click", e => { if (S.hcSel && !e.target.closest(".hc-t")) calmSet(null); });
+      document.addEventListener("keydown", e => { if (e.key === "Escape" && S.hcSel) { const k = S.hcSel; calmSet(null); const t = document.querySelector('.hc-t[data-hc="' + k + '"]'); t && t.focus(); } });
+      window.addEventListener("hashchange", () => { S.hcSel = null; });
+    }
+  }
   V.inicio = {
     view() {
       loadAll();
       const D = hData(), first = esc((S.name || "").split(" ")[0] || "trader");
+      if (CALM()) {
+        const sel = S.hcSel;
+        return `<div class="hb hb-full hc"><section class="hb-l">
+          <div class="hc-hello"><small>${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))} · ${greetLine(D)}</small><h1>Hola, ${first}</h1></div>
+          <div class="hc-grid${sel ? " has" : ""}">${HAPPS.filter(k => appDef(k)).map(k => `<div class="hc-t${sel === k ? " sel" : ""}" role="button" tabindex="0" data-hc="${k}" aria-expanded="${sel === k}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${sel === k ? calmOpen(k, D) : calmRest(k, D)}</div>`).join("")}</div>
+        </section></div>`;
+      }
       setTimeout(() => { S.hbAnim = true; }, 600);
       return `<div class="hb hb-full">
         <section class="hb-l">${metaRow(D)}
@@ -187,7 +246,7 @@
           <div class="hb-grid">${HAPPS.filter(k => appDef(k)).map(k => `<div class="hb-t t-${k} ${S.hbAnim ? "noanim" : ""}" role="link" tabindex="0" data-href="${appHref(k)}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${appTile(k, D)}</div>`).join("")}</div>
         </section></div>`;
     },
-    bind() { bindTiles(); }
+    bind() { if (CALM()) bindCalm(); else bindTiles(); }
   };
   V.app = {
     view(r) {
