@@ -181,7 +181,7 @@
       const day = todayKey(); S.planOk = { day, ts: Date.now() };
       const t = b.closest(".hb-t"); if (t) { t.innerHTML = appTile("plan", hData()); bindWidgets(t); }
       const { error } = await sb.from("docs").upsert({ user_id: S.user.id, col: "plandia", id: "d" + day, data: { ts: S.planOk.ts }, updated_at: new Date().toISOString() });
-      if (error) toast("No se pudo guardar tu compromiso"); else toast("Comprometido. Tus normas, a la vista toda la sesión");
+      if (error) toast("No se pudo guardar tu compromiso"); else toast("Comprometido. Tus normas, a la vista toda la sesión"); if (document.getElementById("hday")) { window.__tkDay && window.__tkDay(); const pt = document.querySelector('.hb-t[data-hc="plan"]'); if (pt) { pt.innerHTML = appTile("plan", hData()); bindWidgets(pt); } }
     });
     q("[data-mt]").forEach(b => b.onclick = async () => {
       const [k, v] = b.dataset.mt.split(":"), day = todayKey(); S.mente = S.mente || {};
@@ -449,7 +449,7 @@
   async function loadPlanOk() {
     const day = todayKey(); if ((S.planOk && S.planOk.day === day) || S.planOkLoaded === day) return; S.planOkLoaded = day;
     const { data, error } = await sb.from("docs").select("id,data").eq("col", "plandia").eq("id", "d" + day);
-    if (!error && data && data[0]) { S.planOk = { day, ts: data[0].data.ts }; const t = document.querySelector('.hb-t[data-hc="plan"]:not(.sel)'); if (t) { t.innerHTML = appTile("plan", hData()); bindWidgets(t); } }
+    if (!error && data && data[0]) { S.planOk = { day, ts: data[0].data.ts }; if (document.getElementById("hday") && window.__tkDay) window.__tkDay(); const t = document.querySelector('.hb-t[data-hc="plan"]:not(.sel)'); if (t) { t.innerHTML = appTile("plan", hData()); bindWidgets(t); } }
   }
   async function loadMente() {
     if (S.menteLoaded || S.menteLoading || !healthOk()) return; S.menteLoading = true;
@@ -458,6 +458,7 @@
     const t = document.querySelector('.hb-t[data-hc="resultados"]:not(.sel)');
     if (t) { t.innerHTML = appTile("resultados", hData()); bindWidgets(t); }
     if (document.getElementById("hxq") && window.__tkHero && !S.hqStep) window.__tkHero();
+    if (document.getElementById("hday") && window.__tkDay) window.__tkDay();
   }
   /* gráfico del cuadro: velas reales de los últimos minutos, en azul y gris */
   const chartSym = () => (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD";
@@ -588,6 +589,54 @@
     const cl = document.getElementById("hxcats"); if (cl) cl.innerHTML = carCats();
     lsSet("tk-car", String(a));
   }
+  /* ===== panel «Tu día»: debajo de la portada, lo más importante de la jornada ===== */
+  const NEWS_IMP = { High: 3, Medium: 2, Low: 1 };
+  function homeDay(D) {
+    const p = D.p, used = D.today.length, mx = p.maxTrades || 3, L = p.dayLimitR || 2, dr = D.st.n ? D.st.tot : 0, ph = D.phase;
+    const m = healthOk() ? (S.mente || {})[todayKey()] : null, md = mDone(m), sc = md ? mScore(m) : null, ok = S.planOk && S.planOk.day === todayKey();
+    const cl = closed(D.today), good = cl.filter(t => evaluate(t).good).length;
+    const byDay = {}; closed(S.trades).forEach(t => { const k = dayKey(dateOf(t)); (byDay[k] = byDay[k] || []).push(t); });
+    let racha = 0; for (const k of Object.keys(byDay).sort().reverse()) { if (byDay[k].every(t => evaluate(t).good)) racha++; else break; }
+    const margin = Math.max(0, L + Math.min(0, dr));
+    const kpi = (lbl, val, sub) => `<div class="hd-k"><span>${lbl}</span><b class="mono">${val}</b><small>${sub}</small></div>`;
+    const kpis = `<div class="hd-kpis">${kpi("Resultado de hoy", D.st.n ? fmtR(D.st.tot) : "0 R", D.st.n ? D.st.n + (D.st.n === 1 ? " cerrada" : " cerradas") : "sin operaciones")}${kpi("Operaciones", used + " de " + mx, used >= mx ? "has llegado al máximo" : (mx - used) + " por delante")}${kpi("Aún puedes perder", num(margin, 1) + " R", "límite del día −" + num(L, 1) + " R")}${kpi("Cómo llegas", md ? String(sc) : "—", md ? mLabel(sc) : "sin chequeo hoy")}${kpi("Dentro del plan", cl.length ? Math.round(good / cl.length * 100) + " %" : "—", racha ? racha + (racha === 1 ? " día seguido" : " días seguidos") : "hoy")}</div>`;
+    // preparación
+    const nh = (D.todayEv || []).filter(e => e.impact === "High").sort((a, b) => a.ts - b.ts);
+    const step = (done, title, sub, act) => `<li class="${done ? "ok" : ""}"><span class="hd-ck">${done ? I('<path d="M4.5 10.5l3.5 3.5 7.5-8"/>', 12, 2.6) : ""}</span><div><b>${title}</b><small>${sub}</small></div>${act || ""}</li>`;
+    const prep = `<div class="hd-c"><h3>Antes de operar</h3><ul class="hd-steps">
+      ${step(md, "Cuéntame cómo llegas", md ? `${mLabel(sc)} · para hoy: ${esc(psyAdvice(m, D).tip[0].toLowerCase())}` : healthOk() ? "5 preguntas, 15 segundos" : "Actívalo en Ajustes", md ? "" : healthOk() ? `<button type="button" class="x-ch" data-hd="checkin">Hacer ahora</button>` : `<a class="x-ch" href="#ajustes">Ajustes</a>`)}
+      ${step(ok, "Comprométete con tu plan", ok ? "Hecho a las " + new Date(S.planOk.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "Riesgo " + num(p.riskPct, 2).replace(/,?0+$/, "") + " % · máximo " + mx + " · límite −" + num(L, 1) + " R", ok ? "" : `<button type="button" class="x-ch" data-pcommit>Me comprometo</button>`)}
+      ${step(!!(S.news && !S.news.err) && !nh.length, nh.length ? "Ojo con las noticias fuertes" : "Noticias fuertes", !S.news ? "Cargando…" : nh.length ? nh.map(e => hhmm(e.ts)).join(" · ") + " · ten cuidado cerca de esas horas" : "Hoy no hay noticias de alto impacto", `<a class="x-ch" href="#noticias">Ver</a>`)}
+      ${step(!!(m && m.sit), "Ten tu regla de hoy a mano", m && m.sit ? `Si ${esc(m.sit)} → ${esc(m.then)}` : "Sale de tu consejo, después del chequeo", "")}
+    </ul></div>`;
+    // noticias de hoy
+    const evs = (D.todayEv || []).filter(e => NEWS_IMP[e.impact] >= 2).sort((a, b) => a.ts - b.ts).slice(0, 7);
+    const inH = ts => { const d = new Date(ts), mm = d.getHours() * 60 + d.getMinutes(); return mm >= D.a && mm < D.b; };
+    const news = `<div class="hd-c"><h3>Noticias de hoy</h3>${!S.news ? `<p class="hd-e">Cargando el calendario…</p>` : evs.length ? `<ul class="hd-news">${evs.map(e => `<li class="${e.ts < Date.now() ? "past" : ""}"><span class="mono">${hhmm(e.ts)}</span><i class="imp i${NEWS_IMP[e.impact]}" title="${e.impact === "High" ? "Impacto alto" : "Impacto medio"}"></i><b>${esc(e.country || "")}</b><span class="t">${esc(e.title || "")}</span>${inH(e.ts) ? `<em>en tu horario</em>` : ""}</li>`).join("")}</ul>` : `<p class="hd-e">Hoy no hay noticias de impacto alto ni medio.</p>`}<a class="hd-more" href="#noticias">Calendario completo</a></div>`;
+    // consejo
+    const tip = md ? psyAdvice(m, D) : null;
+    const advice = `<div class="hd-c hd-tip"><h3>Tu consejo de hoy</h3>${tip ? `<b>${esc(tip.tip[0])}</b><p>${esc(tip.tip[2])}</p>${tip.tip[3] ? `<small>Estudio: ${esc(tip.tip[3])}</small>` : ""}<button type="button" class="x-ch" data-hd="psy">Ver mi día completo</button>` : `<p class="hd-e">Contesta las 5 preguntas de arriba y aquí tendrás un consejo hecho para ti.</p><button type="button" class="x-ch" data-hd="checkin">Empezar</button>`}</div>`;
+    // operaciones
+    const ops = `<div class="hd-c hd-wide"><h3>Operaciones de hoy</h3>${D.today.length ? `<ul class="hd-ops">${D.today.slice().sort((a, b) => new Date(b.open_time) - new Date(a.open_time)).map(t => { const ev = t.status === "closed" ? evaluate(t) : null, side = t.side === "buy" ? "Compra" : "Venta";
+      return `<li><a href="#op/${encodeURIComponent(t.id)}"><span class="mono">${hhmm(t.open_time)}</span><b>${esc(t.symbol || "")}</b><span>${side}</span><span class="mono r">${t.status === "closed" && t.r != null ? fmtR(+t.r) : "abierta"}</span>${ev ? `<em class="${ev.good ? "ok" : "bad"}">${ev.good ? "Dentro del plan" : "Fuera: " + esc((ev.fail[0] && NLAB[NK(ev.fail[0].fix)]) || "revisar")}</em>` : `<em>en curso</em>`}</a></li>`; }).join("")}</ul>` : `<p class="hd-e">${ph === "antes" ? "Tu sesión aún no ha empezado." : ph === "en" ? "Aún no has operado. No operar también es una buena sesión si no aparece tu setup." : "Hoy no has operado."}</p>`}<button type="button" class="hd-more" data-hd="informe">Ver el informe del día</button></div>`;
+    // semana
+    const mon = new Date(); mon.setHours(12, 0, 0, 0); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
+    let wt = 0, wd = 0, wok = 0;
+    const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dayKey(d), Ld = byDay[k] || [], st = tradeStats(Ld); if (Ld.length) { wt += st.tot; wd++; if (Ld.every(t => evaluate(t).good)) wok++; }
+      return `<div class="hd-wd ${Ld.length ? (st.tot > 0 ? "p" : st.tot < 0 ? "n" : "z") : ""}${k === todayKey() ? " hoy" : ""}"><span>${["L", "M", "X", "J", "V", "S", "D"].at(i)}</span><b class="mono">${Ld.length ? fmtR(st.tot) : "·"}</b></div>`; }).join("");
+    const week = `<div class="hd-c"><h3>Esta semana</h3><div class="hd-week">${days}</div><p class="hd-ws"><b class="mono">${wd ? fmtR(wt) : "0 R"}</b> en ${wd} ${wd === 1 ? "día" : "días"} · <b>${wok} de ${wd}</b> en plan</p><a class="hd-more" href="#calendario">Abrir el calendario</a></div>`;
+    // cuentas de fondeo: lo que te queda hoy
+    const F = (S.accts || []).filter(a => a.status !== "archivada" && a.type === "fondeo").slice(0, 3);
+    const acc = F.length ? `<div class="hd-c"><h3>Tus cuentas de fondeo</h3><ul class="hd-acc">${F.map(a => { const rp = +a.risk || (S.basePlan || p).riskPct || 1, dd = +a.dailyDD || 0, lim = dd ? (a.dailyU === "R" ? dd : dd / rp) : 0;
+      const T = (S.allTrades || S.trades).filter(t => a.number && String(t.account || "") === String(a.number) && t.status === "closed" && t.r != null && dayKey(t.open_time) === todayKey()), td = T.reduce((s, t) => s + (+t.r || 0), 0), x = accR(a), pr = x.need ? Math.max(0, Math.min(1, x.sum / x.need)) : null;
+      return `<li><div><b>${esc(acctName(a))}</b><small>${a.phase === "f2" ? "Fase 2" : a.phase === "fin" ? "Financiada" : "Fase 1"}${pr != null ? " · " + Math.round(pr * 100) + " % del objetivo" : ""}</small></div><span>${lim ? `Te queda hoy <b class="mono">${num(Math.max(0, lim + Math.min(0, td)), 1)} R</b>` : `Hoy <b class="mono">${fmtR(td)}</b>`}</span></li>`; }).join("")}</ul><a class="hd-more" href="#cuentas">Ver cuentas</a></div>` : "";
+    // cierre
+    const close = `<div class="hd-c hd-close"><h3>Cierre del día</h3>${ph === "despues" ? `<p>Dos minutos para cerrar bien: qué hiciste bien, qué mejorarías y una cosa para mañana.</p><button type="button" class="x-ch pri" data-hd="cierre">Escribir mi cierre</button>` : `<p class="hd-e">Al terminar tu horario (${esc(p.end)}) aquí escribirás tu cierre del día: qué hiciste bien, qué mejorarías y una cosa para mañana.</p>`}<button type="button" class="hd-more" data-hd="informe">Informe del día</button></div>`;
+    const order = ph === "despues" ? [kpis, `<div class="hd-g">${ops}${close}</div>`, `<div class="hd-g">${week}${advice}${acc || news}</div>`] : ph === "en" ? [kpis, `<div class="hd-g">${ops}${advice}</div>`, `<div class="hd-g">${news}${week}${acc || prep}</div>`] : [kpis, `<div class="hd-g">${prep}${news}${advice}</div>`, `<div class="hd-g">${ops}${week}</div>`, acc ? `<div class="hd-g two">${acc}${close}</div>` : `<div class="hd-g two">${close}</div>`];
+    return `<div class="hd-head"><h2>Tu día</h2><span>${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))} · ${ph === "antes" ? "antes de tu horario" : ph === "en" ? "en tu horario" : "sesión terminada"}</span></div>${order.join("")}`;
+  }
+  function paintDay() { const el = document.getElementById("hday"); if (el) { el.innerHTML = homeDay(hData()); bindWidgets(el); } }
+  window.__tkDay = paintDay;
   function homeCar(D, first) {
     const n = CARS.filter(k => appDef(k)).length;
     S.hcar = ((S.hcar != null ? S.hcar : +lsGet("tk-car", "0") || 0) % n + n) % n;
@@ -603,7 +652,9 @@
         <button type="button" class="hx-arr r" data-car="1" aria-label="Siguiente">${I(IC.right, 18, 2)}</button>
       </div>
       <div class="hx-cats" id="hxcats"></div>
-    </div>`;
+      <button type="button" class="hx-down" data-hd="down" aria-label="Bajar a Tu día"><span>Tu día</span>${I('<path d="M5 8l5 5 5-5"/>', 16, 2)}</button>
+    </div>
+    <section class="hd" id="hday" aria-label="Tu día">${homeDay(D)}</section>`;
   }
   function bindHero() {
     const q = document.getElementById("hxq"); if (!q || q.__b) return; q.__b = true;
@@ -616,7 +667,7 @@
         const day = todayKey(); M.ts = Date.now(); S.mente = S.mente || {}; S.mente[day] = mDerive(Object.assign({}, (S.mente[day] || {}), M));
         saveMente("d" + day, S.mente[day]); S.hqStep = 0; S.hqM = null; S.hqEdit = false; repaint();
         ["resultados", "plan"].forEach(k => { const t = document.querySelector('.hb-t[data-hc="' + k + '"]'); if (t) { t.innerHTML = appTile(k, hData()); bindWidgets(t); } });
-        toast("Gracias. Tu consejo de hoy ya está listo");
+        toast("Gracias. Tu consejo de hoy ya está listo"); window.__tkDay && window.__tkDay();
       };
       if (b.dataset.hv) {
         const i = b.dataset.hv.indexOf(":"), k = b.dataset.hv.slice(0, i), v = b.dataset.hv.slice(i + 1); mSet(M, k, v);
@@ -633,8 +684,19 @@
       else if (g === "perfil") psyPanel("perfil");
     });
   }
+  function bindDay() {
+    if (window.__tkHdB) return; window.__tkHdB = true;
+    document.addEventListener("click", async e => {
+      const b = e.target.closest("[data-hd]"); if (!b) return; const k = b.dataset.hd;
+      if (k === "down") { const el = document.getElementById("hday"); el && el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      else if (k === "checkin") { window.scrollTo({ top: 0, behavior: "smooth" }); S.hqEdit = !mDone((S.mente || {})[todayKey()]) ? false : S.hqEdit; setTimeout(() => { const f = document.querySelector("#hxq .hx-a"); f && f.focus({ preventScroll: true }); }, 450); }
+      else if (k === "psy") psyPanel();
+      else if (k === "informe") { S.repDay = todayKey(); location.hash = "#informe"; }
+      else if (k === "cierre") { const Dd = DI(); if (!Dd) return; await Dd.loadPages(); const p = Dd.newPage(null); p.title = "Cierre del " + new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long" }); p.html = "<h3>Lo que hice bien</h3><p></p><h3>Lo que mejoraría</h3><p></p><h3>Una cosa para mañana</h3><p></p>"; await Dd.savePage(p); location.hash = "#diario/" + encodeURIComponent(p.id); }
+    });
+  }
   function bindCar() {
-    bindHero(); bindWidgets(document); loadMini(); loadMente(); loadPlanOk();
+    bindDay(); bindHero(); if (!S.news && window.tkLoadNews) tkLoadNews().then(() => window.__tkDay && window.__tkDay()); bindWidgets(document); loadMini(); loadMente(); loadPlanOk();
     if (!window.__tkMini) { window.__tkMini = setInterval(() => { if (document.visibilityState === "visible") loadMini(); }, 60000); }
     const n = CARS.filter(k => appDef(k)).length, go = i => { S.hcar = ((i % n) + n) % n; placeCar(); };
     placeCar();
