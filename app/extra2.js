@@ -213,7 +213,7 @@
   const PTONE = [["directo", "Directo y corto"], ["cercano", "Cercano"], ["datos", "Con datos y estudios"]];
   const PMOOD = [["ganas", "Con ganas"], ["neutral", "Tranquilo"], ["miedo", "Con miedo"], ["prisa", "Con prisa por ganar"]];
   const PHEAD = [["nada", "Nada especial"], ["perdida", "Una pérdida reciente"], ["dinero", "Dinero"], ["trabajo", "Trabajo o estudios"], ["personal", "Algo personal"], ["salud", "Salud"]];
-  const PSIT = { revancha: "pierdo una operación", fomo: "veo que el precio se escapa sin mí", euforia: "gano dos seguidas", cansancio: "noto que me cuesta concentrarme", nervios: "noto el pulso acelerado antes de entrar", dudas: "dudo ante una entrada que cumple mis reglas", distraccion: "me llega algo al móvil o a la cabeza", impaciencia: "llevo un rato sin entradas", enfoque: "abro el gráfico", maximo: "quiero hacer una operación más", estable: "noto que algo me altera" };
+  const PSIT = { revancha: "pierdo una operación", fomo: "veo que el precio se escapa sin mí", euforia: "gano dos seguidas", cansancio: "noto que me cuesta concentrarme", nervios: "noto el pulso acelerado antes de entrar", dudas: "dudo ante una entrada que cumple mis reglas", distraccion: "me llega algo al móvil o a la cabeza", impaciencia: "llevo un rato sin entradas", enfoque: "abro el gráfico", maximo: "quiero hacer una operación más", estable: "noto que algo me altera", recuperar: "pienso en lo que perdí ayer", presion: "noto que necesito ganar", observar: "veo una entrada que me tienta" };
   /* [título, versión corta, versión completa, estudio] */
   const TIPS2 = {
     revancha: ["Pausa antes de recuperar", "Tras una pérdida, 10 minutos fuera antes de la siguiente.", "Después de perder, la cabeza busca volver a cero y empuja a arriesgar más. Date 10 minutos lejos de la pantalla antes de la siguiente operación.", "Thaler y Johnson (1990)"],
@@ -228,13 +228,22 @@
     enfoque: ["Decide antes de abrir el gráfico", "Repasa tus reglas si → entonces.", "Repasar tus reglas «si pasa esto, hago esto» antes de empezar hace mucho más probable que las cumplas cuando llegue el momento.", "Gollwitzer y Sheeran (2006)"],
     maximo: ["Has llegado a tu máximo", "Lo que queda, solo para mirar.", "Quien más opera suele ganar menos. Lo que queda de sesión, solo para mirar y apuntar lo que ves.", "Barber y Odean (2000)"],
     estable: ["Ponle nombre a lo que sientes", "Antes de cada entrada, nombra tu emoción.", "Antes de cada entrada, di en una frase cómo te sientes. Nombrar la emoción le quita fuerza y te ayuda a decidir con calma.", "Lieberman y otros (2007)"],
+    recuperar: ["Hoy no toca recuperar", "Mismo riesgo y una operación menos de lo normal.", "Querer recuperar lo de ayer es la forma más rápida de perder más. Hoy, mismo riesgo de siempre y una operación menos de lo normal.", "Thaler y Johnson (1990)"],
+    presion: ["Opera como si no necesitaras ganar", "Solo entradas que harías sin presión.", "Las preocupaciones por dinero ocupan cabeza y empeoran las decisiones. Hoy, solo operaciones que harías aunque no necesitaras ganar nada.", "Mani y otros (2013)"],
+    observar: ["Hoy toca mirar y aprender", "Apunta 3 situaciones que habrías operado.", "Mirar sin operar también entrena: apunta en el Diario tres situaciones que habrías operado y mañana revisa cómo acabaron.", ""],
     respirar: ["Un minuto de respiración lenta", "Un minuto: 5 segundos dentro, 5 fuera.", "Respirar despacio, 5 segundos dentro y 5 fuera durante un minuto, baja la activación y te ayuda a decidir con calma.", "Zaccaro y otros (2018)"]
   };
   function psyFactors(m, D) {
     const f = [], head = m.head || [], cl = closed(D.today).sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b))), l2 = cl.slice(-2);
     if (l2.length === 2 && l2.every(t => +t.r < 0)) f.push("revancha");
     if (D.today.length >= (D.p.maxTrades || 3)) f.push("maximo");
-    if (head.includes("perdida")) f.push("revancha");
+    if (m.intent === "recuperar") f.push("recuperar");
+    if (m.last === "recuperar" || m.emo === "frustrado" || head.includes("perdida")) f.push("revancha");
+    if (m.last === "miedo") f.push("dudas");
+    if (m.emo === "nervioso") f.push("nervios");
+    if (m.emo === "euforico") f.push("euforia");
+    if (m.emo === "cansado") f.push("cansancio");
+    if (head.includes("dinero")) f.push("presion");
     if (m.mood === "prisa") f.push(head.includes("perdida") || head.includes("dinero") ? "revancha" : "fomo");
     if (m.mood === "miedo") f.push("dudas");
     if (m.r <= 2) f.push("cansancio");
@@ -249,12 +258,14 @@
     const P = S.menteP || {}, trig = P.trig || [], calm = P.calm || [], fs = psyFactors(m, D);
     let main = fs.find(x => x === "maximo") || (fs.includes("revancha") && closed(D.today).length ? "revancha" : null) || fs.find(x => trig.includes(x)) || fs[0];
     let personal = !!main && trig.includes(main);
+    if (fs.includes("recuperar") && main !== "maximo") { main = "recuperar"; personal = trig.includes("revancha"); }
+    if (!main && m.intent === "mirar") main = "observar";
     if (!main) { main = trig.includes("impaciencia") ? "impaciencia" : "estable"; personal = main === "impaciencia"; }
     let key = main;
     if (main === "nervios" && calm.includes("escribir")) key = "escribir";
     if (main === "estable" && calm.includes("respirar")) key = "respirar";
     const tool = (PCALM.find(c => c[0] === calm[0]) || PCALM[4])[2];
-    const then = main === "dudas" ? "entro con mi riesgo normal, sin pensarlo más" : main === "maximo" ? "cierro la plataforma por hoy" : main === "enfoque" ? "repaso mis reglas en voz alta" : tool;
+    const then = main === "observar" ? "lo apunto en el Diario en vez de entrar" : main === "recuperar" ? "cierro el gráfico y me aparto 10 minutos" : main === "dudas" ? "entro con mi riesgo normal, sin pensarlo más" : main === "maximo" ? "cierro la plataforma por hoy" : main === "enfoque" ? "repaso mis reglas en voz alta" : tool;
     return { main, personal, tip: TIPS2[key], sit: PSIT[main], then };
   }
   function mPattern() {
@@ -275,19 +286,20 @@
       <div class="pt-m"><div class="pz-ring${done ? "" : " off"}" style="--p:${sc}"><b class="mono">${done ? sc : "?"}</b></div><div class="pt-tx">${txt}</div><div class="pt-bars">${bars}</div></div>`;
   }
   /* panel lateral de Psicología: perfil (una vez), cómo llegas hoy y tu consejo personal */
+  const hqOk = M => HQ2.every(Q => mVal(M, Q.k).length);
   function psyPanel(step0) {
     const old = document.querySelector(".xdrawer.psyd"); if (old) old.remove();
     const box = document.createElement("div"); box.className = "xdrawer psyd"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Psicología");
     const day = todayKey(); S.mente = S.mente || {};
     const P = Object.assign({ trig: [], calm: [], tone: "cercano" }, S.menteP || {}), M = Object.assign({}, S.mente[day] || {});
-    let step = step0 || (!healthOk() ? "permiso" : !S.menteP ? "perfil" : mDone(M) ? "resultado" : "hoy");
+    let step = step0 || (!healthOk() ? "permiso" : mDone(M) ? "resultado" : !S.menteP ? "perfil" : "hoy");
     const chips = (g, opts, sel, multi) => `<div class="pz-chips" data-g="${g}" data-multi="${multi ? 1 : 0}">${opts.map(([k, l]) => `<button type="button" class="pz-chip" data-v="${k}" aria-pressed="${sel.includes(k)}">${esc(l)}</button>`).join("")}</div>`;
     const scale = (k, l) => `<div class="pz-sc"><span>${l}</span><div class="pz-sv" data-sc="${k}" role="group" aria-label="${l}, de 1 a 5">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-n="${n}" aria-pressed="${M[k] === n}" aria-label="${l}: ${n} de 5">${n}</button>`).join("")}</div><small><i>Muy bajo</i><i>Muy alto</i></small></div>`;
     const save = (id, data) => sb.from("docs").upsert({ user_id: S.user.id, col: "mente", id, data, updated_at: new Date().toISOString() }).then(({ error }) => { if (error) toast("No se pudo guardar"); });
     function body() {
       if (step === "permiso") return { t: "Psicología", s: "Antes de empezar", b: `<p class="pz-p">Para darte consejos según cómo llegas cada día, Tickora tiene que guardar cómo te sientes. Es información sobre tu salud: necesita tu permiso y solo la ves tú.</p>`, f: `<a class="btn" href="#ajustes" data-close>Activar en Ajustes</a>` };
       if (step === "perfil") return { t: "Conócete", s: "Tres preguntas, solo la primera vez. Así los consejos serán tuyos.", b: `<div class="pz-q"><b>¿Qué es lo que más te saca de tu plan?</b><small>Elige hasta tres</small>${chips("trig", PTRIG, P.trig, 1)}</div><div class="pz-q"><b>¿Qué te ayuda a volver a la calma?</b><small>Elige las que te funcionen; la primera será la que te proponga</small>${chips("calm", PCALM, P.calm, 1)}</div><div class="pz-q"><b>¿Cómo quieres que te hable?</b>${chips("tone", PTONE, [P.tone], 0)}</div>`, f: `<button type="button" class="btn" data-go="perfil-ok" ${P.trig.length && P.calm.length ? "" : "disabled"}>Guardar y seguir</button>` };
-      if (step === "hoy") return { t: "¿Cómo llegas hoy?", s: "20 segundos. Contesta con lo primero que te salga.", b: `<div class="pz-q">${scale("r", "Descanso")}${scale("c", "Calma")}${scale("f", "Enfoque")}</div><div class="pz-q"><b>¿Cómo ves el mercado hoy?</b>${chips("mood", PMOOD, [M.mood], 0)}</div><div class="pz-q"><b>¿Algo te ronda la cabeza?</b>${chips("head", PHEAD, M.head || [], 1)}</div>`, f: `<button type="button" class="btn" data-go="hoy-ok" ${mDone(M) ? "" : "disabled"}>Ver mi consejo</button>` };
+      if (step === "hoy") return { t: "¿Cómo llegas hoy?", s: "20 segundos. Contesta con lo primero que te salga.", b: HQ2.map(Q => `<div class="pz-q"><b>${Q.q}</b>${Q.multi ? "<small>Puedes marcar varias</small>" : ""}${chips("q-" + Q.k, Q.o, mVal(M, Q.k), Q.multi)}</div>`).join(""), f: `<button type="button" class="btn" data-go="hoy-ok" ${hqOk(M) ? "" : "disabled"}>Ver mi consejo</button>` };
       const D = hData(), a = psyAdvice(M, D), sc = mScore(M), tone = P.tone || "cercano", tip = a.tip, tl = (PTRIG.find(x => x[0] === a.main) || [])[1];
       const pers = a.personal && tl ? (tone === "directo" ? `Tu punto débil: ${tl.toLowerCase()}.` : `Nos dijiste que «${tl.toLowerCase()}» es lo que más te saca del plan. Hoy puede aparecer.`) : "";
       const added = M.sit === a.sit && M.then === a.then;
@@ -308,10 +320,10 @@
       ["resultados", "plan"].forEach(k => { const t = document.querySelector('.hb-t[data-hc="' + k + '"]:not(.sel)'); if (t) { t.innerHTML = appTile(k, hData()); bindWidgets(t); } });
     }
     function sync() {
-      box.querySelectorAll(".pz-chips").forEach(g => { const k = g.dataset.g, cur = k === "trig" || k === "calm" ? P[k] : k === "tone" ? [P.tone] : k === "mood" ? [M.mood] : M.head || []; g.querySelectorAll(".pz-chip").forEach(c => c.setAttribute("aria-pressed", cur.includes(c.dataset.v))); });
+      box.querySelectorAll(".pz-chips").forEach(g => { const k = g.dataset.g, cur = k === "trig" || k === "calm" ? P[k] : k === "tone" ? [P.tone] : k.startsWith("q-") ? mVal(M, k.slice(2)) : []; g.querySelectorAll(".pz-chip").forEach(c => c.setAttribute("aria-pressed", cur.includes(c.dataset.v))); });
       box.querySelectorAll(".pz-sv").forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", M[g.dataset.sc] === +b.dataset.n)));
       const po = box.querySelector('[data-go="perfil-ok"]'); if (po) po.disabled = !(P.trig.length && P.calm.length);
-      const ho = box.querySelector('[data-go="hoy-ok"]'); if (ho) ho.disabled = !mDone(M);
+      const ho = box.querySelector('[data-go="hoy-ok"]'); if (ho) ho.disabled = !hqOk(M);
     }
     const close = () => { box.classList.remove("in"); setTimeout(() => box.remove(), 200); document.removeEventListener("keydown", ek); const t = document.querySelector('.hb-t[data-hc="resultados"]'); t && t.focus({ preventScroll: true }); };
     const ek = e => { if (e.key === "Escape") close(); };
@@ -324,7 +336,7 @@
         if (g === "trig" || g === "calm") { const arr = P[g]; P[g] = arr.includes(v) ? arr.filter(x => x !== v) : g === "trig" && arr.length >= 3 ? arr : arr.concat(v); if (g === "trig" && arr.length >= 3 && !arr.includes(v)) toast("Elige como mucho tres"); }
         else if (g === "tone") P.tone = v;
         else if (g === "mood") M.mood = M.mood === v ? undefined : v;
-        else if (g === "head") { let arr = M.head || []; if (v === "nada") arr = arr.includes("nada") ? [] : ["nada"]; else { arr = arr.filter(x => x !== "nada"); arr = arr.includes(v) ? arr.filter(x => x !== v) : arr.concat(v); } M.head = arr; }
+        else if (g.startsWith("q-")) mSet(M, g.slice(2), v);
         return sync();
       }
       const sv = e.target.closest(".pz-sv button"); if (sv) { M[sv.parentElement.dataset.sc] = +sv.dataset.n; return sync(); }
@@ -441,9 +453,45 @@
       if (on && kb) { const f = t.querySelector(".hc-c,.hc-go"); f && f.focus({ preventScroll: true }); }
     });
   }
+  /* ===== barra lateral con todas las categorías (botón pequeño arriba a la izquierda) ===== */
+  function navDrawer() {
+    const old = document.querySelector(".xdrawer.navd"); if (old) { old.remove(); return; }
+    const cur = (location.hash || "#inicio").slice(1).split("/")[0] || "inicio", curApp = appOf(cur);
+    const box = document.createElement("div"); box.className = "xdrawer navd"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Todas las categorías");
+    const apps = NAV_APPS.filter(a => a[0] !== "inicio");
+    box.innerHTML = `<div class="xdrawer-p navd-p"><div class="navd-h"><a class="navd-home${cur === "inicio" ? " on" : ""}" href="#inicio">${ico("inicio", 18)}Inicio</a><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
+      <nav class="navd-l" aria-label="Categorías">${apps.map(([k, l, items]) => { const on = curApp && curApp[0] === k;
+        return `<div class="navd-g${on ? " on" : ""}"><a class="navd-a" href="#${MAINV[k] || items[0][0]}" ${items.length === 1 && on ? 'aria-current="page"' : ""}>${ico(k, 18)}<span>${esc(l)}</span></a>${items.length > 1 ? `<div class="navd-s">${items.map(([ck, cl]) => `<a href="#${ck}" ${cur === ck ? 'aria-current="page"' : ""}>${esc(cl)}</a>`).join("")}</div>` : ""}</div>`; }).join("")}</nav>
+      <div class="navd-f"><span>Ctrl/⌘ K para buscar cualquier cosa</span></div></div>`;
+    const close = () => { box.classList.remove("in"); setTimeout(() => box.remove(), 200); document.removeEventListener("keydown", ek); const b = document.querySelector("[data-navd]"); b && b.focus(); };
+    const ek = e => { if (e.key === "Escape") close(); };
+    box.addEventListener("click", e => { if (e.target === box || e.target.closest("[data-x]")) return close(); if (e.target.closest("a")) { box.remove(); document.removeEventListener("keydown", ek); } });
+    document.addEventListener("keydown", ek); document.body.appendChild(box);
+    requestAnimationFrame(() => box.classList.add("in")); setTimeout(() => { const a = box.querySelector('[aria-current="page"]') || box.querySelector(".navd-a"); a && a.focus(); }, 60);
+  }
+  document.addEventListener("click", e => { if (e.target.closest("[data-navd]")) navDrawer(); });
   /* ===== portada «conversación»: saludo, preguntas de cómo llegas y carrusel de cuadros ===== */
   const CARS = ["hoy", "plan", "calendario", "analizar", "resultados", "diario", "cartera", "backtest", "asistente"];
-  const HQ = [["r", "¿Cómo has dormido?", ["Fatal", "Poco", "Normal", "Bien", "Genial"]], ["c", "¿Qué tal de nervios?", ["Muy nervioso", "Algo tenso", "Normal", "Tranquilo", "Muy tranquilo"]], ["f", "¿Y la cabeza, centrada?", ["Dispersa", "Me cuesta", "Normal", "Centrada", "Muy centrada"]]];
+  /* las 5 preguntas del día: cada una aporta un dato que cambia el consejo */
+  const HQ2 = [
+    { k: "r", q: "¿Cómo has dormido?", o: [["1", "Fatal"], ["2", "Poco"], ["3", "Normal"], ["4", "Bien"], ["5", "Genial"]] },
+    { k: "emo", q: "¿Cómo te sientes ahora mismo?", o: [["tranquilo", "Tranquilo"], ["ganas", "Con ganas"], ["nervioso", "Nervioso"], ["cansado", "Cansado"], ["frustrado", "Frustrado"], ["euforico", "Eufórico"]] },
+    { k: "last", q: "¿Cómo te dejó tu última sesión?", o: [["bien", "Bien"], ["normal", "Normal"], ["mal", "Mal, pero lo acepto"], ["recuperar", "Con ganas de recuperar"], ["miedo", "Con miedo a volver a perder"], ["nueva", "Es mi primera sesión"]] },
+    { k: "head", q: "¿Algo te quita la cabeza hoy?", multi: 1, o: [["nada", "Nada"], ["dinero", "Dinero"], ["trabajo", "Trabajo o estudios"], ["personal", "Algo personal"], ["salud", "Salud"]] },
+    { k: "intent", q: "¿Qué quieres hacer hoy?", o: [["plan", "Seguir mi plan"], ["menos", "Operar menos, solo lo mejor"], ["mirar", "Solo mirar y aprender"], ["recuperar", "Recuperar lo de ayer"]] }
+  ];
+  function mDerive(M) {
+    const CE = { tranquilo: 5, ganas: 4, cansado: 3, euforico: 3, nervioso: 2, frustrado: 2 };
+    if (M.emo) { M.c = CE[M.emo]; M.mood = { ganas: "ganas", euforico: "ganas", nervioso: "miedo", frustrado: "prisa" }[M.emo] || "neutral"; }
+    if (M.head) { const n = M.head.filter(x => x !== "nada").length; M.f = n === 0 ? 4 : n === 1 ? 3 : 2; if (M.emo === "cansado") M.f = Math.min(M.f, 3); }
+    return M;
+  }
+  function mSet(M, k, v) {
+    if (k === "head") { let arr = M.head || []; if (v === "nada") arr = arr.includes("nada") ? [] : ["nada"]; else { arr = arr.filter(x => x !== "nada"); arr = arr.includes(v) ? arr.filter(x => x !== v) : arr.concat(v); } M.head = arr; }
+    else if (k === "r") M.r = +v; else M[k] = v;
+    return mDerive(M);
+  }
+  const mVal = (M, k) => k === "head" ? (M.head || []) : M[k] == null ? [] : [String(M[k])];
   const saveMente = (id, data) => sb.from("docs").upsert({ user_id: S.user.id, col: "mente", id, data, updated_at: new Date().toISOString() }).then(({ error }) => { if (error) toast("No se pudo guardar"); });
   const homeSw = mode => `<div class="hx-sw" role="group" aria-label="Vista de la portada"><button type="button" data-home="car" aria-pressed="${mode === "car"}" title="Vista conversación">${I('<rect x="6" y="5" width="8" height="10" rx="2"/><path d="M3 7v6M17 7v6"/>', 15, 1.8)}</button><button type="button" data-home="grid" aria-pressed="${mode === "grid"}" title="Vista de cuadros">${I('<rect x="3.5" y="3.5" width="5.5" height="5.5" rx="1.5"/><rect x="11" y="3.5" width="5.5" height="5.5" rx="1.5"/><rect x="3.5" y="11" width="5.5" height="5.5" rx="1.5"/><rect x="11" y="11" width="5.5" height="5.5" rx="1.5"/>', 15, 1.8)}</button></div>`;
   function heroQ(D) {
@@ -451,13 +499,11 @@
     const day = todayKey(), m = (S.mente || {})[day];
     if (mDone(m) && !S.hqEdit) {
       const a = psyAdvice(m, D), sc = mScore(m);
-      return `<p class="hx-sub">Llegas <b>${mLabel(sc).toLowerCase()}</b> <span class="hx-sc mono">${sc}</span> · Para hoy: <b>${esc(a.tip[0].toLowerCase())}</b></p><div class="hx-ans"><button type="button" class="hx-a pri" data-hq="panel">Ver mi consejo</button><button type="button" class="hx-a" data-hq="redo">Cambiar respuestas</button>${S.menteP ? "" : `<button type="button" class="hx-a" data-hq="perfil">Conócete · 1 minuto</button>`}</div>`;
+      return `<p class="hx-sub">${sc >= 70 ? "Llegas <b>en buen estado</b>" : sc >= 45 ? "Llegas <b>con cuidado</b>" : "Hoy es <b>un día delicado</b>"} <span class="hx-sc mono">${sc}</span> · Para hoy: <b>${esc(a.tip[0].toLowerCase())}</b></p><div class="hx-ans"><button type="button" class="hx-a pri" data-hq="panel">Ver mi consejo</button><button type="button" class="hx-a" data-hq="redo">Cambiar respuestas</button>${S.menteP ? "" : `<button type="button" class="hx-a" data-hq="perfil">Conócete · 1 minuto</button>`}</div>`;
     }
-    const st = S.hqStep || 0, M = S.hqM || (S.hqM = Object.assign({}, m || {}));
-    const prog = `<div class="hx-prog" aria-label="Pregunta ${st + 1} de 5">${[0, 1, 2, 3, 4].map(i => `<i class="${i < st ? "d" : i === st ? "c" : ""}"></i>`).join("")}${st ? `<button type="button" data-hq="back">Atrás</button>` : ""}</div>`;
-    if (st < 3) { const [k, q, opts] = HQ.at(st); return `${prog}<p class="hx-qt">${q}</p><div class="hx-ans">${opts.map((o, i) => `<button type="button" class="hx-a" data-hv="${k}:${i + 1}" aria-pressed="${M[k] === i + 1}">${o}</button>`).join("")}</div>`; }
-    if (st === 3) return `${prog}<p class="hx-qt">¿Cómo ves el mercado hoy?</p><div class="hx-ans">${PMOOD.map(([k, l]) => `<button type="button" class="hx-a" data-hv="mood:${k}" aria-pressed="${M.mood === k}">${esc(l)}</button>`).join("")}</div>`;
-    return `${prog}<p class="hx-qt">¿Algo te ronda la cabeza?</p><div class="hx-ans">${PHEAD.map(([k, l]) => `<button type="button" class="hx-a" data-hv="head:${k}" aria-pressed="${(M.head || []).includes(k)}">${esc(l)}</button>`).join("")}<button type="button" class="hx-a pri" data-hq="fin">Listo</button></div>`;
+    const st = Math.min(S.hqStep || 0, HQ2.length - 1), M = S.hqM || (S.hqM = Object.assign({}, m || {})), Q = HQ2.at(st), sel = mVal(M, Q.k);
+    const prog = `<div class="hx-prog" aria-label="Pregunta ${st + 1} de ${HQ2.length}">${HQ2.map((x, i) => `<i class="${i < st ? "d" : i === st ? "c" : ""}"></i>`).join("")}${st ? `<button type="button" data-hq="back">Atrás</button>` : ""}</div>`;
+    return `${prog}<p class="hx-qt">${Q.q}</p><div class="hx-ans">${Q.o.map(([v, l]) => `<button type="button" class="hx-a" data-hv="${Q.k}:${v}" aria-pressed="${sel.includes(v)}">${esc(l)}</button>`).join("")}${Q.multi ? `<button type="button" class="hx-a pri" data-hq="next" ${sel.length ? "" : "disabled"}>Siguiente</button>` : ""}</div>`;
   }
   function carCats() {
     const k = CARS.filter(x => appDef(x)).at(S.hcar), a = appDef(k), cats = a[2];
@@ -500,21 +546,23 @@
     q.addEventListener("click", e => {
       const b = e.target.closest("[data-hv],[data-hq]"); if (!b) return; S.hqKb = e.detail === 0;
       const M = S.hqM || (S.hqM = {});
-      if (b.dataset.hv) {
-        const [k, v] = b.dataset.hv.split(":");
-        if (k === "head") { let arr = M.head || []; if (v === "nada") arr = arr.includes("nada") ? [] : ["nada"]; else { arr = arr.filter(x => x !== "nada"); arr = arr.includes(v) ? arr.filter(x => x !== v) : arr.concat(v); } M.head = arr; }
-        else { if (k === "mood") M.mood = v; else M[k] = +v; S.hqStep = (S.hqStep || 0) + 1; }
-        return setTimeout(repaint, k === "head" ? 0 : 140);
-      }
-      const g = b.dataset.hq;
-      if (g === "back") { S.hqStep = Math.max(0, (S.hqStep || 0) - 1); repaint(); }
-      else if (g === "redo") { S.hqEdit = true; S.hqStep = 0; S.hqM = Object.assign({}, (S.mente || {})[todayKey()] || {}); repaint(); }
-      else if (g === "fin") {
-        const day = todayKey(); M.ts = Date.now(); S.mente = S.mente || {}; S.mente[day] = Object.assign({}, (S.mente[day] || {}), M);
+      const fin = () => {
+        const day = todayKey(); M.ts = Date.now(); S.mente = S.mente || {}; S.mente[day] = mDerive(Object.assign({}, (S.mente[day] || {}), M));
         saveMente("d" + day, S.mente[day]); S.hqStep = 0; S.hqM = null; S.hqEdit = false; repaint();
         ["resultados", "plan"].forEach(k => { const t = document.querySelector('.hb-t[data-hc="' + k + '"]'); if (t) { t.innerHTML = appTile(k, hData()); bindWidgets(t); } });
         toast("Gracias. Tu consejo de hoy ya está listo");
+      };
+      if (b.dataset.hv) {
+        const i = b.dataset.hv.indexOf(":"), k = b.dataset.hv.slice(0, i), v = b.dataset.hv.slice(i + 1); mSet(M, k, v);
+        if (k === "head") return repaint();
+        if (k === "intent") return setTimeout(fin, 160);
+        S.hqStep = (S.hqStep || 0) + 1; return setTimeout(repaint, 160);
       }
+      if (b.disabled) return;
+      const g = b.dataset.hq;
+      if (g === "next") { S.hqStep = (S.hqStep || 0) + 1; repaint(); }
+      else if (g === "back") { S.hqStep = Math.max(0, (S.hqStep || 0) - 1); repaint(); }
+      else if (g === "redo") { S.hqEdit = true; S.hqStep = 0; S.hqM = Object.assign({}, (S.mente || {})[todayKey()] || {}); repaint(); }
       else if (g === "panel") psyPanel();
       else if (g === "perfil") psyPanel("perfil");
     });
@@ -677,27 +725,30 @@
 
   /* ======================= ESTILOS ======================= */
   const PRESETS = [
-    ["base", "Fundamental", [["cobalto", "Cobalto", "#2443c7", "#4f7dff"], ["clasico", "Clásico", "#1f2937", "#cbd5e1"]]],
+    ["base", "Fundamental", [["tinta", "Negro", "#141416", "#ededf0"], ["cobalto", "Cobalto", "#2443c7", "#4f7dff"], ["clasico", "Clásico", "#1f2937", "#cbd5e1"]]],
     ["mas", "Adicional", [["indigo", "Índigo", "#4338ca", "#818cf8"], ["oceano", "Océano", "#0e7490", "#22b8cf"], ["violeta", "Violeta", "#6d28d9", "#a78bfa"], ["ambar", "Ámbar", "#b45309", "#f5a524"], ["fucsia", "Fucsia", "#be185d", "#f472b6"], ["pino", "Pino", "#166534", "#34d399"], ["cielo", "Cielo", "#0369a1", "#38bdf8"], ["grafito", "Grafito", "#334155", "#94a3b8"]]]
   ];
   const hex2rgb = h => { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join(""); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
   const mix = (a, b, t) => { const x = hex2rgb(a), y = hex2rgb(b); return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join(""); };
   const rgba = (h, a) => { const [r, g, b] = hex2rgb(h); return `rgba(${r},${g},${b},${a})`; };
   function styleCss(lc, dc) {
-    const L = `--cobalto:${lc};--cobalto2:${mix(lc, "#000000", .35)};--btn:${lc};--cobaltoC:${mix(lc, "#ffffff", .9)};--cobaltoA:${rgba(lc, .14)};`;
-    const D = `--cobalto:${dc};--cobalto2:${mix(dc, "#ffffff", .3)};--btn:${mix(dc, "#000000", .12)};--cobaltoC:${mix(dc, "#0f1729", .78)};--cobaltoA:${rgba(dc, .2)};--glow:${rgba(dc, .2)};`;
+    const lum = h => { const [r, g, b] = hex2rgb(h); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; }, on = h => lum(h) > .6 ? "#0b0b0c" : "#ffffff";
+    const L = `--onAccent:${on(lc)};--cobalto:${lc};--cobalto2:${mix(lc, "#000000", .35)};--btn:${lc};--cobaltoC:${mix(lc, "#ffffff", .9)};--cobaltoA:${rgba(lc, .14)};`;
+    const D = `--onAccent:${on(dc)};--cobalto:${dc};--cobalto2:${mix(dc, "#ffffff", .3)};--btn:${mix(dc, "#000000", .12)};--cobaltoC:${mix(dc, "#141416", .8)};--cobaltoA:${rgba(dc, .2)};--glow:${rgba(dc, .2)};`;
     return `:root{${L}}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${D}}}:root[data-theme="dark"]{${D}}`;
   }
   function applyStyle() {
     const st = lsGet("tk-style", null); let el = document.getElementById("tkStyle");
-    if (!st || st.id === "cobalto") { if (el) el.remove(); return; }
+    if (!st || st.id === "tinta") { if (el) el.remove(); return; }
     const p = st.id === "custom" ? ["custom", "", st.l, st.d] : PRESETS.flatMap(g => g[2]).find(x => x[0] === st.id); if (!p) return;
     if (!el) { el = document.createElement("style"); el.id = "tkStyle"; document.head.appendChild(el); }
     el.textContent = styleCss(p[2], p[3]);
   }
+  /* paso único a la paleta negra: quien tenía guardado el azul por defecto pasa al negro (lo pidió Marcos, nov 2026) */
+  try { const st0 = lsGet("tk-style", null); if (st0 && st0.id === "cobalto" && !lsGet("tk-pal2", null)) lsSet("tk-style", { id: "tinta" }); lsSet("tk-pal2", 1); } catch (e) {}
   applyStyle();
   function stylePanel() {
-    const cur = lsGet("tk-style", { id: "cobalto" }); let tab = cur.id === "custom" ? "custom" : "pre", pick = cur.id, cl = cur.l || "#2443c7", cd = cur.d || "#4f7dff";
+    const cur = lsGet("tk-style", { id: "tinta" }); let tab = cur.id === "custom" ? "custom" : "pre", pick = cur.id, cl = cur.l || "#2443c7", cd = cur.d || "#4f7dff";
     const box = document.createElement("div"); box.className = "xdrawer"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Estilo y colores");
     const sw = (l, d) => `<span class="stsw"><i style="background:${l}"></i><i style="background:${d}"></i></span>`;
     const paint = () => {
@@ -727,7 +778,7 @@
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.st) { tab = b.dataset.st; paint(); preview(); }
       else if (b.dataset.pick) { pick = b.dataset.pick; paint(); preview(); }
-      else if (b.hasAttribute("data-reset")) { lsSet("tk-style", { id: "cobalto" }); applyStyle(); close(true); toast("Estilo restablecido"); }
+      else if (b.hasAttribute("data-reset")) { lsSet("tk-style", { id: "tinta" }); applyStyle(); close(true); toast("Estilo restablecido"); }
       else if (b.hasAttribute("data-save")) { lsSet("tk-style", tab === "custom" ? { id: "custom", l: cl, d: cd } : { id: pick }); applyStyle(); close(true); toast("Estilo guardado"); }
     });
     document.addEventListener("keydown", ek); paint(); document.body.appendChild(box); requestAnimationFrame(() => box.classList.add("in"));
