@@ -589,6 +589,98 @@
     const cl = document.getElementById("hxcats"); if (cl) cl.innerHTML = carCats();
     lsSet("tk-car", String(a));
   }
+  /* ===== «Tu día»: ideas en prueba (Marcos dirá cuáles se quedan) ===== */
+  const tagP = n => `<span class="hd-try" title="Idea en prueba">Prueba ${n}</span>`;
+  const mins = m => m >= 60 ? Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : "") : Math.max(0, Math.round(m)) + " min";
+  function dayX(D) {
+    const p = D.p, mx = p.maxTrades || 3, L = p.dayLimitR || 2, dr = D.st.n ? D.st.tot : 0, ph = D.phase, now = Date.now();
+    const m = healthOk() ? (S.mente || {})[todayKey()] : null, md = mDone(m), sc = md ? mScore(m) : null;
+    const C = closed(S.trades).slice().sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b)));
+    const cl = closed(D.today).sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b)));
+    const nh = (D.todayEv || []).filter(e => e.impact === "High" && e.ts > now - 15 * 6e4).sort((a, b) => a.ts - b.ts)[0];
+    const toNews = nh ? (nh.ts - now) / 6e4 : null;
+    const l2 = cl.slice(-2), twoLoss = l2.length === 2 && l2.every(t => +t.r < 0);
+    let fastBack = false;
+    const T = D.today.slice().sort((a, b) => new Date(a.open_time) - new Date(b.open_time));
+    for (let i = 1; i < T.length; i++) { const pv = T.at(i - 1); if (pv.status === "closed" && +pv.r < 0 && pv.close_time && (new Date(T.at(i).open_time) - new Date(pv.close_time)) < 5 * 6e4) fastBack = true; }
+    const X = {};
+    /* 1 · semáforo */
+    let lv = "g"; const why = [];
+    if (ph === "despues") { lv = "x"; why.push("Tu horario ha terminado: toca revisar, no operar"); }
+    else {
+      if (dr <= -L) { lv = "r"; why.push("Has llegado a tu límite del día"); }
+      if (D.today.length >= mx) { lv = "r"; why.push("Has llegado a tu máximo de operaciones"); }
+      if (md && sc < 45) { lv = "r"; why.push("Llegas en un día delicado (" + sc + ")"); }
+      if (m && m.intent === "recuperar") { lv = "r"; why.push("Has dicho que quieres recuperar lo de ayer"); }
+      if (lv !== "r") {
+        if (!md && healthOk()) { lv = "a"; why.push("Aún no me has contado cómo llegas"); }
+        if (md && sc < 70) { lv = "a"; why.push("Llegas con cuidado (" + sc + ")"); }
+        if (D.st.n && dr <= -L * .6) { lv = "a"; why.push("Ya has usado más del 60 % de tu límite"); }
+        if (twoLoss) { lv = "a"; why.push("Llevas dos pérdidas seguidas"); }
+        if (toNews != null && toNews < 30 && toNews > -15) { lv = "a"; why.push("Noticia fuerte a las " + hhmm(nh.ts)); }
+      }
+      if (!why.length) why.push(md ? "Llegas bien, con margen en tu límite y sin noticias cerca" : "Con margen en tu límite y sin noticias cerca");
+    }
+    const LT = { g: ["Listo para operar tu plan", "Mismo riesgo y mismo máximo de siempre."], a: ["Opera con cuidado", "Hoy, medio riesgo y una operación menos de lo normal."], r: ["Hoy mejor solo mirar", "Apunta lo que veas en el Diario en vez de entrar."], x: ["Sesión terminada", "Revisa tus operaciones y escribe tu cierre."] };
+    X.sem = `<div class="hd-sem s-${lv}">${tagP(1)}<span class="hd-dot" aria-hidden="true"></span><div><b>${LT[lv][0]}</b><p>${LT[lv][1]}</p><small>${why.map(esc).join(" · ")}</small></div></div>`;
+    /* 2 · lo que te dijiste ayer */
+    const tk = todayKey(), cier = (S.pages || []).filter(x => /^Cierre del/.test(x.title || "") && dayKey(new Date(x.created || x.updated || 0)) < tk).sort((a, b) => (b.created || 0) - (a.created || 0))[0];
+    let msg = "";
+    if (cier) { const d = document.createElement("div"); d.innerHTML = cier.html || ""; const hs = [...d.querySelectorAll("h1,h2,h3,b,strong")]; const h = hs.find(x => /mañana/i.test(x.textContent)); let n = h ? h.nextElementSibling : null; while (n && !n.textContent.trim() && n.nextElementSibling) n = n.nextElementSibling; msg = n ? n.textContent.trim() : ""; }
+    X.ayer = `<div class="hd-c hd-ayer">${tagP(2)}<h3>Lo que te dijiste ayer</h3>${msg ? `<blockquote>«${esc(msg.slice(0, 220))}»</blockquote><small>De tu cierre del ${new Date(cier.created || cier.updated).toLocaleDateString("es-ES", { day: "numeric", month: "long" })}</small>` : cier ? `<p class="hd-e">Tu último cierre no tiene nada en «Una cosa para mañana». La próxima vez, deja ahí una frase para hoy.</p>` : `<p class="hd-e">Cuando escribas tu cierre del día, mañana verás aquí la frase que te dejaste para hoy.</p>`}</div>`;
+    /* 3 · el precio de lo evitable (este mes) */
+    const m0 = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), CM = C.filter(t => dayKey(dateOf(t)) >= m0), EV = CM.filter(t => !evaluate(t).good);
+    const tot = CM.reduce((a, t) => a + (+t.r || 0), 0), evs = EV.reduce((a, t) => a + (+t.r || 0), 0);
+    X.cost = `<div class="hd-c">${tagP(3)}<h3>El precio de lo evitable</h3>${!CM.length ? `<p class="hd-e">Este mes aún no hay operaciones cerradas.</p>` : !EV.length ? `<p class="hd-big"><b class="mono">0</b> operaciones fuera de plan este mes</p><p class="hd-e">Todo lo que has operado este mes ha seguido tu plan.</p>` : evs < 0 ? `<p class="hd-big"><b class="mono">${fmtR(evs)}</b> te han costado ${EV.length} ${EV.length === 1 ? "operación" : "operaciones"} fuera de plan</p><p class="hd-e">Sin ellas irías <b>${fmtR(tot - evs)}</b> este mes en vez de <b>${fmtR(tot)}</b>.</p>` : `<p class="hd-big"><b class="mono">${fmtR(evs)}</b> te han dado ${EV.length} ${EV.length === 1 ? "operación" : "operaciones"} fuera de plan</p><p class="hd-e">Han salido bien, pero son hábitos que tarde o temprano salen caros.</p>`}</div>`;
+    /* 4 · zona de no operar por noticias */
+    X.news = `<div class="hd-c hd-nz ${toNews != null && toNews <= 15 && toNews >= -15 ? "hot" : ""}">${tagP(4)}<h3>Zona de noticias</h3>${!S.news ? `<p class="hd-e">Cargando el calendario…</p>` : nh ? (toNews <= 15 && toNews >= -15 ? `<p class="hd-big"><b>Ahora mismo</b> estás en zona de noticia</p><p class="hd-e">${esc(nh.country || "")} ${esc(nh.title || "")} a las ${hhmm(nh.ts)}. Mejor fuera hasta las ${hhmm(nh.ts + 15 * 6e4)}.</p>` : `<p class="hd-big"><b class="mono">${mins(toNews)}</b> para ${esc(nh.country || "")} ${esc(nh.title || "")}</p><p class="hd-e">Mejor fuera de ${hhmm(nh.ts - 15 * 6e4)} a ${hhmm(nh.ts + 15 * 6e4)}.</p>`) : `<p class="hd-e">No quedan noticias de impacto alto hoy.</p>`}</div>`;
+    /* 5 · aviso de calentón y pausa */
+    const pu = S.pauseUntil && S.pauseUntil > now ? S.pauseUntil : 0, tool = ((PCALM.find(c => c[0] === ((S.menteP || {}).calm || [])[0]) || PCALM[4])[2]);
+    X.heat = `<div class="hd-c hd-heat ${pu || ((twoLoss || fastBack) && ph === "en") ? "hot" : ""}">${tagP(5)}<h3>Calentón</h3>${pu ? `<p class="hd-big">Pausa hasta las <b class="mono">${hhmm(pu)}</b></p><p class="hd-e">Quedan ${mins((pu - now) / 6e4)}. Mientras: ${esc(tool)}.</p><button type="button" class="x-ch" data-hx="pause0">Terminar la pausa</button>` : (twoLoss || fastBack) ? `<p class="hd-big">${twoLoss ? "Dos pérdidas seguidas" : "Has vuelto a entrar muy rápido tras perder"}</p><p class="hd-e">Antes de la siguiente, 10 minutos fuera. Es cuando más se arriesga para recuperar.</p><button type="button" class="x-ch pri" data-hx="pause">Empezar pausa de 10 min</button>` : `<p class="hd-e">Sin señales. Te avisaré si encadenas dos pérdidas o vuelves a entrar menos de 5 minutos después de perder.</p>`}</div>`;
+    /* 6 · tu franja buena y tu franja mala */
+    const C90 = C.filter(t => new Date(dateOf(t)) >= now - 90 * 864e5), byH = {};
+    C90.forEach(t => { const h = new Date(t.open_time).getHours(); (byH[h] = byH[h] || [0, 0]); byH[h][1]++; if (evaluate(t).good) byH[h][0]++; });
+    const hs = Object.entries(byH).filter(([, v]) => v[1] >= 3).map(([h, v]) => [+h, v[0] / v[1], v[1]]).sort((a, b) => b[1] - a[1]), curH = new Date().getHours();
+    X.hours = `<div class="hd-c">${tagP(6)}<h3>Tus horas</h3>${hs.length >= 2 ? `<ul class="hd-hrs"><li><span>Mejor hora</span><b class="mono">${hs[0][0]}:00–${hs[0][0] + 1}:00</b><small>${Math.round(hs[0][1] * 100)} % en plan · ${hs[0][2]} op.</small></li><li><span>Peor hora</span><b class="mono">${hs.at(-1)[0]}:00–${hs.at(-1)[0] + 1}:00</b><small>${Math.round(hs.at(-1)[1] * 100)} % en plan · ${hs.at(-1)[2]} op.</small></li></ul>${curH === hs[0][0] ? `<p class="hd-e"><b>Ahora estás en tu mejor hora.</b></p>` : curH === hs.at(-1)[0] ? `<p class="hd-e"><b>Ahora estás en tu peor hora:</b> cuidado extra.</p>` : ""}` : `<p class="hd-e">Con unas 3 operaciones en cada franja horaria te diré cuál es tu mejor y tu peor hora (llevas ${C90.length} en 90 días).</p>`}</div>`;
+    /* 7 · norma en foco de la semana */
+    const cnt = {}; C.filter(t => new Date(dateOf(t)) >= now - 30 * 864e5).forEach(t => evaluate(t).fail.forEach(f => { const k = NK(f.fix); if (k) cnt[k] = (cnt[k] || 0) + 1; }));
+    const fo = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+    const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
+    const wk = {}; C.filter(t => new Date(dateOf(t)) >= mon).forEach(t => { const k = dayKey(dateOf(t)); (wk[k] = wk[k] || []).push(t); });
+    const wdays = Object.keys(wk).sort(), okd = fo ? wdays.filter(k => wk[k].every(t => !evaluate(t).fail.some(f => NK(f.fix) === fo[0]))).length : 0;
+    X.focus = `<div class="hd-c">${tagP(7)}<h3>Norma en foco de la semana</h3>${fo ? `<p class="hd-big"><b>${NLAB[fo[0]]}</b></p><div class="hd-fd">${wdays.map(k => `<i class="${wk[k].every(t => !evaluate(t).fail.some(f => NK(f.fix) === fo[0])) ? "ok" : "no"}" title="${k}"></i>`).join("") || "<small>Aún no has operado esta semana</small>"}</div><p class="hd-e">${wdays.length ? `${okd} de ${wdays.length} días cumplida esta semana. Meta: todos.` : "Es la que más rompiste en 30 días. Esta semana, solo esta."}</p>` : `<p class="hd-e">No has roto ninguna norma en 30 días. Cuando rompas alguna, aquí tendrás tu foco de la semana.</p>`}</div>`;
+    /* 8 · la operación para aprender */
+    const C7 = C.filter(t => new Date(dateOf(t)) >= now - 7 * 864e5);
+    const evT = C7.filter(t => !evaluate(t).good).sort((a, b) => (+a.r || 0) - (+b.r || 0))[0], glT = C7.filter(t => evaluate(t).good && +t.r < 0).at(-1), lt = evT || glT;
+    X.learn = `<div class="hd-c">${tagP(8)}<h3>La operación para aprender</h3>${lt ? `<a class="hd-lt" href="#op/${encodeURIComponent(lt.id)}"><span class="mono">${new Date(lt.open_time).toLocaleDateString("es-ES", { weekday: "short", day: "numeric" })}</span><b>${esc(lt.symbol || "")}</b><span>${lt.side === "buy" ? "Compra" : "Venta"}</span><span class="mono">${fmtR(+lt.r)}</span></a><p class="hd-e">${evT ? `Te saltaste «${esc((NLAB[NK((evaluate(lt).fail[0] || {}).fix || "")] || "tu plan").toLowerCase())}». ¿Qué te empujó a hacerlo y qué harás la próxima vez?` : "Perdiste haciendo todo bien. ¿Qué te dice esta operación de tu plan? Una buena pérdida también enseña."}</p><a class="x-ch" href="#op/${encodeURIComponent(lt.id)}">Revisarla</a>` : `<p class="hd-e">Esta semana no hay operaciones fuera de plan ni pérdidas que revisar.</p>`}</div>`;
+    /* 9 · descubrimiento */
+    let disc = "";
+    if (C.length >= 15) {
+      let a2 = 0, a2b = 0; for (let i = 2; i < C.length; i++) { if (+C.at(i - 1).r > 0 && +C.at(i - 2).r > 0) { a2++; if (!evaluate(C.at(i)).good) a2b++; } }
+      const base = C.filter(t => !evaluate(t).good).length / C.length;
+      const evF = {}; C.filter(t => !evaluate(t).good && t.review && t.review.feel).forEach(t => { evF[t.review.feel] = (evF[t.review.feel] || 0) + 1; }); const tf = Object.entries(evF).sort((a, b) => b[1] - a[1])[0];
+      const dow = {}; C.forEach(t => { const d = (new Date(dateOf(t)).getDay() + 6) % 7; (dow[d] = dow[d] || [0, 0]); dow[d][1]++; if (evaluate(t).good) dow[d][0]++; });
+      const wd = Object.entries(dow).filter(([, v]) => v[1] >= 4).map(([d, v]) => [+d, v[0] / v[1]]).sort((a, b) => a[1] - b[1])[0];
+      if (a2 >= 3 && a2b / a2 > base + .15) disc = `Después de dos ganancias seguidas, el ${Math.round(a2b / a2 * 100)} % de tus operaciones se salen del plan (normalmente, el ${Math.round(base * 100)} %).`;
+      else if (tf && tf[1] >= 3) disc = `«${tf[0]}» es lo que más sentías antes de tus operaciones fuera de plan (${tf[1]} veces).`;
+      else if (wd && wd[1] < .7) disc = `Los ${["lunes", "martes", "miércoles", "jueves", "viernes", "sábados", "domingos"].at(wd[0])} son tu peor día: solo el ${Math.round(wd[1] * 100)} % dentro del plan.`;
+    }
+    X.disc = `<div class="hd-c hd-disc">${tagP(9)}<h3>Descubrimiento</h3>${disc ? `<p class="hd-big">${esc(disc)}</p>` : `<p class="hd-e">${C.length < 15 ? `Con unas 15 operaciones empezaré a encontrar patrones tuyos (llevas ${C.length}).` : "De momento no veo ningún patrón claro. Buena señal."}</p>`}</div>`;
+    /* 10 · esta semana frente a la anterior (proceso) */
+    const pmon = new Date(mon); pmon.setDate(pmon.getDate() - 7);
+    const wA = C.filter(t => new Date(dateOf(t)) >= mon), wB = C.filter(t => new Date(dateOf(t)) >= pmon && new Date(dateOf(t)) < mon);
+    const pct = L0 => L0.length ? Math.round(L0.filter(t => evaluate(t).good).length / L0.length * 100) : null, evn = L0 => L0.filter(t => !evaluate(t).good).length;
+    const cmp = (lbl, a, b, unit, betterUp) => { const d = a != null && b != null ? a - b : null, good = d == null || d === 0 ? "" : (d > 0) === betterUp ? "up" : "down";
+      return `<li><span>${lbl}</span><b class="mono">${a == null ? "—" : a + unit}</b><small class="${good}">${d == null ? "sin datos de la anterior" : d === 0 ? "igual que la anterior" : (d > 0 ? "▲ " : "▼ ") + Math.abs(d) + unit + " frente a la anterior"}</small></li>`; };
+    X.vs = `<div class="hd-c">${tagP(10)}<h3>Esta semana frente a la anterior</h3><ul class="hd-hrs">${cmp("Dentro del plan", pct(wA), pct(wB), " %", true)}${cmp("Fuera de plan", evn(wA), wB.length ? evn(wB) : null, "", false)}</ul></div>`;
+    /* 11 · ritmo del reto */
+    const F = (S.accts || []).filter(a => a.status !== "archivada" && a.type === "fondeo" && (+a.target || +a.minDays || a.deadline));
+    X.reto = F.length ? `<div class="hd-c">${tagP(11)}<h3>Ritmo del reto</h3><ul class="hd-acc">${F.slice(0, 2).map(a => { const x = accR(a), left = Math.max(0, x.need - x.sum), dl = a.deadline ? Math.max(0, Math.ceil((new Date(a.deadline + "T23:59") - now) / 864e5)) : null;
+      const daysOp = new Set((S.allTrades || S.trades).filter(t => a.number && String(t.account || "") === String(a.number) && t.status === "closed").map(t => dayKey(dateOf(t)))).size, minL = +a.minDays ? Math.max(0, +a.minDays - daysOp) : null;
+      const tdays = dl != null ? Math.max(1, Math.round(dl * 5 / 7)) : null, per = tdays && left ? left / tdays : null;
+      return `<li><div><b>${esc(acctName(a))}</b><small>${x.need ? (left ? `Faltan ${num(left, 1)} R` : "Objetivo conseguido") : ""}${minL != null ? ` · ${minL ? minL + " días mínimos por operar" : "días mínimos cumplidos"}` : ""}${dl != null ? ` · ${dl} días de plazo` : ""}</small></div><span>${per != null ? (per <= .6 ? `Sin prisa: <b class="mono">+${num(per, 1)} R</b>/día` : `<b class="mono">+${num(per, 1)} R</b>/día`) : left ? "Sin fecha límite" : ""}</span></li>`; }).join("")}</ul><p class="hd-e">Ir con calma es la forma más rápida de pasar un reto: no hace falta forzar.</p></div>` : "";
+    return X;
+  }
   /* ===== panel «Tu día»: debajo de la portada, lo más importante de la jornada ===== */
   const NEWS_IMP = { High: 3, Medium: 2, Low: 1 };
   function homeDay(D) {
@@ -633,6 +725,12 @@
     // cierre
     const close = `<div class="hd-c hd-close"><h3>Cierre del día</h3>${ph === "despues" ? `<p>Dos minutos para cerrar bien: qué hiciste bien, qué mejorarías y una cosa para mañana.</p><button type="button" class="x-ch pri" data-hd="cierre">Escribir mi cierre</button>` : `<p class="hd-e">Al terminar tu horario (${esc(p.end)}) aquí escribirás tu cierre del día: qué hiciste bien, qué mejorarías y una cosa para mañana.</p>`}<button type="button" class="hd-more" data-hd="informe">Informe del día</button></div>`;
     const order = ph === "despues" ? [kpis, `<div class="hd-g">${ops}${close}</div>`, `<div class="hd-g">${week}${advice}${acc || news}</div>`] : ph === "en" ? [kpis, `<div class="hd-g">${ops}${advice}</div>`, `<div class="hd-g">${news}${week}${acc || prep}</div>`] : [kpis, `<div class="hd-g">${prep}${news}${advice}</div>`, `<div class="hd-g">${ops}${week}</div>`, acc ? `<div class="hd-g two">${acc}${close}</div>` : `<div class="hd-g two">${close}</div>`];
+    const X = dayX(D);
+    const top = `<div class="hd-top">${X.sem}${X.ayer}</div>`;
+    const prot = `<div class="hd-g">${X.news}${X.heat}${X.hours}</div>`;
+    const learn = `<div class="hd-sub"><h2>Para aprender más rápido</h2></div><div class="hd-g">${X.focus}${X.learn}${X.disc}</div><div class="hd-g ${X.reto ? "" : "two"}">${X.cost}${X.vs}${X.reto}</div>`;
+    order.splice(0, 1, top, kpis, ph === "despues" ? "" : prot);
+    order.push(learn);
     return `<div class="hd-head"><h2>Tu día</h2><span>${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))} · ${ph === "antes" ? "antes de tu horario" : ph === "en" ? "en tu horario" : "sesión terminada"}</span></div>${order.join("")}`;
   }
   function paintDay() { const el = document.getElementById("hday"); if (el) { el.innerHTML = homeDay(hData()); bindWidgets(el); } }
@@ -686,6 +784,8 @@
   }
   function bindDay() {
     if (window.__tkHdB) return; window.__tkHdB = true;
+    document.addEventListener("click", e => { const b = e.target.closest("[data-hx]"); if (!b) return; if (b.dataset.hx === "pause") { S.pauseUntil = Date.now() + 10 * 6e4; toast("Pausa de 10 minutos. Aléjate de la pantalla"); } else S.pauseUntil = 0; paintDay(); });
+    setInterval(() => { if (document.visibilityState === "visible" && document.getElementById("hday")) paintDay(); }, 60000);
     document.addEventListener("click", async e => {
       const b = e.target.closest("[data-hd]"); if (!b) return; const k = b.dataset.hd;
       if (k === "down") { const el = document.getElementById("hday"); el && el.scrollIntoView({ behavior: "smooth", block: "start" }); }
@@ -696,7 +796,7 @@
     });
   }
   function bindCar() {
-    bindDay(); bindHero(); if (!S.news && window.tkLoadNews) tkLoadNews().then(() => window.__tkDay && window.__tkDay()); bindWidgets(document); loadMini(); loadMente(); loadPlanOk();
+    bindDay(); bindHero(); if (!S.pagesLoaded && DI()) DI().loadPages().then(() => window.__tkDay && window.__tkDay()).catch(() => {}); if (!S.news && window.tkLoadNews) tkLoadNews().then(() => window.__tkDay && window.__tkDay()); bindWidgets(document); loadMini(); loadMente(); loadPlanOk();
     if (!window.__tkMini) { window.__tkMini = setInterval(() => { if (document.visibilityState === "visible") loadMini(); }, 60000); }
     const n = CARS.filter(k => appDef(k)).length, go = i => { S.hcar = ((i % n) + n) % n; placeCar(); };
     placeCar();
