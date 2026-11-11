@@ -102,10 +102,9 @@
       }
       case "backtest": {
         const i = Math.min(S.hbBt || 0, Math.max(0, D.sess.length - 1)), x = D.sess[i];
-        if (!x) return `<div class="hb-media-c"><button type="button" class="hb-play" data-btnew aria-label="Crear sesión" data-stop>${I(IC.plus, 22, 2.2)}</button></div><div class="hb-media-t"><b>${esc(name)}</b><small>Crea tu primera sesión · ${n} apartados</small></div>`;
+        if (!x) return `<div class="bt-row"><button type="button" class="hb-play sm" data-btnew aria-label="Crear sesión de backtesting" data-stop>${I(IC.plus, 18, 2.2)}</button><div class="bt-tx"><b>${esc(name)}</b><small>Crea tu primera sesión</small></div></div>`;
         const from = new Date(x.from + "T00:00").getTime(), to = new Date(x.to + "T23:59").getTime(), pr = Math.max(0, Math.min(1, ((x.lastTs || from) - from) / (to - from)));
-        return `<span class="hb-cats-n lt">${esc(name)} · ${n} apartados</span><div class="hb-media-c"><button type="button" class="hb-mb" data-btcyc="-1" aria-label="Sesión anterior" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M14 5l-6 5 6 5zM6 5v10"/>', 16, 2)}</button><button type="button" class="hb-play" data-btplay="${esc(x.id)}" aria-label="${x.lastTs ? "Continuar" : "Empezar"} ${esc(x.name)}" data-stop>${I('<path d="M7 4.5v11l9-5.5z"/>', 22, 2)}</button><button type="button" class="hb-mb" data-btcyc="1" aria-label="Sesión siguiente" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M6 5l6 5-6 5zM14 5v10"/>', 16, 2)}</button></div>
-          <div class="hb-media-t"><div class="hb-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div><b>${esc(x.name)}</b><small>${esc((x.syms || []).join(" · "))} · ${x.mode === "fondeo" ? "reto de fondeo" : "clásico"} · ${Math.round(pr * 100)} %</small></div>`;
+        return `<div class="bt-row"><button type="button" class="hb-play sm" data-btplay="${esc(x.id)}" aria-label="${x.lastTs ? "Continuar" : "Empezar"} ${esc(x.name)}" data-stop>${I('<path d="M7 4.5v11l9-5.5z"/>', 18, 2)}</button><div class="bt-tx"><b>${esc(name)}</b><small>${esc(x.name)} · ${Math.round(pr * 100)} %</small><div class="hb-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div></div>${D.sess.length > 1 ? `<button type="button" class="hb-mb sm" data-btcyc="1" aria-label="Sesión siguiente" data-stop>${I('<path d="M6 5l6 5-6 5zM14 5v10"/>', 14, 2)}</button>` : ""}</div>`;
       }
       case "resultados": return psyTile(D, name, href);
       case "diario": {
@@ -119,7 +118,7 @@
       }
       case "asistente": {
         const q = ["¿A qué hora opero mejor?", "¿Qué norma rompo más?", "¿Cómo voy esta semana?", "¿Cuál es mi mejor mercado?"][new Date().getDate() % 4];
-        return `<div class="hb-w"><a class="hb-q" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 14)}</span></a></div>${tFoot(name, "Pregunta por tus números", href)}`;
+        return `<div class="as-row"><span class="as-n">${ico("asistente", 15)}${esc(name)}</span><a class="hb-q sm" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 13)}</span></a></div>`;
       }
       case "calendario": {
         const nw = new Date(), y = nw.getFullYear(), m = nw.getMonth(), off = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate(), by = {};
@@ -137,10 +136,7 @@
           <div class="hb-mc">${cells}</div>
           ${tFoot(name, vals.length ? pd + (pd === 1 ? " día" : " días") + " en verde · " + nd + " en rojo" : "Aún sin días operados este mes", href)}`;
       }
-      case "plan": {
-        return `<div class="hb-w"><div class="hb-chips"><span>Máx. ${p.maxTrades} op.</span><span>${esc(p.start)}–${esc(p.end)}</span><span>Límite ${num(p.dayLimitR, 1)} R</span>${p.riskPct != null ? `<span>Riesgo ${num(p.riskPct, 2).replace(/,?0+$/, "")} %</span>` : ""}</div></div>
-          ${tFoot(name, (p.rules || []).length ? (p.rules || []).length + ((p.rules || []).length === 1 ? " norma" : " normas") + " · cambios desde mañana" : "Añade tus normas", href)}`;
-      }
+      case "plan": return planTile(D, name, href);
     }
     return "";
   }
@@ -191,6 +187,12 @@
     q("[data-btnew]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer(), 60); });
     q("[data-ask]").forEach(a => a.onclick = () => { S.asPrefill = a.dataset.ask; });
     q("[data-repday]").forEach(b => b.onclick = () => { S.repDay = b.dataset.repday; location.hash = "#informe"; });
+    q("[data-pcommit]").forEach(b => b.onclick = async () => {
+      const day = todayKey(); S.planOk = { day, ts: Date.now() };
+      const t = b.closest(".hb-t"); if (t) { t.innerHTML = appTile("plan", hData()); bindWidgets(t); }
+      const { error } = await sb.from("docs").upsert({ user_id: S.user.id, col: "plandia", id: "d" + day, data: { ts: S.planOk.ts }, updated_at: new Date().toISOString() });
+      if (error) toast("No se pudo guardar tu compromiso"); else toast("Comprometido. Tus normas, a la vista toda la sesión");
+    });
     q("[data-mt]").forEach(b => b.onclick = async () => {
       const [k, v] = b.dataset.mt.split(":"), day = todayKey(); S.mente = S.mente || {};
       const m = Object.assign({}, S.mente[day] || {}, { [k]: +v, ts: Date.now() }); S.mente[day] = m;
@@ -249,6 +251,40 @@
       : `<div class="ps-tip wait"><b>${miss.length === 3 ? "Tarda 5 segundos" : "Te falta " + miss.join(" y ")}</b><p>Toca un punto en cada fila: 1 es muy bajo y 5 muy alto. Con eso te doy un consejo para hoy.</p><em>Solo lo ves tú</em></div>`;
     return head + `<div class="ps-b"><div class="ps-in">${rows}<small class="ps-pat">${esc(mPattern())}</small></div>${right}</div>`;
   }
+  /* ===== Mi plan: tus normas de hoy en directo, la norma en foco, tus reglas y tu compromiso ===== */
+  const NK = f => /stop al entrar|Deja el stop/i.test(f) ? "stop" : /tamaño con tu riesgo/i.test(f) ? "risk" : /horario/i.test(f) ? "hora" : /máximo/i.test(f) ? "max" : /límite/i.test(f) ? "lim" : null;
+  const NLAB = { stop: "Stop al entrar y sin moverlo", risk: "Respetar tu riesgo", hora: "Operar solo en tu horario", max: "No pasar de tu máximo", lim: "Parar en tu límite del día" };
+  function planTile(D, name, href) {
+    const p = D.p, used = D.today.length, mx = p.maxTrades || 3, L = p.dayLimitR || 2, dr = D.st.n ? D.st.tot : 0;
+    const fails = new Set(); D.today.forEach(t => evaluate(t).fail.forEach(f => { const k = NK(f.fix); if (k) fails.add(k); }));
+    const cnt = {}; closed(S.trades).filter(t => new Date(dateOf(t)) >= Date.now() - 30 * 864e5).forEach(t => evaluate(t).fail.forEach(f => { const k = NK(f.fix); if (k) cnt[k] = (cnt[k] || 0) + 1; }));
+    const focus = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+    const byDay = {}; closed(S.trades).forEach(t => { const k = dayKey(dateOf(t)); (byDay[k] = byDay[k] || []).push(t); });
+    let racha = 0; for (const k of Object.keys(byDay).sort().reverse()) { if (byDay[k].every(t => evaluate(t).good)) racha++; else break; }
+    const rp = num(p.riskPct, 2).replace(/,?0+$/, "");
+    const st = (k, warn) => fails.has(k) ? "bad" : warn ? "warn" : used ? "ok" : "idle";
+    const rows = [
+      ["max", "Máximo " + mx + (mx === 1 ? " operación" : " operaciones"), used > mx ? "te pasaste" : used === mx ? "llegaste: cierra el día" : used ? "llevas " + used : "aún ninguna", st("max", used === mx)],
+      ["lim", "Límite del día −" + num(L, 1) + " R", D.st.n ? "llevas " + fmtR(dr) : "sin pérdidas", dr <= -L ? "bad" : st("lim", D.st.n && dr <= -L * .6)],
+      ["hora", "Horario " + esc(p.start) + "–" + esc(p.end), D.phase === "antes" ? "empieza a las " + esc(p.start) : D.phase === "en" ? "estás dentro" : "terminado", fails.has("hora") ? "bad" : D.phase === "en" ? "ok" : "idle"],
+      ["risk", "Riesgo " + rp + " % por operación", fails.has("risk") ? "hoy te pasaste" : used ? "respetado" : "", st("risk")],
+      ["stop", "Stop al entrar y sin moverlo", fails.has("stop") ? "hoy no" : used ? "bien" : "", st("stop")]
+    ];
+    const icon = s => s === "ok" ? ico("check", 13, 2.6) : s === "bad" ? ico("x", 12, 2.6) : s === "warn" ? "<b>!</b>" : "";
+    const list = rows.map(([k, l, sub, s]) => `<div class="pl-r ${s}${focus && focus[0] === k ? " foc" : ""}"><span class="pl-i">${icon(s)}</span><span class="pl-l">${l}${focus && focus[0] === k ? ' <em>en foco</em>' : ""}</span><small>${sub}</small></div>`).join("");
+    const ok = S.planOk && S.planOk.day === todayKey();
+    const rules = (p.rules || []).filter(r => r.si || r.entonces).slice(0, 3);
+    const right = `<div class="pl-foc">${focus ? `<small>Tu norma en foco</small><b>${NLAB[focus[0]]}</b><span>La rompiste ${focus[1]} ${focus[1] === 1 ? "vez" : "veces"} en los últimos 30 días. Hoy, ojo con esta.</span>` : closed(S.trades).length ? `<small>Tu norma en foco</small><b>Ninguna rota en 30 días</b><span>Sigue así: lo difícil es mantenerlo.</span>` : `<small>Tu norma en foco</small><b>Aparecerá con tus operaciones</b><span>Te marcaré la norma que más te cuesta.</span>`}</div>
+      <div class="pl-si">${rules.length ? rules.map(r => `<div><b>Si</b> ${esc(String(r.si || "").replace(/,$/, ""))} <b>→</b> ${esc(r.entonces || "")}</div>`).join("") : `<div class="pl-empty">Añade tus reglas «si pasa esto → hago esto» en <a href="#plan" data-stop>Mi plan</a>.</div>`}</div>`;
+    const commit = ok ? `<span class="pl-done" title="Lo decides en frío: los cambios del plan valen desde mañana">${ico("check", 14, 2.6)} Comprometido a las ${new Date(S.planOk.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>` : `<button type="button" class="pl-btn" data-pcommit data-stop title="Lo decides en frío: los cambios del plan valen desde mañana">Me comprometo hoy</button>`;
+    return `<div class="ps-h"><b class="hb-ch-n">${esc(name)}</b>${racha ? `<span class="pl-racha">${racha} ${racha === 1 ? "día" : "días"} seguidos en plan</span>` : ""}<span style="flex:1"></span>${commit}${rbtn(href, name)}</div>
+      <div class="pl-b"><div class="pl-list"><small class="pl-t">Tus normas de hoy</small>${list}</div><div class="pl-right">${right}</div></div>`;
+  }
+  async function loadPlanOk() {
+    const day = todayKey(); if ((S.planOk && S.planOk.day === day) || S.planOkLoaded === day) return; S.planOkLoaded = day;
+    const { data, error } = await sb.from("docs").select("id,data").eq("col", "plandia").eq("id", "d" + day);
+    if (!error && data && data[0]) { S.planOk = { day, ts: data[0].data.ts }; const t = document.querySelector('.hb-t[data-hc="plan"]:not(.sel)'); if (t) { t.innerHTML = appTile("plan", hData()); bindWidgets(t); } }
+  }
   async function loadMente() {
     if (S.menteLoaded || S.menteLoading || !healthOk()) return; S.menteLoading = true;
     try { const { data, error } = await sb.from("docs").select("id,data").eq("col", "mente"); if (!error) { S.mente = Object.assign({}, ...(data || []).map(d => ({ [String(d.id).slice(1)]: d.data }))); S.menteLoaded = true; } }
@@ -285,6 +321,7 @@
     bindWidgets(document);
     loadMini();
     loadMente();
+    loadPlanOk();
     if (!window.__tkMini) { window.__tkMini = setInterval(() => { if (document.visibilityState === "visible") loadMini(); }, 60000); }
     if (!window.__tkSel) {
       window.__tkSel = true;
