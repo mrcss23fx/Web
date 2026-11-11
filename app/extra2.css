@@ -722,7 +722,7 @@ a.dp-op:hover{border-color:var(--cobalto)}
 @media (min-width:1024px){.hb-full .hb-grid.g9{grid-auto-rows:minmax(max(150px,calc((100vh - 348px)/3)),auto)}}
 
 /* ===== portada por tamaños: cada cuadro con su sitio ===== */
-.hb-full .hb-grid.g9{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"hoy graf graf cal" "psi dia cue cal" "plan asis bt bt"}
+.hb-full .hb-grid.g9{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"psi psi hoy cal" "graf dia cue cal" "plan asis bt bt"}
 .hbshell .hb-full .hb-grid.g9>.t-hoy{grid-area:hoy!important}
 .hbshell .hb-full .hb-grid.g9>.t-analizar{grid-area:graf!important}
 .hbshell .hb-full .hb-grid.g9>.t-calendario{grid-area:cal!important}
@@ -733,8 +733,7 @@ a.dp-op:hover{border-color:var(--cobalto)}
 .hbshell .hb-full .hb-grid.g9>.t-asistente{grid-area:asis!important}
 .hbshell .hb-full .hb-grid.g9>.t-backtest{grid-area:bt!important}
 @media (max-width:1023px){
-  .hb-full .hb-grid.g9{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"hoy psi" "graf graf" "cal cal" "dia cue" "bt bt" "plan asis";grid-auto-rows:auto}
-  .hb-full .hb-grid.g9>.t-analizar{min-height:210px}
+  .hb-full .hb-grid.g9{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"psi psi" "hoy graf" "cal cal" "dia cue" "bt bt" "plan asis";grid-auto-rows:auto}
 }
 /* gráfico */
 .hb-t.t-analizar{gap:8px}
@@ -784,5 +783,40 @@ button.mc-d:focus-visible{outline:2px solid var(--cobalto);outline-offset:1px}
 .hb-full .hb-grid.g9 .hb-chart{min-height:48px}
 .hb-ch-n{font-size:17px!important;font-weight:700;margin-right:2px}
 .hb-ch-top .hb-go{flex:none}
-.hb-full .hb-grid.g9 .t-analizar .hb-chart{min-height:90px}
 @media (max-width:560px){.hb-ch-top .hb-step,.hb-ch-top .hb-sym{display:none}.hb-ch-top{gap:8px}}
+
+/* gráfico pequeño */
+.hb-ch-bot{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.hb-ch-top .hb-sym{flex:none}
+/* ===== Psicología ===== */
+.hb-t.t-resultados{gap:8px}
+.ps-h{display:flex;align-items:center;gap:10px;min-width:0}
+.ps-sub{font-size:12.5px;color:var(--hb-ink2);white-space:nowrap}
+.ps-sc{display:inline-flex;align-items:baseline;gap:6px;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.ps-sc b{font-size:15px}
+.ps-sc.ok{background:var(--cobalto);color:#fff}
+.ps-sc.mid{background:color-mix(in srgb,var(--cobalto) 14%,transparent);color:var(--cobalto)}
+.ps-sc.low{background:var(--hb-track);color:var(--hb-ink)}
+.ps-plan{font-size:12px;color:var(--hb-ink2);white-space:nowrap}
+.ps-plan b{color:var(--hb-ink);font-size:13px}
+.ps-b{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;min-height:0}
+.ps-in{display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0}
+.ps-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ps-row>span{font-size:12.5px;color:var(--hb-ink2)}
+.ps-dots{display:flex;gap:6px}
+.ps-dots button{all:unset;box-sizing:border-box;cursor:pointer;width:22px;height:22px;border-radius:50%;background:var(--hb-track);transition:background .15s ease,transform .15s ease}
+.ps-dots button.on{background:var(--cobalto)}
+.ps-dots button:hover{transform:scale(1.12)}
+.ps-dots button:focus-visible{outline:2px solid var(--cobalto);outline-offset:2px}
+.ps-pat{font-size:11.5px;line-height:1.35;color:var(--hb-ink2);margin-top:2px}
+.ps-p{margin:0;font-size:13px;color:var(--hb-ink2);line-height:1.45}
+.ps-tip{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:14px;background:var(--hb-t2);border:1px solid var(--hb-line);min-width:0}
+.ps-tip b{font-size:14px;color:var(--hb-ink)}
+.ps-tip p{margin:0;font-size:12.5px;line-height:1.4;color:var(--hb-ink2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ps-tip em{font-style:normal;font-size:11px;color:var(--cobalto);margin-top:auto}
+.ps-tip.wait em{color:var(--hb-ink2)}
+.ps-btn{align-self:flex-start;margin-top:auto;font-size:12.5px;font-weight:600;color:#fff;background:var(--cobalto);padding:6px 12px;border-radius:99px;text-decoration:none}
+@media (max-width:1023px){.ps-b{grid-template-columns:1fr}.ps-tip p{-webkit-line-clamp:unset}}
+@media (max-width:460px){.ps-plan{display:none}}
+.ps-tip em{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:560px){.hb-ch-bot .hb-step,.hb-ch-top em{display:none}.hb-ch-top b{font-size:15px}}

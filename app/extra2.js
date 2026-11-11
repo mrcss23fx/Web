@@ -96,8 +96,9 @@
         const sym = chartSym(), tf = lsGet("tk-tf", "5m"), c = (S.hbBars || {})[sym + "|" + tf], b = c && c.b || [];
         const last = b.length ? b[b.length - 1].close : null, f = b.length ? b[0].open : null, chg = last != null && f ? (last - f) / f * 100 : null, dg = c && c.d != null ? c.d : 2;
         const body = b.length ? miniCandles(b) : `<div class="hb-chart-ph">${c && c.err ? "El gráfico no responde ahora" : "Cargando gráfico…"}</div>`;
-        return `<div class="hb-ch-top"><b class="hb-ch-n">${esc(name)}</b><span class="hb-sym">${esc(sym)}</span>${last != null ? `<b class="mono">${last.toFixed(dg).replace(".", ",")}</b><em class="mono ${chg >= 0 ? "up" : "dn"}">${chg >= 0 ? "+" : "−"}${num(Math.abs(chg), 2)} %</em>` : ""}<span style="flex:1"></span><div class="hb-step sm"><button type="button" data-tfs="-1" aria-label="Temporalidad más corta" data-stop>−</button><b class="mono">${esc(TFL[tf] || tf)}</b><button type="button" data-tfs="1" aria-label="Temporalidad más larga" data-stop>+</button></div>${rbtn(href, name)}</div>
-          <div class="hb-chart" data-sym="${esc(sym)}" data-tf="${esc(tf)}" role="img" aria-label="${esc(sym)}, últimas ${b.length || 60} velas de ${esc(TFL[tf] || tf)}">${body}</div>`;
+        return `<div class="hb-ch-top"><span class="hb-sym">${esc(sym)}</span>${last != null ? `<b class="mono">${last.toFixed(dg).replace(".", ",")}</b><em class="mono ${chg >= 0 ? "up" : "dn"}">${chg >= 0 ? "+" : "−"}${num(Math.abs(chg), 2)} %</em>` : ""}<span style="flex:1"></span>${rbtn(href, name)}</div>
+          <div class="hb-chart" data-sym="${esc(sym)}" data-tf="${esc(tf)}" role="img" aria-label="${esc(sym)}, últimas ${b.length || 48} velas de ${esc(TFL[tf] || tf)}">${body}</div>
+          <div class="hb-ch-bot"><b class="hb-ch-n">${esc(name)}</b><div class="hb-step sm"><button type="button" data-tfs="-1" aria-label="Temporalidad más corta" data-stop>−</button><b class="mono">${esc(TFL[tf] || tf)}</b><button type="button" data-tfs="1" aria-label="Temporalidad más larga" data-stop>+</button></div></div>`;
       }
       case "backtest": {
         const i = Math.min(S.hbBt || 0, Math.max(0, D.sess.length - 1)), x = D.sess[i];
@@ -106,11 +107,7 @@
         return `<span class="hb-cats-n lt">${esc(name)} · ${n} apartados</span><div class="hb-media-c"><button type="button" class="hb-mb" data-btcyc="-1" aria-label="Sesión anterior" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M14 5l-6 5 6 5zM6 5v10"/>', 16, 2)}</button><button type="button" class="hb-play" data-btplay="${esc(x.id)}" aria-label="${x.lastTs ? "Continuar" : "Empezar"} ${esc(x.name)}" data-stop>${I('<path d="M7 4.5v11l9-5.5z"/>', 22, 2)}</button><button type="button" class="hb-mb" data-btcyc="1" aria-label="Sesión siguiente" ${D.sess.length > 1 ? "" : "disabled"} data-stop>${I('<path d="M6 5l6 5-6 5zM14 5v10"/>', 16, 2)}</button></div>
           <div class="hb-media-t"><div class="hb-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div><b>${esc(x.name)}</b><small>${esc((x.syms || []).join(" · "))} · ${x.mode === "fondeo" ? "reto de fondeo" : "clásico"} · ${Math.round(pr * 100)} %</small></div>`;
       }
-      case "resultados": {
-        const pc = D.C90.length ? Math.round(D.good / D.C90.length * 100) : null;
-        return `<div class="hb-w">${cats}<div class="hb-ban">${pc == null ? "Aún sin operaciones" : pc >= 80 ? "Proceso sólido" : pc >= 60 ? "Vas por buen camino" : "Revisa tus normas"}</div><div class="hb-big"><span class="hb-bl">Dentro del plan</span><b class="mono">${pc == null ? "—" : pc}</b><small>${pc == null ? "" : "%"}</small></div></div>
-          ${tFoot(name, D.s90.n ? fmtR(D.s90.tot) + " en 90 días" : "Rendimiento, disciplina y emociones", href)}`;
-      }
+      case "resultados": return psyTile(D, name, href);
       case "diario": {
         const pg = D.pages[0];
         return `<span class="hb-ic">${ico("diario", 20)}</span><div style="flex:1"></div>${tFoot(name, pg ? "Última: " + esc(pg.title || "Sin título") + " · " + ago(pg.updated) : S.pagesLoaded ? "Escribe tu primera página" : "Tus páginas", href)}`;
@@ -194,6 +191,70 @@
     q("[data-btnew]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer(), 60); });
     q("[data-ask]").forEach(a => a.onclick = () => { S.asPrefill = a.dataset.ask; });
     q("[data-repday]").forEach(b => b.onclick = () => { S.repDay = b.dataset.repday; location.hash = "#informe"; });
+    q("[data-mt]").forEach(b => b.onclick = async () => {
+      const [k, v] = b.dataset.mt.split(":"), day = todayKey(); S.mente = S.mente || {};
+      const m = Object.assign({}, S.mente[day] || {}, { [k]: +v, ts: Date.now() }); S.mente[day] = m;
+      const t = b.closest(".hb-t");
+      if (t) { t.innerHTML = appTile("resultados", hData()); bindWidgets(t); const nb = t.querySelector('[data-mt="' + k + ':' + v + '"]'); nb && nb.focus({ preventScroll: true }); }
+      const { error } = await sb.from("docs").upsert({ user_id: S.user.id, col: "mente", id: "d" + day, data: m, updated_at: new Date().toISOString() });
+      if (error) toast("No se pudo guardar tu estado");
+    });
+  }
+  /* ===== Psicología: cómo llegas hoy, un consejo con estudio detrás y tu propio patrón ===== */
+  const MDIM = [["r", "Descanso"], ["c", "Calma"], ["f", "Enfoque"]];
+  const mDone = m => !!m && MDIM.every(([k]) => m[k] >= 1);
+  const mScore = m => Math.round(((m.r + m.c + m.f) / 3 - 1) / 4 * 100);
+  const mLabel = s => s >= 70 ? "Buen estado" : s >= 45 ? "Con cuidado" : "Día delicado";
+  const TIPS = {
+    perdidas: ["Pausa antes de recuperar", "Tras perder solemos arriesgar más para volver a cero. Antes de la siguiente operación, 10 minutos lejos de la pantalla.", "Thaler y Johnson (1990)"],
+    maximo: ["Has llegado a tu máximo", "Quien más opera suele ganar menos. Lo que queda de sesión, solo para mirar y apuntar lo que ves.", "Barber y Odean (2000)"],
+    sueno: ["Poco descanso: riesgo pequeño", "Con poco sueño el cerebro da más peso a lo que puedes ganar y menos a lo que puedes perder. Hoy, menos riesgo o solo tu mejor setup.", "Venkatraman y otros (2011)"],
+    nervios: ["Convierte los nervios en energía", "Antes de empezar, dite «estoy con ganas» en vez de «tengo que calmarme». Reinterpretar los nervios mejora el rendimiento.", "Brooks (2014)"],
+    escribir: ["Saca la preocupación al papel", "Escribe dos minutos en el Diario lo que te preocupa antes de la sesión. Deja la cabeza libre para decidir.", "Ramírez y Beilock (2011)"],
+    enfoque: ["Decide antes de abrir el gráfico", "Repasa tus reglas «si pasa esto, entonces hago esto». Dejarlo decidido antes hace mucho más probable cumplirlo.", "Gollwitzer y Sheeran (2006)"],
+    confianza: ["Buen día para tu plan, no para ampliarlo", "Sentirse muy bien empuja a operar de más. Mismo riesgo y mismo máximo de operaciones que cualquier otro día.", "Barber y Odean (2000)"],
+    nombrar: ["Ponle nombre a lo que sientes", "Antes de cada entrada, di en una frase cómo te sientes. Nombrar la emoción le quita fuerza.", "Lieberman y otros (2007)"],
+    respirar: ["Un minuto de respiración lenta", "Cinco segundos dentro y cinco fuera durante un minuto antes de la sesión. Baja la activación y te ayuda a decidir con calma.", "Zaccaro y otros (2018)"],
+    error: ["Trátate como a un amigo", "Después de un error, hablarte con comprensión da más ganas de mejorar que castigarte. Apunta qué aprendes y sigue.", "Breines y Chen (2012)"]
+  };
+  function pickTip(m, D) {
+    const cl = closed(D.today).sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b))), l2 = cl.slice(-2);
+    if (l2.length === 2 && l2.every(t => +t.r < 0)) return TIPS.perdidas;
+    if (D.today.length >= (D.p.maxTrades || 3)) return TIPS.maximo;
+    const lastC = closed(S.trades).sort((a, b) => new Date(dateOf(b)) - new Date(dateOf(a)))[0];
+    if (lastC && Date.now() - new Date(dateOf(lastC)) < 36 * 36e5 && evaluate(lastC).fail.length) return TIPS.error;
+    const low = Math.min(m.r, m.c, m.f), d = new Date().getDate();
+    if (low <= 2) { if (m.r === low) return TIPS.sueno; if (m.c === low) return d % 2 ? TIPS.nervios : TIPS.escribir; return TIPS.enfoque; }
+    if (m.r >= 4 && m.c >= 4 && m.f >= 4) return TIPS.confianza;
+    return [TIPS.nombrar, TIPS.respirar, TIPS.enfoque][d % 3];
+  }
+  function mPattern() {
+    const M = S.mente || {}, days = Object.keys(M).filter(k => mDone(M[k])), byDay = {};
+    closed(S.trades).forEach(t => { const k = dayKey(dateOf(t)); (byDay[k] = byDay[k] || []).push(t); });
+    const g = { hi: [0, 0], lo: [0, 0] }; let n = 0;
+    days.forEach(k => { const l = byDay[k]; if (!l) return; n++; const x = mScore(M[k]) >= 60 ? g.hi : g.lo; l.forEach(t => { x[1]++; if (evaluate(t).good) x[0]++; }); });
+    if (n < 5 || !g.hi[1] || !g.lo[1]) return `Tu patrón aparece con 5 días operados y registrados · llevas ${n}`;
+    return `Tu patrón: llegando bien cumples el plan el ${Math.round(g.hi[0] / g.hi[1] * 100)} %; llegando mal, el ${Math.round(g.lo[0] / g.lo[1] * 100)} %`;
+  }
+  function psyTile(D, name, href) {
+    const pc = D.C90.length ? Math.round(D.good / D.C90.length * 100) : null;
+    const m = (S.mente || {})[todayKey()] || {}, done = mDone(m), sc = done ? mScore(m) : null;
+    const head = `<div class="ps-h"><b class="hb-ch-n">${esc(name)}</b>${done ? `<span class="ps-sc ${sc >= 70 ? "ok" : sc >= 45 ? "mid" : "low"}"><b class="mono">${sc}</b> ${mLabel(sc)}</span>` : `<span class="ps-sub">¿Cómo llegas hoy?</span>`}<span style="flex:1"></span><span class="ps-plan" title="Operaciones de los últimos 90 días que siguieron tu plan"><b class="mono">${pc == null ? "—" : pc + " %"}</b> dentro del plan</span>${rbtn(href, name)}</div>`;
+    if (!healthOk()) return head + `<div class="ps-b"><div class="ps-in"><p class="ps-p">Marca cada día cómo llegas y Tickora te dirá cómo te afecta al operar, con consejos basados en estudios de psicología.</p></div><div class="ps-tip"><b>Necesita tu permiso</b><p>Es información sobre tu salud, así que necesita tu permiso. Solo la ves tú.</p><a class="ps-btn" href="#ajustes" data-stop>Activar en Ajustes</a></div></div>`;
+    const rows = MDIM.map(([k, l]) => `<div class="ps-row"><span>${l}</span><div class="ps-dots" role="group" aria-label="${l} de hoy, de 1 a 5">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-mt="${k}:${n}" class="${m[k] >= n ? "on" : ""}" aria-pressed="${m[k] === n}" aria-label="${l}: ${n} de 5" data-stop></button>`).join("")}</div></div>`).join("");
+    const miss = MDIM.filter(([k]) => !m[k]).map(([, l]) => l.toLowerCase());
+    const tip = done ? pickTip(m, D) : null;
+    const right = done
+      ? `<div class="ps-tip" title="${esc(tip[1])}"><b>${esc(tip[0])}</b><p>${esc(tip[1])}</p><em>Estudio: ${esc(tip[2])}</em></div>`
+      : `<div class="ps-tip wait"><b>${miss.length === 3 ? "Tarda 5 segundos" : "Te falta " + miss.join(" y ")}</b><p>Toca un punto en cada fila: 1 es muy bajo y 5 muy alto. Con eso te doy un consejo para hoy.</p><em>Solo lo ves tú</em></div>`;
+    return head + `<div class="ps-b"><div class="ps-in">${rows}<small class="ps-pat">${esc(mPattern())}</small></div>${right}</div>`;
+  }
+  async function loadMente() {
+    if (S.menteLoaded || S.menteLoading || !healthOk()) return; S.menteLoading = true;
+    try { const { data, error } = await sb.from("docs").select("id,data").eq("col", "mente"); if (!error) { S.mente = Object.assign({}, ...(data || []).map(d => ({ [String(d.id).slice(1)]: d.data }))); S.menteLoaded = true; } }
+    finally { S.menteLoading = false; }
+    const t = document.querySelector('.hb-t[data-hc="resultados"]:not(.sel)');
+    if (t) { t.innerHTML = appTile("resultados", hData()); bindWidgets(t); }
   }
   /* gráfico del cuadro: velas reales de los últimos minutos, en azul y gris */
   const chartSym = () => (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD";
@@ -208,7 +269,7 @@
     const sym = el.dataset.sym, tf = el.dataset.tf, key = sym + "|" + tf; S.hbBars = S.hbBars || {};
     const c = S.hbBars[key]; if (c && !force && Date.now() - c.t < 60000) return;
     if (S.hbLoading === key) return; S.hbLoading = key;
-    try { const r = await TkChart.bars(sym, tf, { invoke: (n, body) => sb.functions.invoke(n, { body }) }); S.hbBars[key] = { t: Date.now(), b: (r.bars || []).slice(-60), d: TkChart.digits ? TkChart.digits(sym) : 2 }; }
+    try { const r = await TkChart.bars(sym, tf, { invoke: (n, body) => sb.functions.invoke(n, { body }) }); S.hbBars[key] = { t: Date.now(), b: (r.bars || []).slice(-48), d: TkChart.digits ? TkChart.digits(sym) : 2 }; }
     catch (e) { S.hbBars[key] = { t: Date.now() - 45000, b: c ? c.b : [], d: c ? c.d : 2, err: !c }; }
     finally { S.hbLoading = null; }
     const t = document.querySelector('.hb-t[data-hc="analizar"]:not(.sel)');
@@ -223,6 +284,7 @@
     });
     bindWidgets(document);
     loadMini();
+    loadMente();
     if (!window.__tkMini) { window.__tkMini = setInterval(() => { if (document.visibilityState === "visible") loadMini(); }, 60000); }
     if (!window.__tkSel) {
       window.__tkSel = true;
