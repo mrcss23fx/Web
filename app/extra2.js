@@ -86,12 +86,7 @@
     const p = D.p, name = appDef(k)[1], href = appHref(k), n = appDef(k)[2].length;
     const cats = n > 1 ? `<span class="hb-cats-n">${n} apartados</span>` : "";
     switch (k) {
-      case "hoy": {
-        const used = D.today.length, mx = p.maxTrades || 3, f = Math.min(1, used / mx), tf = D.phase === "antes" ? 0 : D.phase === "despues" ? 1 : (D.now - D.a) / Math.max(1, D.b - D.a);
-        return `<div class="hb-w">${cats}<div class="hb-bar" role="img" aria-label="${used} de ${mx} operaciones"><i style="left:${(f * 100).toFixed(1)}%"></i></div>
-          <div class="hb-sbar" role="img" aria-label="Horario ${esc(p.start)} a ${esc(p.end)}"><span>${esc(p.start)}</span><div><em style="width:${(tf * 100).toFixed(1)}%"></em></div><span>${esc(p.end)}</span></div></div>
-          ${tFoot(name, (D.st.n ? fmtR(D.st.tot) + " · " : "") + used + " de " + mx + " operaciones" + (D.nextHigh && dayKey(D.nextHigh.ts) === todayKey() ? " · noticia " + hhmm(D.nextHigh.ts) : ""), href)}`;
-      }
+      case "hoy": return hoyTile(D, name, href);
       case "analizar": {
         const sym = chartSym(), tf = lsGet("tk-tf", "5m"), c = (S.hbBars || {})[sym + "|" + tf], b = c && c.b || [];
         const last = b.length ? b[b.length - 1].close : null, f = b.length ? b[0].open : null, chg = last != null && f ? (last - f) / f * 100 : null, dg = c && c.d != null ? c.d : 2;
@@ -102,19 +97,9 @@
       }
       case "backtest": return btTile(D, name, href);
       case "resultados": return psyTile(D, name, href);
-      case "diario": {
-        const pg = D.pages[0];
-        return `<span class="hb-ic">${ico("diario", 20)}</span><div style="flex:1"></div>${tFoot(name, pg ? "Última: " + esc(pg.title || "Sin título") + " · " + ago(pg.updated) : S.pagesLoaded ? "Escribe tu primera página" : "Tus páginas", href)}`;
-      }
-      case "cartera": {
-        const A = (S.accts || []).filter(a => a.status !== "archivada"), c = t => A.filter(a => a.type === t).length;
-        return `<div class="hb-w">${cats}<div class="hb-ac"><span>${I('<path d="M4 14l4-4 3 3 5-6"/>', 13, 2.2)} Fondeo ${c("fondeo")}</span><span>${I('<circle cx="10" cy="10" r="5"/>', 13, 2.2)} Demo ${c("demo")} · Propia ${c("propia")}</span></div><div class="hb-pill">${A.length} ${A.length === 1 ? "cuenta" : "cuentas"}</div></div>
-          ${tFoot(name, inSession(p) ? "Finanzas al terminar tu horario" : "Cuentas y finanzas", href)}`;
-      }
-      case "asistente": {
-        const q = ["¿A qué hora opero mejor?", "¿Qué norma rompo más?", "¿Cómo voy esta semana?", "¿Cuál es mi mejor mercado?"][new Date().getDate() % 4];
-        return `<div class="as-row"><span class="as-n">${ico("asistente", 15)}${esc(name)}</span><a class="hb-q sm" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 13)}</span></a></div>`;
-      }
+      case "diario": return diarioTile(D, name, href);
+      case "cartera": return cuentasTile(D, name, href);
+      case "asistente": return asisTile(D, name, href);
       case "calendario": {
         const nw = new Date(), y = nw.getFullYear(), m = nw.getMonth(), off = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate(), by = {};
         closed(S.trades).forEach(t => { const d = new Date(dateOf(t)); if (d.getFullYear() === y && d.getMonth() === m) (by[d.getDate()] = by[d.getDate()] || []).push(t); });
@@ -180,6 +165,15 @@
     q("[data-btcyc]").forEach(b => b.onclick = () => { const n = (S.bts || []).length; S.hbBt = ((S.hbBt || 0) + +b.dataset.btcyc + n) % n; re(); });
     q("[data-btplay]").forEach(b => b.onclick = () => { const x = (S.bts || []).find(y => y.id === b.dataset.btplay); if (x && BT()) BT().run(x); });
     q("[data-btnew]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer(), 60); });
+    q("[data-act]").forEach(b => b.onclick = async () => {
+      const k = b.dataset.act;
+      if (k === "addop") { location.hash = "#historial"; setTimeout(() => window.tkAddTrade && tkAddTrade(), 80); }
+      else if (k === "emo") { window.tkEmoModal && tkEmoModal(); }
+      else if (k === "newacct") { S.acctEdit = "new"; S.lastView = null; location.hash = "#cuentas"; }
+      else if (k === "finmov") { location.hash = "#finanzas"; setTimeout(finModal, 80); }
+      else if (k === "write") { const Dd = DI(); if (!Dd) return; await Dd.loadPages(); const p = Dd.newPage(null); p.title = b.dataset.title || ""; await Dd.savePage(p); location.hash = "#diario/" + encodeURIComponent(p.id); }
+    });
+    q("[data-askf]").forEach(f => f.onsubmit = e => { e.preventDefault(); const v = (f.q.value || "").trim(); if (!v) { f.q.focus(); return; } S.asPrefill = v; location.hash = "#asistente"; });
     q("[data-btnewf]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer("fondeo"), 60); });
     q("[data-ask]").forEach(a => a.onclick = () => { S.asPrefill = a.dataset.ask; });
     q("[data-repday]").forEach(b => b.onclick = () => { S.repDay = b.dataset.repday; location.hash = "#informe"; });
@@ -197,6 +191,59 @@
       const { error } = await sb.from("docs").upsert({ user_id: S.user.id, col: "mente", id: "d" + day, data: m, updated_at: new Date().toISOString() });
       if (error) toast("No se pudo guardar tu estado");
     });
+  }
+  /* ===== Hoy, Cuentas y dinero, Diario y Asistente: lo importante y lo que puedes hacer ===== */
+  const xChip = (attrs, label, icon) => `<button type="button" class="x-ch" ${attrs} data-stop>${icon ? I(icon, 13, 2.1) : ""}${label}</button>`;
+  const xLink = (href, label) => `<a class="x-ch" href="${href}" data-stop>${label}</a>`;
+  function hoyTile(D, name, href) {
+    const p = D.p, used = D.today.length, mx = p.maxTrades || 3, ph = D.phase;
+    const chip = ph === "antes" ? `Empieza en ${durTxt(D.a - D.now)}` : ph === "en" ? `Quedan ${durTxt(D.b - D.now)}` : "Sesión terminada";
+    const cl = closed(D.today).sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b)));
+    let cum = 0; const pts = [0].concat(cl.map(t => cum += +t.r || 0)), lo = Math.min(0, ...pts), hi = Math.max(0, ...pts), rg = (hi - lo) || 1;
+    const sp = pts.length > 1 ? `<svg class="x-sp" viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="100" y1="${(34 - (0 - lo) / rg * 32).toFixed(1)}" y2="${(34 - (0 - lo) / rg * 32).toFixed(1)}" class="z" vector-effect="non-scaling-stroke"/><polyline points="${pts.map((v, i) => `${(i / (pts.length - 1) * 100).toFixed(1)},${(34 - (v - lo) / rg * 32).toFixed(1)}`).join(" ")}" vector-effect="non-scaling-stroke"/></svg>` : "";
+    const segs = Array.from({ length: Math.max(mx, used) }, (_, i) => `<i class="${i < used ? (i >= mx ? "over" : "on") : ""}"></i>`).join("");
+    const tf = ph === "antes" ? 0 : ph === "despues" ? 1 : (D.now - D.a) / Math.max(1, D.b - D.a);
+    const nh = D.nextHigh && dayKey(D.nextHigh.ts) === todayKey() ? D.nextHigh : null;
+    return `<div class="x-h"><b class="hb-ch-n">${esc(name)}</b><span class="x-pill">${chip}</span><span style="flex:1"></span>${rbtn(href, name)}</div>
+      <div class="x-big"><div><b class="mono">${D.st.n ? fmtR(D.st.tot) : "0 R"}</b><small>${D.st.n ? D.st.n + (D.st.n === 1 ? " cerrada hoy" : " cerradas hoy") : "Aún sin operaciones hoy"}</small></div>${sp}</div>
+      <div class="x-segs" role="img" aria-label="${used} de ${mx} operaciones"><div>${segs}</div><span>${used} de ${mx} operaciones</span></div>
+      <div class="hb-sbar" role="img" aria-label="Horario ${esc(p.start)} a ${esc(p.end)}"><span>${esc(p.start)}</span><div><em style="width:${(tf * 100).toFixed(1)}%"></em></div><span>${esc(p.end)}</span></div>
+      <div class="x-line x-more">${I('<rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4"/>', 14, 1.8)}${nh ? `Noticia fuerte a las <b>${hhmm(nh.ts)}</b> · ${esc(nh.country || nh.cur || "")} ${esc(nh.title || "")}` : "Sin noticias fuertes hoy"}</div>
+      <div class="x-acts x-more">${xChip('data-act="addop"', "Añadir operación", IC.plus)}${xChip('data-act="emo"', "Registrar emoción")}${xLink("#noticias", "Noticias")}</div>`;
+  }
+  function accR(a) {
+    const L = (S.allTrades || S.trades).filter(t => a.number && String(t.account || "") === String(a.number) && t.status === "closed" && t.r != null && (!a.start || dayKey(t.open_time) >= a.start));
+    const sum = L.reduce((s, t) => s + (+t.r || 0), 0), rp = +a.risk || (S.basePlan || S.plan).riskPct || 1, tg = +a.target || 0, need = tg ? (a.targetU === "R" ? tg : tg / rp) : 0;
+    return { sum, n: L.length, need };
+  }
+  function cuentasTile(D, name, href) {
+    const A = (S.accts || []).filter(a => a.status !== "archivada"), ord = { fondeo: 0, propia: 1, demo: 2 };
+    const L = A.slice().sort((a, b) => (ord[a.type] ?? 3) - (ord[b.type] ?? 3)).slice(0, 3);
+    const TIPO = { fondeo: "Fondeo", propia: "Capital propio", demo: "Demo", otra: "Otra" }, FASE = { f1: "Fase 1", f2: "Fase 2", fin: "Financiada" };
+    const rows = L.map(a => { const x = accR(a), pr = x.need ? Math.max(0, Math.min(1, x.sum / x.need)) : null;
+      return `<div class="x-acc"><div class="x-acc-t"><b>${esc(acctName(a))}</b><span class="x-tag">${TIPO[a.type] || "Cuenta"}${a.type === "fondeo" && a.phase ? " · " + FASE[a.phase] : ""}</span><span style="flex:1"></span><span class="mono">${x.n ? fmtR(x.sum) : "—"}</span></div>${pr != null ? `<div class="x-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div><small>${Math.round(pr * 100)} % del objetivo de +${num(x.need, 1)} R</small>` : ""}</div>`; }).join("");
+    const lock = inSession(D.p);
+    return `<div class="x-h"><b class="hb-ch-n">${esc(name)}</b><span class="x-pill">${A.length} ${A.length === 1 ? "cuenta" : "cuentas"}</span><span style="flex:1"></span>${rbtn(href, name)}</div>
+      <div class="x-accs">${rows || `<p class="x-empty">Añade tu cuenta de fondeo, real o demo para ver cómo va cada una.</p>`}</div>
+      <div class="x-line x-more">${lock ? I('<rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 016 0v3"/>', 14, 1.8) + `Finanzas se abre a las <b>${esc(D.p.end)}</b>, al terminar tu horario` : I('<path d="M4 14l4-4 3 3 5-6"/>', 14, 1.8) + "Finanzas: lo que gastas y cobras con el trading"}</div>
+      <div class="x-acts x-more">${xChip('data-act="newacct"', "Añadir cuenta", IC.plus)}${lock ? "" : xChip('data-act="finmov"', "Añadir movimiento")}</div>`;
+  }
+  const DPROMPTS = ["¿Qué hiciste hoy mejor que ayer?", "¿Qué te costó más hoy y por qué?", "Una operación que repetirías mañana", "¿Qué te dirías antes de la próxima sesión?", "Lo que aprendí esta semana"];
+  function diarioTile(D, name, href) {
+    const pg = D.pages[0], n = D.pages.length, pr = DPROMPTS.at(new Date().getDate() % DPROMPTS.length), txt0 = h => { const d = document.createElement("div"); d.innerHTML = h || ""; return (d.textContent || "").trim(); };
+    const last = pg ? `<a class="x-page" href="#diario/${encodeURIComponent(pg.id)}" data-stop><b>${esc(pg.title || "Sin título")}</b><span>${esc(txt0(pg.html).slice(0, 120)) || "Página vacía"}</span><small>Editada ${ago(pg.updated)}</small></a>` : `<p class="x-empty">${S.pagesLoaded ? "Tu cuaderno está vacío. Apunta cualquier cosa: ideas, errores, lo que ves en el mercado." : "Cargando tus páginas…"}</p>`;
+    return `<div class="x-h"><b class="hb-ch-n">${esc(name)}</b>${n ? `<span class="x-pill">${n} ${n === 1 ? "página" : "páginas"}</span>` : ""}<span style="flex:1"></span>${rbtn(href, name)}</div>
+      ${last}
+      <button type="button" class="x-prompt x-more" data-act="write" data-title="${esc(pr)}" data-stop><small>Para escribir hoy</small><b>${esc(pr)}</b><span>Escribir ${I('<path d="M4 10h12M11 5l5 5-5 5"/>', 13, 2)}</span></button>`;
+  }
+  function asisTile(D, name, href) {
+    const cnt = {}; closed(S.trades).filter(t => new Date(dateOf(t)) >= Date.now() - 30 * 864e5).forEach(t => evaluate(t).fail.forEach(f => { const k = NK(f.fix); if (k) cnt[k] = (cnt[k] || 0) + 1; }));
+    const fo = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+    const qs = [fo ? `¿Por qué me cuesta «${NLAB[fo[0]].toLowerCase()}»?` : "¿Qué norma rompo más?", "¿Cómo voy esta semana?", "¿A qué hora opero mejor?", "¿Qué hago después de perder?"];
+    return `<div class="x-h"><b class="hb-ch-n as-n">${ico("asistente", 16)}${esc(name)}</b><span style="flex:1"></span>${rbtn(href, name)}</div>
+      <p class="x-desc x-more">Pregúntale por tu trading. Te contesta con tus propias operaciones, tu plan y cómo llegas cada día.</p>
+      <form class="x-ask" data-askf data-stop><input type="text" name="q" placeholder="Escribe tu pregunta…" aria-label="Pregunta para el asistente" autocomplete="off" data-stop><button type="submit" aria-label="Preguntar" data-stop>${I(IC.send, 14)}</button></form>
+      <div class="x-acts x-more">${qs.map(q => `<a class="x-ch" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}</a>`).join("")}</div>`;
   }
   /* ===== Backtesting: repetición vela a vela, tu sesión, tus números de práctica y lo que puedes hacer ===== */
   function btVis() {
