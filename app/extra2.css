@@ -1060,3 +1060,31 @@ button.mc-d:focus-visible{outline:2px solid var(--cobalto);outline-offset:1px}
 .pl-r.ok .pl-i,.pl-r.warn .pl-i{color:var(--onAccent)}
 .pl-r.warn .pl-i{color:var(--cobalto)}
 .pl-hoy em{color:var(--onAccent)}
+
+/* ===== Backtesting rediseñado ===== */
+.hb-t.t-backtest{gap:10px;color:#f2f2f3}
+.bt-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.bt-h .hb-ch-n{color:#f2f2f3}
+.bt-sub{display:block;font-size:12px;color:rgba(255,255,255,.62);margin-top:2px}
+.t-backtest .hb-go{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff}
+.bt-vis{position:relative;flex:1;min-height:64px;border-radius:12px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+.bt-vis svg{position:absolute;inset:0;width:100%;height:100%}
+.bt-vis .u line{stroke:#f2f2f3}.bt-vis .u rect{fill:#f2f2f3}
+.bt-vis .d line{stroke:rgba(255,255,255,.45)}.bt-vis .d rect{fill:rgba(255,255,255,.35)}
+.bt-vis .f line{stroke:rgba(255,255,255,.18)}.bt-vis .f rect{fill:rgba(255,255,255,.12)}
+.bt-vis .ph{stroke:#ffc478;stroke-width:1.5}
+.bt-fut{position:absolute;right:10px;top:8px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.bt-stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:rgba(255,255,255,.62)}
+.bt-stats b{color:#fff;font-weight:600}
+.bt-acts{display:flex;flex-wrap:wrap;gap:6px}
+.bt-ch{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 10px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#f2f2f3;text-decoration:none}
+.bt-ch:hover{background:rgba(255,255,255,.16)}
+.bt-ch:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.bt-tx b{font-size:14px}
+/* en la vista de cuadros (media altura) solo cabe la fila de la sesión */
+.hb-full .hb-grid.g9>.t-backtest .bt-h,.hb-full .hb-grid.g9>.t-backtest .bt-vis,.hb-full .hb-grid.g9>.t-backtest .bt-stats,.hb-full .hb-grid.g9>.t-backtest .bt-acts{display:none}
+.bt-tx b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb-full .hb-grid.g9>.t-backtest{gap:0}
+@media (max-width:760px){.bt-vis{min-height:50px}.hb-t.t-backtest{gap:8px}}
+.hb-full .hb-grid.g9>.t-backtest{padding-block:12px}
+@media (max-width:760px){.bt-sub{display:none}}

@@ -100,12 +100,7 @@
           <div class="hb-chart" data-sym="${esc(sym)}" data-tf="${esc(tf)}" role="img" aria-label="${esc(sym)}, últimas ${b.length || 48} velas de ${esc(TFL[tf] || tf)}">${body}</div>
           <div class="hb-ch-bot"><b class="hb-ch-n">${esc(name)}</b><div class="hb-step sm"><button type="button" data-tfs="-1" aria-label="Temporalidad más corta" data-stop>−</button><b class="mono">${esc(TFL[tf] || tf)}</b><button type="button" data-tfs="1" aria-label="Temporalidad más larga" data-stop>+</button></div></div>`;
       }
-      case "backtest": {
-        const i = Math.min(S.hbBt || 0, Math.max(0, D.sess.length - 1)), x = D.sess[i];
-        if (!x) return `<div class="bt-row"><button type="button" class="hb-play sm" data-btnew aria-label="Crear sesión de backtesting" data-stop>${I(IC.plus, 18, 2.2)}</button><div class="bt-tx"><b>${esc(name)}</b><small>Crea tu primera sesión</small></div></div>`;
-        const from = new Date(x.from + "T00:00").getTime(), to = new Date(x.to + "T23:59").getTime(), pr = Math.max(0, Math.min(1, ((x.lastTs || from) - from) / (to - from)));
-        return `<div class="bt-row"><button type="button" class="hb-play sm" data-btplay="${esc(x.id)}" aria-label="${x.lastTs ? "Continuar" : "Empezar"} ${esc(x.name)}" data-stop>${I('<path d="M7 4.5v11l9-5.5z"/>', 18, 2)}</button><div class="bt-tx"><b>${esc(name)}</b><small>${esc(x.name)} · ${Math.round(pr * 100)} %</small><div class="hb-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div></div>${D.sess.length > 1 ? `<button type="button" class="hb-mb sm" data-btcyc="1" aria-label="Sesión siguiente" data-stop>${I('<path d="M6 5l6 5-6 5zM14 5v10"/>', 14, 2)}</button>` : ""}</div>`;
-      }
+      case "backtest": return btTile(D, name, href);
       case "resultados": return psyTile(D, name, href);
       case "diario": {
         const pg = D.pages[0];
@@ -185,6 +180,7 @@
     q("[data-btcyc]").forEach(b => b.onclick = () => { const n = (S.bts || []).length; S.hbBt = ((S.hbBt || 0) + +b.dataset.btcyc + n) % n; re(); });
     q("[data-btplay]").forEach(b => b.onclick = () => { const x = (S.bts || []).find(y => y.id === b.dataset.btplay); if (x && BT()) BT().run(x); });
     q("[data-btnew]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer(), 60); });
+    q("[data-btnewf]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer("fondeo"), 60); });
     q("[data-ask]").forEach(a => a.onclick = () => { S.asPrefill = a.dataset.ask; });
     q("[data-repday]").forEach(b => b.onclick = () => { S.repDay = b.dataset.repday; location.hash = "#informe"; });
     q("[data-pcommit]").forEach(b => b.onclick = async () => {
@@ -201,6 +197,29 @@
       const { error } = await sb.from("docs").upsert({ user_id: S.user.id, col: "mente", id: "d" + day, data: m, updated_at: new Date().toISOString() });
       if (error) toast("No se pudo guardar tu estado");
     });
+  }
+  /* ===== Backtesting: repetición vela a vela, tu sesión, tus números de práctica y lo que puedes hacer ===== */
+  function btVis() {
+    const c = (S.hbBars || {})[chartSym() + "|" + lsGet("tk-tf", "5m")];
+    let b = c && c.b && c.b.length > 20 ? c.b.slice(-40) : null;
+    if (!b) { let p = 100; b = Array.from({ length: 40 }, (_, i) => { const o = p, cl = o + Math.sin(i / 3.1) * 1.6 + Math.cos(i / 1.7) * 1.1; p = cl; return { open: o, close: cl, high: Math.max(o, cl) + .7 + (i % 3) * .3, low: Math.min(o, cl) - .7 - (i % 4) * .25 }; }); }
+    const W = 400, H = 90, n = b.length, cut = Math.round(n * .62), lo = Math.min(...b.map(x => x.low)), hi = Math.max(...b.map(x => x.high)), rg = (hi - lo) || 1, st = W / n, bw = Math.max(2, st * .58), y = v => (H - 6 - (v - lo) / rg * (H - 12)).toFixed(1), px = (cut * st).toFixed(1);
+    const cs = b.map((x, i) => { const cx = (i + .5) * st, up = x.close >= x.open, t = y(Math.max(x.open, x.close)), bo = y(Math.min(x.open, x.close));
+      return `<g class="${i < cut ? (up ? "u" : "d") : "f"}"><line x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${y(x.high)}" y2="${y(x.low)}" vector-effect="non-scaling-stroke"/><rect x="${(cx - bw / 2).toFixed(1)}" y="${t}" width="${bw.toFixed(1)}" height="${Math.max(1, bo - t).toFixed(1)}"/></g>`; }).join("");
+    return `<div class="bt-vis" aria-hidden="true"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><linearGradient id="btfut" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".25" stop-color="#000" stop-opacity=".55"/></linearGradient></defs>${cs}<rect x="${px}" y="0" width="${(W - px).toFixed(1)}" height="${H}" fill="url(#btfut)"/><line class="ph" x1="${px}" x2="${px}" y1="0" y2="${H}" vector-effect="non-scaling-stroke"/></svg><span class="bt-fut">Aún oculto</span></div>`;
+  }
+  function btTile(D, name, href) {
+    const i = Math.min(S.hbBt || 0, Math.max(0, D.sess.length - 1)), x = D.sess[i];
+    const L = typeof simAll === "function" ? simAll() : [], st = tradeStats(L);
+    const stats = st.n ? `<span><b class="mono">${st.n}</b> ${st.n === 1 ? "operación" : "operaciones"}</span><span><b class="mono">${Math.round(st.win)} %</b> acierto</span><span><b class="mono">${fmtR(st.tot)}</b> en práctica</span>` : `<span>Aún sin operaciones de práctica</span>`;
+    let row;
+    if (x) {
+      const from = new Date(x.from + "T00:00").getTime(), to = new Date(x.to + "T23:59").getTime(), pr = Math.max(0, Math.min(1, ((x.lastTs || from) - from) / (to - from)));
+      row = `<div class="bt-row"><button type="button" class="hb-play sm" data-btplay="${esc(x.id)}" aria-label="${x.lastTs ? "Continuar" : "Empezar"} ${esc(x.name)}" data-stop>${I('<path d="M7 4.5v11l9-5.5z"/>', 18, 2)}</button><div class="bt-tx"><b>${x.lastTs ? "Continuar" : "Empezar"} · ${esc(x.name)}</b><small>${esc((x.syms || []).join(", ") || "")}${x.mode === "fondeo" ? " · Reto de fondeo" : ""} · ${Math.round(pr * 100)} % recorrido</small><div class="hb-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div></div>${D.sess.length > 1 ? `<button type="button" class="hb-mb sm" data-btcyc="1" aria-label="Sesión siguiente" data-stop>${I('<path d="M6 5l6 5-6 5zM14 5v10"/>', 14, 2)}</button>` : ""}</div>`;
+    } else row = `<div class="bt-row"><button type="button" class="hb-play sm" data-btnew aria-label="Crear sesión de backtesting" data-stop>${I(IC.plus, 18, 2.2)}</button><div class="bt-tx"><b>Empieza tu primera sesión</b><small>Elige mercado y fechas y avanza vela a vela</small></div></div>`;
+    return `<div class="bt-h"><div><b class="hb-ch-n">${esc(name)}</b><small class="bt-sub">Repite el mercado vela a vela, sin arriesgar dinero</small></div>${rbtn(href, name)}</div>
+      ${btVis()}${row}<div class="bt-stats">${stats}</div>
+      <div class="bt-acts"><button type="button" class="bt-ch" data-btnew data-stop>${I(IC.plus, 13, 2.2)} Nueva sesión</button><button type="button" class="bt-ch" data-btnewf data-stop>${I(IC.trophy, 13, 2)} Reto de fondeo</button><a class="bt-ch" href="#btanalisis" data-stop>Ver análisis</a></div>`;
   }
   /* ===== Psicología: cómo llegas hoy, un consejo con estudio detrás y tu propio patrón ===== */
   const MDIM = [["r", "Descanso"], ["c", "Calma"], ["f", "Enfoque"]];
