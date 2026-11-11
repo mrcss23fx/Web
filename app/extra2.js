@@ -78,7 +78,8 @@
     rendimiento: "Todos tus números en R", progreso: "Cuánto cumples tu plan y qué normas rompes", emociones: "Qué emociones te ayudan y cuáles te cuestan", historial: "Todas tus operaciones en una tabla", calendario: "Tu resultado de cada día; toca uno para ver su informe",
     diario: "Tus páginas", cuentas: "Demo, fondeo y capital propio", finanzas: "Lo que pagas y cobras", asistente: "Pregunta por tus números"
   };
-  const appHref = k => { const a = appDef(k); return a[2].length > 1 ? "#app/" + k : "#" + a[2][0][0]; };
+  const MAINV = { calendario: "calendario" };
+  const appHref = k => "#" + (MAINV[k] || appDef(k)[2][0][0]);
   const rbtn = (href, label) => `<a class="hb-go" href="${href}" aria-label="Entrar en ${esc(label)}" title="Entrar en ${esc(label)}" data-stop>${I(ARW, 16, 2)}</a>`;
   const tFoot = (name, sub, href) => `<div class="hb-tf"><span><b>${esc(name)}</b><small>${sub}</small></span>${rbtn(href, name)}</div>`;
   function appTile(k, D) {
@@ -92,9 +93,11 @@
           ${tFoot(name, (D.st.n ? fmtR(D.st.tot) + " · " : "") + used + " de " + mx + " operaciones" + (D.nextHigh && dayKey(D.nextHigh.ts) === todayKey() ? " · noticia " + hhmm(D.nextHigh.ts) : ""), href)}`;
       }
       case "analizar": {
-        const sym = (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD", tf = lsGet("tk-tf", "5m");
-        return `<div class="hb-w"><span class="hb-cats-n">Se abre en</span><div class="hb-step"><button type="button" data-tfs="-1" aria-label="Temporalidad más corta" data-stop>−</button><b class="mono">${esc(TFL[tf] || tf)}</b><button type="button" data-tfs="1" aria-label="Temporalidad más larga" data-stop>+</button></div></div>
-          ${tFoot(name, esc(sym) + " · gráfico en directo", href)}`;
+        const sym = chartSym(), tf = lsGet("tk-tf", "5m"), c = (S.hbBars || {})[sym + "|" + tf], b = c && c.b || [];
+        const last = b.length ? b[b.length - 1].close : null, f = b.length ? b[0].open : null, chg = last != null && f ? (last - f) / f * 100 : null, dg = c && c.d != null ? c.d : 2;
+        const body = b.length ? miniCandles(b) : `<div class="hb-chart-ph">${c && c.err ? "El gráfico no responde ahora" : "Cargando gráfico…"}</div>`;
+        return `<div class="hb-ch-top"><b class="hb-ch-n">${esc(name)}</b><span class="hb-sym">${esc(sym)}</span>${last != null ? `<b class="mono">${last.toFixed(dg).replace(".", ",")}</b><em class="mono ${chg >= 0 ? "up" : "dn"}">${chg >= 0 ? "+" : "−"}${num(Math.abs(chg), 2)} %</em>` : ""}<span style="flex:1"></span><div class="hb-step sm"><button type="button" data-tfs="-1" aria-label="Temporalidad más corta" data-stop>−</button><b class="mono">${esc(TFL[tf] || tf)}</b><button type="button" data-tfs="1" aria-label="Temporalidad más larga" data-stop>+</button></div>${rbtn(href, name)}</div>
+          <div class="hb-chart" data-sym="${esc(sym)}" data-tf="${esc(tf)}" role="img" aria-label="${esc(sym)}, últimas ${b.length || 60} velas de ${esc(TFL[tf] || tf)}">${body}</div>`;
       }
       case "backtest": {
         const i = Math.min(S.hbBt || 0, Math.max(0, D.sess.length - 1)), x = D.sess[i];
@@ -122,15 +125,20 @@
         return `<div class="hb-w"><a class="hb-q" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 14)}</span></a></div>${tFoot(name, "Pregunta por tus números", href)}`;
       }
       case "calendario": {
-        const nw = new Date(), y = nw.getFullYear(), m = nw.getMonth(), off = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate(), sum = {};
-        closed(S.trades).forEach(t => { const d = new Date(dateOf(t)); if (d.getFullYear() === y && d.getMonth() === m) sum[d.getDate()] = (sum[d.getDate()] || 0) + (+t.r || 0); });
-        const vals = Object.values(sum), tot = vals.reduce((a, b) => a + b, 0), pd = vals.filter(v => v > 0).length, nd = vals.filter(v => v < 0).length;
-        const mes = nw.toLocaleDateString("es-ES", { month: "long" });
-        let cells = "";
-        for (let i = 0; i < off; i++) cells += '<i class="bl"></i>';
-        for (let d = 1; d <= dim; d++) cells += `<i class="${sum[d] > 0 ? "p" : sum[d] < 0 ? "n" : sum[d] === 0 ? "z" : d > nw.getDate() ? "f" : ""}${d === nw.getDate() ? " hoy" : ""}"></i>`;
-        return `<div class="hb-w">${cats}<div class="hb-mcal" role="img" aria-label="${cap(mes)}: ${pd} días en verde y ${nd} en rojo">${cells}</div></div>
-          ${tFoot(name, vals.length ? cap(mes) + ": " + fmtR(tot) + " · " + pd + " en verde, " + nd + " en rojo" : cap(mes) + " · aún sin días operados", href)}`;
+        const nw = new Date(), y = nw.getFullYear(), m = nw.getMonth(), off = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate(), by = {};
+        closed(S.trades).forEach(t => { const d = new Date(dateOf(t)); if (d.getFullYear() === y && d.getMonth() === m) (by[d.getDate()] = by[d.getDate()] || []).push(t); });
+        const st = {}; Object.keys(by).forEach(d => { st[d] = tradeStats(by[d]); });
+        const vals = Object.values(st), tot = vals.reduce((a, s) => a + s.tot, 0), pd = vals.filter(s => s.tot > 0).length, nd = vals.filter(s => s.tot < 0).length, mx = Math.max(.5, ...vals.map(s => Math.abs(s.tot)));
+        let cells = ["L", "M", "X", "J", "V", "S", "D"].map(d => `<span class="mc-wd">${d}</span>`).join("");
+        for (let i = 0; i < off; i++) cells += '<span class="mc-d bl"></span>';
+        for (let d = 1; d <= dim; d++) {
+          const s = st[d], k = dayKey(new Date(y, m, d)), td = d === nw.getDate() ? " hoy" : "", we = (off + d - 1) % 7 >= 5 ? " we" : "";
+          cells += s ? `<button type="button" class="mc-d ${s.tot > 0 ? "p" : s.tot < 0 ? "n" : "z"}${td}" style="--a:${(.3 + Math.min(1, Math.abs(s.tot) / mx) * .6).toFixed(2)}" data-repday="${k}" data-stop aria-label="${d}: ${fmtR(s.tot)}. Ver informe del día" title="${fmtR(s.tot)} · ${s.n} op.">${d}</button>`
+            : `<span class="mc-d${d > nw.getDate() ? " f" : ""}${we}${td}">${d}</span>`;
+        }
+        return `<div class="hb-mc-h"><b>${cap(nw.toLocaleDateString("es-ES", { month: "long", year: "numeric" }))}</b>${vals.length ? `<span class="mono ${tot > 0 ? "cpos" : tot < 0 ? "cneg" : ""}">${fmtR(tot)}</span>` : ""}</div>
+          <div class="hb-mc">${cells}</div>
+          ${tFoot(name, vals.length ? pd + (pd === 1 ? " día" : " días") + " en verde · " + nd + " en rojo" : "Aún sin días operados este mes", href)}`;
       }
       case "plan": {
         return `<div class="hb-w"><div class="hb-chips"><span>Máx. ${p.maxTrades} op.</span><span>${esc(p.start)}–${esc(p.end)}</span><span>Límite ${num(p.dayLimitR, 1)} R</span>${p.riskPct != null ? `<span>Riesgo ${num(p.riskPct, 2).replace(/,?0+$/, "")} %</span>` : ""}</div></div>
@@ -185,6 +193,26 @@
     q("[data-btplay]").forEach(b => b.onclick = () => { const x = (S.bts || []).find(y => y.id === b.dataset.btplay); if (x && BT()) BT().run(x); });
     q("[data-btnew]").forEach(b => b.onclick = () => { location.hash = "#backtest"; setTimeout(() => BT() && BT().drawer(), 60); });
     q("[data-ask]").forEach(a => a.onclick = () => { S.asPrefill = a.dataset.ask; });
+    q("[data-repday]").forEach(b => b.onclick = () => { S.repDay = b.dataset.repday; location.hash = "#informe"; });
+  }
+  /* gráfico del cuadro: velas reales de los últimos minutos, en azul y gris */
+  const chartSym = () => (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD";
+  function miniCandles(b) {
+    const W = 600, H = 200, n = b.length, lo = Math.min(...b.map(x => x.low)), hi = Math.max(...b.map(x => x.high)), rg = (hi - lo) || 1, step = W / n, bw = Math.max(1.5, step * .62);
+    const y = v => (H - 6 - (v - lo) / rg * (H - 12)).toFixed(1), last = b[n - 1].close;
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><line class="lp" x1="0" x2="${W}" y1="${y(last)}" y2="${y(last)}" vector-effect="non-scaling-stroke"/>${b.map((x, i) => { const cx = (i + .5) * step, up = x.close >= x.open, t = y(Math.max(x.open, x.close)), bt = y(Math.min(x.open, x.close));
+      return `<g class="${up ? "u" : "d"}"><line x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${y(x.high)}" y2="${y(x.low)}" vector-effect="non-scaling-stroke"/><rect x="${(cx - bw / 2).toFixed(1)}" y="${t}" width="${bw.toFixed(1)}" height="${Math.max(1, bt - t).toFixed(1)}"/></g>`; }).join("")}</svg>`;
+  }
+  async function loadMini(force) {
+    const el = document.querySelector(".hb-chart"); if (!el || !window.TkChart || !TkChart.bars) return;
+    const sym = el.dataset.sym, tf = el.dataset.tf, key = sym + "|" + tf; S.hbBars = S.hbBars || {};
+    const c = S.hbBars[key]; if (c && !force && Date.now() - c.t < 60000) return;
+    if (S.hbLoading === key) return; S.hbLoading = key;
+    try { const r = await TkChart.bars(sym, tf, { invoke: (n, body) => sb.functions.invoke(n, { body }) }); S.hbBars[key] = { t: Date.now(), b: (r.bars || []).slice(-60), d: TkChart.digits ? TkChart.digits(sym) : 2 }; }
+    catch (e) { S.hbBars[key] = { t: Date.now() - 45000, b: c ? c.b : [], d: c ? c.d : 2, err: !c }; }
+    finally { S.hbLoading = null; }
+    const t = document.querySelector('.hb-t[data-hc="analizar"]:not(.sel)');
+    if (t && t.querySelector(".hb-chart")) { t.innerHTML = appTile("analizar", hData()); bindWidgets(t); }
   }
   function bindTiles() {
     $$("[data-href]").forEach(el => {
@@ -194,6 +222,8 @@
       el.addEventListener("keydown", e => { if (e.target === el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); act(true); } });
     });
     bindWidgets(document);
+    loadMini();
+    if (!window.__tkMini) { window.__tkMini = setInterval(() => { if (document.visibilityState === "visible") loadMini(); }, 60000); }
     if (!window.__tkSel) {
       window.__tkSel = true;
       document.addEventListener("click", e => { if (S.hcSel && !e.composedPath().some(n => n.dataset && n.dataset.hc)) selTile(null); });
@@ -228,7 +258,7 @@
       loadAll();
       const D = hData(), first = esc((S.name || "").split(" ")[0] || "trader");
       setTimeout(() => { S.hbAnim = true; }, 600);
-      return `<div class="hb hb-full">
+      return `<div class="hb hb-full${HAPPS.filter(k => appDef(k)).length === 9 ? " bento" : ""}">
         <section class="hb-l">${metaRow(D)}
           <h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1>
           <div class="hb-grid${HAPPS.filter(k => appDef(k)).length === 9 ? " g9" : ""}${S.hcSel ? " has" : ""}">${HAPPS.filter(k => appDef(k)).map(k => { const on = S.hcSel === k; return `<div class="hb-t t-${k} ${S.hbAnim ? "noanim" : ""}${on ? " sel" : ""}" role="button" tabindex="0" data-hc="${k}" data-href="${appHref(k)}" aria-expanded="${on}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${on ? calmOpen(k, D) : appTile(k, D)}</div>`; }).join("")}</div>
@@ -303,7 +333,7 @@
   /* ======================= RUTA, PESTAÑAS Y BOTÓN + ======================= */
   window.tkCrumb = function (view) {
     const app = appOf(view === "op" ? "historial" : view), many = app && app[2].length > 1;
-    const back = view === "informe" ? ["#calendario", "Calendario"] : !app ? ["#inicio", "Inicio"] : many && view !== "op" ? ["#app/" + app[0], app[1]] : view === "op" ? ["#historial", "Operaciones"] : ["#inicio", "Inicio"];
+    const back = view === "informe" ? ["#calendario", "Calendario"] : !app ? ["#inicio", "Inicio"] : view === "op" ? ["#historial", "Operaciones"] : ["#inicio", "Inicio"];
     return `<div class="pgbar"><a class="hb-back" href="${back[0]}">${I('<path d="M12 5l-5 5 5 5"/>', 16, 2.2)} ${esc(back[1])}</a>
       ${many && view !== "op" ? `<nav class="pgtabs" aria-label="${esc(app[1])}">${app[2].map(([k, l]) => `<a href="#${k}" ${k === view ? 'aria-current="page"' : ""}>${ico(k, 16)}<span>${esc(l)}</span></a>`).join("")}</nav>` : `<span class="pgtabs-sp"></span>`}
       <div class="xpop pgadd"><button type="button" class="hbtb" data-plus aria-haspopup="true" aria-expanded="false" title="Crear" aria-label="Crear">${I(IC.plus, 18, 2.2)}</button><div class="xpopm right" id="plusM" hidden>${actions().slice(0, 5).map((a, i) => `<button type="button" class="xpopb" data-pa="${i}">${esc(a[0])}</button>`).join("")}</div></div></div>`;
@@ -506,7 +536,7 @@
     const wkRows = W.map(x => `<tr><td><b>Semana ${x.w}</b></td><td class="mono">${x.st.n || "—"}</td><td class="mono">${x.st.win == null ? "—" : num(x.st.win, 0) + " %"}</td><td class="mono">${x.st.avgW != null ? fmtR(x.st.avgW) : "—"}</td><td class="mono">${x.st.avgL != null ? fmtR(x.st.avgL) : "—"}</td><td>${x.st.n ? cR(x.st.tot) : "—"}</td></tr>`).join("");
     return `<div class="card stack calcard" style="gap:16px"><div class="calh"><div><div class="calbig">${mst.n ? cR(mst.tot) : `<b class="mono">0,0 R</b>`}</div><div class="small muted">${cap(MESES_L[st.m])} de ${st.y} · ${inMonth.length} días operados · <span class="cpos">${pos} positivos</span>, <span class="cneg">${neg} negativos</span></div></div>
         <div class="row" style="gap:8px;flex-wrap:wrap">${src}${modeB}<div class="calnav"><button type="button" class="xpb" data-cnav="-1" aria-label="Mes anterior">${I(IC.left, 16, 2)}</button><b>${cap(MESES_L[st.m])} ${st.y}</b><button type="button" class="xpb" data-cnav="1" aria-label="Mes siguiente">${I(IC.right, 16, 2)}</button></div><button type="button" class="btn2" data-ctoday style="height:34px">Hoy</button></div></div>
-      <div class="calwrap"><div class="calgrid big">${grid}</div></div>${leg}</div>
+      <div class="calwrap"><div class="calgrid big" style="--wk:${weeks}">${grid}</div></div>${leg}</div>
       <div class="card stack" style="gap:10px"><h2 class="h2b">Resumen por semanas</h2><div class="xtablewrap"><table class="xtable"><thead><tr><th>Semana</th><th>Operaciones</th><th>Acierto</th><th>Ganancia media</th><th>Pérdida media</th><th>Resultado</th></tr></thead><tbody>${wkRows}</tbody></table></div></div>`;
   }
   function bindCal(key, onDay) {

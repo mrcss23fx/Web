@@ -706,7 +706,6 @@ a.dp-op:hover{border-color:var(--cobalto)}
 /* ===== portada con 9 cuadros (3 × 3) y mini calendario ===== */
 .hb-full .hb-grid.g9{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (min-width:1024px) and (min-height:700px){.hb-full .hb-grid.g9{grid-auto-rows:minmax(170px,calc((100vh - 330px)/3))}}
-@media (max-width:1023px){.hb-full .hb-grid.g9{grid-template-columns:repeat(2,minmax(0,1fr))}.hb-full .hb-grid.g9>.hb-t:last-child:nth-child(odd){grid-column:1/-1}}
 .hb-mcal{display:grid;grid-template-columns:repeat(7,12px);gap:4px;align-self:flex-start}
 .hb-mcal i{width:12px;height:12px;border-radius:3px;background:var(--hb-track)}
 .hb-mcal i.f{opacity:.45}
@@ -721,4 +720,69 @@ a.dp-op:hover{border-color:var(--cobalto)}
 .hb-full .hb-grid.g9 .hb-big b{font-size:30px}
 .hb-full .hb-grid.g9 .hb-w{gap:8px}
 @media (min-width:1024px){.hb-full .hb-grid.g9{grid-auto-rows:minmax(max(150px,calc((100vh - 348px)/3)),auto)}}
-@media (max-width:1023px){.hbshell .hb-full .hb-grid.g9>.hb-t:last-child:nth-child(odd){grid-column:1/-1!important}}
+
+/* ===== portada por tamaños: cada cuadro con su sitio ===== */
+.hb-full .hb-grid.g9{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"hoy graf graf cal" "psi dia cue cal" "plan asis bt bt"}
+.hbshell .hb-full .hb-grid.g9>.t-hoy{grid-area:hoy!important}
+.hbshell .hb-full .hb-grid.g9>.t-analizar{grid-area:graf!important}
+.hbshell .hb-full .hb-grid.g9>.t-calendario{grid-area:cal!important}
+.hbshell .hb-full .hb-grid.g9>.t-resultados{grid-area:psi!important}
+.hbshell .hb-full .hb-grid.g9>.t-diario{grid-area:dia!important}
+.hbshell .hb-full .hb-grid.g9>.t-cartera{grid-area:cue!important}
+.hbshell .hb-full .hb-grid.g9>.t-plan{grid-area:plan!important}
+.hbshell .hb-full .hb-grid.g9>.t-asistente{grid-area:asis!important}
+.hbshell .hb-full .hb-grid.g9>.t-backtest{grid-area:bt!important}
+@media (max-width:1023px){
+  .hb-full .hb-grid.g9{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"hoy psi" "graf graf" "cal cal" "dia cue" "bt bt" "plan asis";grid-auto-rows:auto}
+  .hb-full .hb-grid.g9>.t-analizar{min-height:210px}
+}
+/* gráfico */
+.hb-t.t-analizar{gap:8px}
+.hb-ch-top{display:flex;align-items:center;gap:10px;min-width:0}
+.hb-sym{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--hb-ink2);background:var(--hb-t2);border:1px solid var(--hb-line);padding:3px 9px;border-radius:99px;white-space:nowrap}
+.hb-ch-top b{font-size:17px;color:var(--hb-ink);white-space:nowrap}
+.hb-ch-top em{font-style:normal;font-size:12.5px;font-weight:600;white-space:nowrap}
+.hb-ch-top em.up{color:var(--cobalto)}
+.hb-ch-top em.dn{color:var(--hb-ink2)}
+.hb-step.sm{gap:2px;padding:2px;border-radius:99px}
+.hb-step.sm b{font-size:13px;min-width:46px;text-align:center}
+.hb-step.sm button{width:26px;height:26px;font-size:15px}
+.hb-chart{flex:1;min-height:70px;position:relative;border-radius:12px;overflow:hidden}
+.hb-chart svg{position:absolute;inset:0;width:100%;height:100%}
+.hb-chart .u line{stroke:var(--cobalto);stroke-width:1}
+.hb-chart .u rect{fill:var(--cobalto)}
+.hb-chart .d line{stroke:color-mix(in srgb,var(--hb-ink2) 70%,transparent);stroke-width:1}
+.hb-chart .d rect{fill:color-mix(in srgb,var(--hb-ink2) 55%,transparent)}
+.hb-chart .lp{stroke:var(--cobalto);stroke-width:1;stroke-dasharray:3 4;opacity:.55}
+.hb-chart-ph{position:absolute;inset:0;display:grid;place-items:center;font-size:12.5px;color:var(--hb-ink2);background:repeating-linear-gradient(90deg,transparent 0 22px,var(--hb-track) 22px 23px);border-radius:12px}
+/* calendario del cuadro */
+.hb-t.t-calendario{gap:10px}
+.hb-mc-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.hb-mc-h b{font-size:15px;color:var(--hb-ink)}
+.hb-mc-h span{font-size:14px;font-weight:700}
+.hb-mc{flex:1;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:1fr;gap:4px;min-height:0}
+.mc-wd{font-size:10.5px;font-weight:600;color:var(--hb-ink2);text-align:center;align-self:end;padding-bottom:2px}
+.mc-d{all:unset;box-sizing:border-box;display:grid;place-items:center;border-radius:8px;font-size:12px;font-variant-numeric:tabular-nums;color:var(--hb-ink);background:var(--hb-t2);border:1px solid transparent;min-height:22px}
+.mc-d.bl{visibility:hidden}
+.mc-d.we{opacity:.45}
+.mc-d.f{color:var(--hb-ink2);background:transparent;border-color:var(--hb-line)}
+.mc-d.p{background:color-mix(in srgb,var(--pos) calc(var(--a)*100%),var(--hb-t2));color:#fff;font-weight:700;cursor:pointer}
+.mc-d.n{background:color-mix(in srgb,var(--neg) calc(var(--a)*100%),var(--hb-t2));color:#fff;font-weight:700;cursor:pointer}
+.mc-d.z{background:color-mix(in srgb,var(--hb-ink) 22%,transparent);cursor:pointer}
+.mc-d.hoy{box-shadow:0 0 0 2px var(--cobalto)}
+button.mc-d:hover{filter:brightness(1.08);transform:translateY(-1px)}
+button.mc-d:focus-visible{outline:2px solid var(--cobalto);outline-offset:1px}
+@media (max-width:1023px){.hb-mc{grid-auto-rows:34px}}
+/* calendario de la página: llena la pantalla */
+@media (min-width:1024px) and (min-height:700px){.calgrid.big .calc{min-height:max(76px,calc((100vh - 410px - (var(--wk,6) - 1) * 8px) / var(--wk,6)))}}
+@media (min-width:1024px){
+  .hb-full.bento .hb-hi{font-size:clamp(26px,2.4vw,34px)}
+  .hb-full .hb-grid.g9>.hb-t{padding:14px;gap:8px}
+  .hb-full .hb-grid.g9{gap:14px}
+  .hb-full .hb-grid.g9{grid-auto-rows:minmax(max(150px,calc((100vh - 330px)/3)),auto)}
+}
+.hb-full .hb-grid.g9 .hb-chart{min-height:48px}
+.hb-ch-n{font-size:17px!important;font-weight:700;margin-right:2px}
+.hb-ch-top .hb-go{flex:none}
+.hb-full .hb-grid.g9 .t-analizar .hb-chart{min-height:90px}
+@media (max-width:560px){.hb-ch-top .hb-step,.hb-ch-top .hb-sym{display:none}.hb-ch-top{gap:8px}}

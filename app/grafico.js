@@ -1629,5 +1629,7 @@
     const last = b[b.length - 1], prev = b.length > 1 ? b[b.length - 2].close : last.open;
     return { last: last.close, chg: prev ? (last.close - prev) / prev * 100 : null };
   }
-  window.TkChart = { mount, destroy, quote, sources: { binance, publico }, get current() { return inst; }, get all() { return Array.from(ALL); } };
+  /* velas sueltas para el cuadro de la portada */
+  function bars(sym, tf, o) { o = o || {}; const prov = binSym(sym) ? binance() : publico(o.invoke, o.digits != null ? o.digits : guessDigits(sym)); return prov.bars(sym, tf, null); }
+  window.TkChart = { mount, destroy, quote, bars, digits: guessDigits, sources: { binance, publico }, get current() { return inst; }, get all() { return Array.from(ALL); } };
 })();
