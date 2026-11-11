@@ -6,7 +6,7 @@
   const A = window.TKAPP;
   const { S, sb, esc, SVG, fmtR, num, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, lsGet, lsSet, acctName, selAcct, FEELS, greet, money, inSession, MESES_L, NAV_APPS, appOf, ico, isDark } = A;
   const V = window.TK_VIEWS;
-  if (!(NAV_APPS || []).some(a => a[0] === "resultados")) {
+  if (!(NAV_APPS || []).some(a => a[0] === "calendario")) {
     let tried = false; try { tried = sessionStorage.getItem("tk-fresh") === "1"; sessionStorage.setItem("tk-fresh", "1"); } catch (e) {}
     if (!tried) { location.replace(location.pathname + "?r=" + Date.now() + location.hash); return; }
   } else { try { sessionStorage.removeItem("tk-fresh"); } catch (e) {} }
@@ -58,13 +58,14 @@
     return { today, st, p, C90, s90, good, nextHigh: ev && ev.find(e => e.impact === "High"), todayEv, sess, pages, phase, a, b, now };
   }
   /* portada: 8 aplicaciones en cuadros vivos; al entrar en una ves sus categorías */
-  const HAPPS = ["hoy", "analizar", "backtest", "resultados", "diario", "cartera", "plan", "asistente"];
+  const HAPPS = ["hoy", "analizar", "backtest", "resultados", "diario", "cartera", "plan", "asistente", "calendario"];
   const appDef = k => NAV_APPS.find(a => a[0] === k);
   const APPDESC = {
     hoy: "Tu sesión de hoy: lo que llevas, tus límites, tu horario y las noticias.",
     analizar: "El gráfico en directo con todas tus herramientas.",
     backtest: "Practica con el mercado real, vela a vela, en sesiones o retos de fondeo.",
-    resultados: "Cómo te va: tus números, tu disciplina, tus emociones y cada operación.",
+    resultados: "Cómo te va por dentro: tus números, tu disciplina y tus emociones.",
+    calendario: "Tus días en verde y rojo, el informe de cada día y todas tus operaciones.",
     diario: "Tu cuaderno para apuntarlo todo.",
     cartera: "Tus cuentas de demo, fondeo y capital propio, y lo que gastas y cobras.",
     plan: "Tus normas, tus límites y tu horario.",
@@ -105,7 +106,7 @@
       case "resultados": {
         const pc = D.C90.length ? Math.round(D.good / D.C90.length * 100) : null;
         return `<div class="hb-w">${cats}<div class="hb-ban">${pc == null ? "Aún sin operaciones" : pc >= 80 ? "Proceso sólido" : pc >= 60 ? "Vas por buen camino" : "Revisa tus normas"}</div><div class="hb-big"><span class="hb-bl">Dentro del plan</span><b class="mono">${pc == null ? "—" : pc}</b><small>${pc == null ? "" : "%"}</small></div></div>
-          ${tFoot(name, D.s90.n ? fmtR(D.s90.tot) + " en 90 días" : "Rendimiento, progreso y emociones", href)}`;
+          ${tFoot(name, D.s90.n ? fmtR(D.s90.tot) + " en 90 días" : "Rendimiento, disciplina y emociones", href)}`;
       }
       case "diario": {
         const pg = D.pages[0];
@@ -119,6 +120,17 @@
       case "asistente": {
         const q = ["¿A qué hora opero mejor?", "¿Qué norma rompo más?", "¿Cómo voy esta semana?", "¿Cuál es mi mejor mercado?"][new Date().getDate() % 4];
         return `<div class="hb-w"><a class="hb-q" href="#asistente" data-ask="${esc(q)}" data-stop>${esc(q)}<span>${I(IC.send, 14)}</span></a></div>${tFoot(name, "Pregunta por tus números", href)}`;
+      }
+      case "calendario": {
+        const nw = new Date(), y = nw.getFullYear(), m = nw.getMonth(), off = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate(), sum = {};
+        closed(S.trades).forEach(t => { const d = new Date(dateOf(t)); if (d.getFullYear() === y && d.getMonth() === m) sum[d.getDate()] = (sum[d.getDate()] || 0) + (+t.r || 0); });
+        const vals = Object.values(sum), tot = vals.reduce((a, b) => a + b, 0), pd = vals.filter(v => v > 0).length, nd = vals.filter(v => v < 0).length;
+        const mes = nw.toLocaleDateString("es-ES", { month: "long" });
+        let cells = "";
+        for (let i = 0; i < off; i++) cells += '<i class="bl"></i>';
+        for (let d = 1; d <= dim; d++) cells += `<i class="${sum[d] > 0 ? "p" : sum[d] < 0 ? "n" : sum[d] === 0 ? "z" : d > nw.getDate() ? "f" : ""}${d === nw.getDate() ? " hoy" : ""}"></i>`;
+        return `<div class="hb-w">${cats}<div class="hb-mcal" role="img" aria-label="${cap(mes)}: ${pd} días en verde y ${nd} en rojo">${cells}</div></div>
+          ${tFoot(name, vals.length ? cap(mes) + ": " + fmtR(tot) + " · " + pd + " en verde, " + nd + " en rojo" : cap(mes) + " · aún sin días operados", href)}`;
       }
       case "plan": {
         return `<div class="hb-w"><div class="hb-chips"><span>Máx. ${p.maxTrades} op.</span><span>${esc(p.start)}–${esc(p.end)}</span><span>Límite ${num(p.dayLimitR, 1)} R</span>${p.riskPct != null ? `<span>Riesgo ${num(p.riskPct, 2).replace(/,?0+$/, "")} %</span>` : ""}</div></div>
@@ -219,7 +231,7 @@
       return `<div class="hb hb-full">
         <section class="hb-l">${metaRow(D)}
           <h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1>
-          <div class="hb-grid${S.hcSel ? " has" : ""}">${HAPPS.filter(k => appDef(k)).map(k => { const on = S.hcSel === k; return `<div class="hb-t t-${k} ${S.hbAnim ? "noanim" : ""}${on ? " sel" : ""}" role="button" tabindex="0" data-hc="${k}" data-href="${appHref(k)}" aria-expanded="${on}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${on ? calmOpen(k, D) : appTile(k, D)}</div>`; }).join("")}</div>
+          <div class="hb-grid${HAPPS.filter(k => appDef(k)).length === 9 ? " g9" : ""}${S.hcSel ? " has" : ""}">${HAPPS.filter(k => appDef(k)).map(k => { const on = S.hcSel === k; return `<div class="hb-t t-${k} ${S.hbAnim ? "noanim" : ""}${on ? " sel" : ""}" role="button" tabindex="0" data-hc="${k}" data-href="${appHref(k)}" aria-expanded="${on}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${on ? calmOpen(k, D) : appTile(k, D)}</div>`; }).join("")}</div>
         </section></div>`;
     },
     bind() { bindTiles(); }

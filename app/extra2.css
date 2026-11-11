@@ -702,3 +702,23 @@ a.dp-op:hover{border-color:var(--cobalto)}
 @keyframes hcFade{from{opacity:0}to{opacity:1}}
 @media (max-width:760px){.hc-c em{display:none}.hc-n{font-size:15px}}
 @media (prefers-reduced-motion:reduce){.hb-t,.hc-in{transition:none;animation:none}}
+
+/* ===== portada con 9 cuadros (3 × 3) y mini calendario ===== */
+.hb-full .hb-grid.g9{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (min-width:1024px) and (min-height:700px){.hb-full .hb-grid.g9{grid-auto-rows:minmax(170px,calc((100vh - 330px)/3))}}
+@media (max-width:1023px){.hb-full .hb-grid.g9{grid-template-columns:repeat(2,minmax(0,1fr))}.hb-full .hb-grid.g9>.hb-t:last-child:nth-child(odd){grid-column:1/-1}}
+.hb-mcal{display:grid;grid-template-columns:repeat(7,12px);gap:4px;align-self:flex-start}
+.hb-mcal i{width:12px;height:12px;border-radius:3px;background:var(--hb-track)}
+.hb-mcal i.f{opacity:.45}
+.hb-mcal i.bl{visibility:hidden}
+.hb-mcal i.p{background:var(--pos)}
+.hb-mcal i.n{background:var(--neg)}
+.hb-mcal i.z{background:color-mix(in srgb,var(--hb-ink) 35%,transparent)}
+.hb-mcal i.hoy{outline:1.5px solid var(--hb-ink);outline-offset:1px}
+.hb-full .hb-grid.g9>.hb-t{min-height:0}
+.hb-full .hb-grid.g9 .hb-cats-n:not(.lt){display:none}
+.hb-full .hb-grid.g9 .hb-ban{padding:6px 10px;font-size:13px}
+.hb-full .hb-grid.g9 .hb-big b{font-size:30px}
+.hb-full .hb-grid.g9 .hb-w{gap:8px}
+@media (min-width:1024px){.hb-full .hb-grid.g9{grid-auto-rows:minmax(max(150px,calc((100vh - 348px)/3)),auto)}}
+@media (max-width:1023px){.hbshell .hb-full .hb-grid.g9>.hb-t:last-child:nth-child(odd){grid-column:1/-1!important}}
