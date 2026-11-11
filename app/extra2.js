@@ -207,28 +207,55 @@
   const mDone = m => !!m && MDIM.every(([k]) => m[k] >= 1);
   const mScore = m => Math.round(((m.r + m.c + m.f) / 3 - 1) / 4 * 100);
   const mLabel = s => s >= 70 ? "Buen estado" : s >= 45 ? "Con cuidado" : "Día delicado";
-  const TIPS = {
-    perdidas: ["Pausa antes de recuperar", "Tras perder solemos arriesgar más para volver a cero. Antes de la siguiente operación, 10 minutos lejos de la pantalla.", "Thaler y Johnson (1990)"],
-    maximo: ["Has llegado a tu máximo", "Quien más opera suele ganar menos. Lo que queda de sesión, solo para mirar y apuntar lo que ves.", "Barber y Odean (2000)"],
-    sueno: ["Poco descanso: riesgo pequeño", "Con poco sueño el cerebro da más peso a lo que puedes ganar y menos a lo que puedes perder. Hoy, menos riesgo o solo tu mejor setup.", "Venkatraman y otros (2011)"],
-    nervios: ["Convierte los nervios en energía", "Antes de empezar, dite «estoy con ganas» en vez de «tengo que calmarme». Reinterpretar los nervios mejora el rendimiento.", "Brooks (2014)"],
-    escribir: ["Saca la preocupación al papel", "Escribe dos minutos en el Diario lo que te preocupa antes de la sesión. Deja la cabeza libre para decidir.", "Ramírez y Beilock (2011)"],
-    enfoque: ["Decide antes de abrir el gráfico", "Repasa tus reglas «si pasa esto, entonces hago esto». Dejarlo decidido antes hace mucho más probable cumplirlo.", "Gollwitzer y Sheeran (2006)"],
-    confianza: ["Buen día para tu plan, no para ampliarlo", "Sentirse muy bien empuja a operar de más. Mismo riesgo y mismo máximo de operaciones que cualquier otro día.", "Barber y Odean (2000)"],
-    nombrar: ["Ponle nombre a lo que sientes", "Antes de cada entrada, di en una frase cómo te sientes. Nombrar la emoción le quita fuerza.", "Lieberman y otros (2007)"],
-    respirar: ["Un minuto de respiración lenta", "Cinco segundos dentro y cinco fuera durante un minuto antes de la sesión. Baja la activación y te ayuda a decidir con calma.", "Zaccaro y otros (2018)"],
-    error: ["Trátate como a un amigo", "Después de un error, hablarte con comprensión da más ganas de mejorar que castigarte. Apunta qué aprendes y sigue.", "Breines y Chen (2012)"]
+  /* lo que el usuario cuenta de sí mismo (una vez) y de su día (cada día) */
+  const PTRIG = [["revancha", "Querer recuperar una pérdida"], ["fomo", "Miedo a perderme el movimiento"], ["euforia", "Venirme arriba tras ganar"], ["cansancio", "Cansancio o poco sueño"], ["impaciencia", "Aburrimiento o impaciencia"], ["dudas", "Dudar y no entrar"], ["distraccion", "Distracciones o el móvil"]];
+  const PCALM = [["respirar", "Respirar despacio", "respiro un minuto, 5 segundos dentro y 5 fuera"], ["escribir", "Escribir lo que siento", "escribo una línea en el Diario antes de seguir"], ["mover", "Levantarme y caminar", "me levanto y camino 5 minutos"], ["plan", "Releer mi plan", "releo mis normas antes de tocar nada"], ["pausa", "Apartarme de la pantalla", "me aparto 10 minutos de la pantalla"], ["hablar", "Hablarlo con alguien", "se lo cuento a alguien antes de seguir"]];
+  const PTONE = [["directo", "Directo y corto"], ["cercano", "Cercano"], ["datos", "Con datos y estudios"]];
+  const PMOOD = [["ganas", "Con ganas"], ["neutral", "Tranquilo"], ["miedo", "Con miedo"], ["prisa", "Con prisa por ganar"]];
+  const PHEAD = [["nada", "Nada especial"], ["perdida", "Una pérdida reciente"], ["dinero", "Dinero"], ["trabajo", "Trabajo o estudios"], ["personal", "Algo personal"], ["salud", "Salud"]];
+  const PSIT = { revancha: "pierdo una operación", fomo: "veo que el precio se escapa sin mí", euforia: "gano dos seguidas", cansancio: "noto que me cuesta concentrarme", nervios: "noto el pulso acelerado antes de entrar", dudas: "dudo ante una entrada que cumple mis reglas", distraccion: "me llega algo al móvil o a la cabeza", impaciencia: "llevo un rato sin entradas", enfoque: "abro el gráfico", maximo: "quiero hacer una operación más", estable: "noto que algo me altera" };
+  /* [título, versión corta, versión completa, estudio] */
+  const TIPS2 = {
+    revancha: ["Pausa antes de recuperar", "Tras una pérdida, 10 minutos fuera antes de la siguiente.", "Después de perder, la cabeza busca volver a cero y empuja a arriesgar más. Date 10 minutos lejos de la pantalla antes de la siguiente operación.", "Thaler y Johnson (1990)"],
+    fomo: ["Ese movimiento no era tuyo", "Si no estaba en tu plan, déjalo ir.", "Entrar tarde por miedo a quedarte fuera suele darte peor precio y peor stop. Si el movimiento no cumplía tus reglas, no era tuyo: vendrán más.", ""],
+    euforia: ["Mismo plan aunque vaya bien", "Gane o pierda, mismo riesgo y mismo máximo.", "Cuando todo va bien aparece el exceso de confianza, y con él las operaciones de más. Hoy, mismo riesgo y mismo máximo que cualquier otro día.", "Barber y Odean (2000)"],
+    cansancio: ["Poco descanso: riesgo pequeño", "Hoy, menos riesgo o solo tu mejor setup.", "Con poco sueño el cerebro da más peso a lo que puedes ganar y menos a lo que puedes perder. Hoy, menos riesgo o solo tu mejor setup.", "Venkatraman y otros (2011)"],
+    nervios: ["Convierte los nervios en energía", "Dite «estoy con ganas», no «cálmate».", "Reinterpretar los nervios como energía («estoy con ganas») funciona mejor que intentar calmarse a la fuerza. Dilo en voz alta antes de empezar.", "Brooks (2014)"],
+    escribir: ["Saca la preocupación al papel", "Dos minutos escribiendo lo que te preocupa.", "Escribir dos minutos lo que te preocupa antes de la sesión deja la cabeza libre para decidir. Hazlo en el Diario.", "Ramírez y Beilock (2011)"],
+    dudas: ["Decide antes, ejecuta después", "Si cumple tus reglas, entras. Sin pensarlo más.", "Las dudas bajan cuando la decisión ya está tomada antes: «si se cumple mi setup, entro con mi riesgo normal». Así no decides a mitad de la vela.", "Gollwitzer y Sheeran (2006)"],
+    distraccion: ["Móvil fuera durante la sesión", "Modo avión mientras operas.", "Cada interrupción te obliga a volver a concentrarte y sube el estrés. Pon el móvil en modo avión y cierra todo lo que no sea el gráfico.", "Mark y otros (2008)"],
+    impaciencia: ["No operar también es operar bien", "Un día sin entradas puede ser un día perfecto.", "Si no aparece tu setup, no hay nada que hacer. Los días sin operaciones que respetan tu plan también cuentan como días buenos.", ""],
+    enfoque: ["Decide antes de abrir el gráfico", "Repasa tus reglas si → entonces.", "Repasar tus reglas «si pasa esto, hago esto» antes de empezar hace mucho más probable que las cumplas cuando llegue el momento.", "Gollwitzer y Sheeran (2006)"],
+    maximo: ["Has llegado a tu máximo", "Lo que queda, solo para mirar.", "Quien más opera suele ganar menos. Lo que queda de sesión, solo para mirar y apuntar lo que ves.", "Barber y Odean (2000)"],
+    estable: ["Ponle nombre a lo que sientes", "Antes de cada entrada, nombra tu emoción.", "Antes de cada entrada, di en una frase cómo te sientes. Nombrar la emoción le quita fuerza y te ayuda a decidir con calma.", "Lieberman y otros (2007)"],
+    respirar: ["Un minuto de respiración lenta", "Un minuto: 5 segundos dentro, 5 fuera.", "Respirar despacio, 5 segundos dentro y 5 fuera durante un minuto, baja la activación y te ayuda a decidir con calma.", "Zaccaro y otros (2018)"]
   };
-  function pickTip(m, D) {
-    const cl = closed(D.today).sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b))), l2 = cl.slice(-2);
-    if (l2.length === 2 && l2.every(t => +t.r < 0)) return TIPS.perdidas;
-    if (D.today.length >= (D.p.maxTrades || 3)) return TIPS.maximo;
-    const lastC = closed(S.trades).sort((a, b) => new Date(dateOf(b)) - new Date(dateOf(a)))[0];
-    if (lastC && Date.now() - new Date(dateOf(lastC)) < 36 * 36e5 && evaluate(lastC).fail.length) return TIPS.error;
-    const low = Math.min(m.r, m.c, m.f), d = new Date().getDate();
-    if (low <= 2) { if (m.r === low) return TIPS.sueno; if (m.c === low) return d % 2 ? TIPS.nervios : TIPS.escribir; return TIPS.enfoque; }
-    if (m.r >= 4 && m.c >= 4 && m.f >= 4) return TIPS.confianza;
-    return [TIPS.nombrar, TIPS.respirar, TIPS.enfoque][d % 3];
+  function psyFactors(m, D) {
+    const f = [], head = m.head || [], cl = closed(D.today).sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b))), l2 = cl.slice(-2);
+    if (l2.length === 2 && l2.every(t => +t.r < 0)) f.push("revancha");
+    if (D.today.length >= (D.p.maxTrades || 3)) f.push("maximo");
+    if (head.includes("perdida")) f.push("revancha");
+    if (m.mood === "prisa") f.push(head.includes("perdida") || head.includes("dinero") ? "revancha" : "fomo");
+    if (m.mood === "miedo") f.push("dudas");
+    if (m.r <= 2) f.push("cansancio");
+    if (m.c <= 2) f.push("nervios");
+    if (m.f <= 2) f.push(head.some(h => ["trabajo", "personal", "salud", "dinero"].includes(h)) ? "distraccion" : "enfoque");
+    if (head.some(h => ["trabajo", "personal", "salud"].includes(h))) f.push("distraccion");
+    if (m.mood === "ganas" && m.r >= 4 && m.c >= 4 && m.f >= 4) f.push("euforia");
+    return [...new Set(f)];
+  }
+  /* el consejo de hoy: primero lo urgente de la sesión, luego lo que coincide con tu punto débil, luego lo demás */
+  function psyAdvice(m, D) {
+    const P = S.menteP || {}, trig = P.trig || [], calm = P.calm || [], fs = psyFactors(m, D);
+    let main = fs.find(x => x === "maximo") || (fs.includes("revancha") && closed(D.today).length ? "revancha" : null) || fs.find(x => trig.includes(x)) || fs[0];
+    let personal = !!main && trig.includes(main);
+    if (!main) { main = trig.includes("impaciencia") ? "impaciencia" : "estable"; personal = main === "impaciencia"; }
+    let key = main;
+    if (main === "nervios" && calm.includes("escribir")) key = "escribir";
+    if (main === "estable" && calm.includes("respirar")) key = "respirar";
+    const tool = (PCALM.find(c => c[0] === calm[0]) || PCALM[4])[2];
+    const then = main === "dudas" ? "entro con mi riesgo normal, sin pensarlo más" : main === "maximo" ? "cierro la plataforma por hoy" : main === "enfoque" ? "repaso mis reglas en voz alta" : tool;
+    return { main, personal, tip: TIPS2[key], sit: PSIT[main], then };
   }
   function mPattern() {
     const M = S.mente || {}, days = Object.keys(M).filter(k => mDone(M[k])), byDay = {};
@@ -239,17 +266,77 @@
     return `Tu patrón: llegando bien cumples el plan el ${Math.round(g.hi[0] / g.hi[1] * 100)} %; llegando mal, el ${Math.round(g.lo[0] / g.lo[1] * 100)} %`;
   }
   function psyTile(D, name, href) {
-    const pc = D.C90.length ? Math.round(D.good / D.C90.length * 100) : null;
-    const m = (S.mente || {})[todayKey()] || {}, done = mDone(m), sc = done ? mScore(m) : null;
-    const head = `<div class="ps-h"><b class="hb-ch-n">${esc(name)}</b>${done ? `<span class="ps-sc ${sc >= 70 ? "ok" : sc >= 45 ? "mid" : "low"}"><b class="mono">${sc}</b> ${mLabel(sc)}</span>` : `<span class="ps-sub">¿Cómo llegas hoy?</span>`}<span style="flex:1"></span><span class="ps-plan" title="Operaciones de los últimos 90 días que siguieron tu plan"><b class="mono">${pc == null ? "—" : pc + " %"}</b> dentro del plan</span>${rbtn(href, name)}</div>`;
-    if (!healthOk()) return head + `<div class="ps-b"><div class="ps-in"><p class="ps-p">Marca cada día cómo llegas y Tickora te dirá cómo te afecta al operar, con consejos basados en estudios de psicología.</p></div><div class="ps-tip"><b>Necesita tu permiso</b><p>Es información sobre tu salud, así que necesita tu permiso. Solo la ves tú.</p><a class="ps-btn" href="#ajustes" data-stop>Activar en Ajustes</a></div></div>`;
-    const rows = MDIM.map(([k, l]) => `<div class="ps-row"><span>${l}</span><div class="ps-dots" role="group" aria-label="${l} de hoy, de 1 a 5">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-mt="${k}:${n}" class="${m[k] >= n ? "on" : ""}" aria-pressed="${m[k] === n}" aria-label="${l}: ${n} de 5" data-stop></button>`).join("")}</div></div>`).join("");
-    const miss = MDIM.filter(([k]) => !m[k]).map(([, l]) => l.toLowerCase());
-    const tip = done ? pickTip(m, D) : null;
-    const right = done
-      ? `<div class="ps-tip" title="${esc(tip[1])}"><b>${esc(tip[0])}</b><p>${esc(tip[1])}</p><em>Estudio: ${esc(tip[2])}</em></div>`
-      : `<div class="ps-tip wait"><b>${miss.length === 3 ? "Tarda 5 segundos" : "Te falta " + miss.join(" y ")}</b><p>Toca un punto en cada fila: 1 es muy bajo y 5 muy alto. Con eso te doy un consejo para hoy.</p><em>Solo lo ves tú</em></div>`;
-    return head + `<div class="ps-b"><div class="ps-in">${rows}<small class="ps-pat">${esc(mPattern())}</small></div>${right}</div>`;
+    const m = (S.mente || {})[todayKey()] || {}, done = healthOk() && mDone(m), sc = done ? mScore(m) : 0;
+    const bars = MDIM.map(([k, l]) => `<div class="pt-b"><span>${l}</span><i><u style="width:${done ? m[k] * 20 : 0}%"></u></i></div>`).join("");
+    const txt = !healthOk() ? `<b>Cómo llegas cada día</b><small>Actívalo en Ajustes · solo lo ves tú</small>`
+      : done ? `<b>${mLabel(sc)}</b><small>Para hoy: ${esc(psyAdvice(m, D).tip[0].toLowerCase())}</small>`
+      : `<b>¿Cómo llegas hoy?</b><small>${S.menteP ? "20 segundos" : "La primera vez, 1 minuto"} · toca para empezar</small>`;
+    return `<div class="ps-h"><b class="hb-ch-n">${esc(name)}</b><span style="flex:1"></span>${rbtn(href, name)}</div>
+      <div class="pt-m"><div class="pz-ring${done ? "" : " off"}" style="--p:${sc}"><b class="mono">${done ? sc : "?"}</b></div><div class="pt-tx">${txt}</div><div class="pt-bars">${bars}</div></div>`;
+  }
+  /* panel lateral de Psicología: perfil (una vez), cómo llegas hoy y tu consejo personal */
+  function psyPanel(step0) {
+    const old = document.querySelector(".xdrawer.psyd"); if (old) old.remove();
+    const box = document.createElement("div"); box.className = "xdrawer psyd"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Psicología");
+    const day = todayKey(); S.mente = S.mente || {};
+    const P = Object.assign({ trig: [], calm: [], tone: "cercano" }, S.menteP || {}), M = Object.assign({}, S.mente[day] || {});
+    let step = step0 || (!healthOk() ? "permiso" : !S.menteP ? "perfil" : mDone(M) ? "resultado" : "hoy");
+    const chips = (g, opts, sel, multi) => `<div class="pz-chips" data-g="${g}" data-multi="${multi ? 1 : 0}">${opts.map(([k, l]) => `<button type="button" class="pz-chip" data-v="${k}" aria-pressed="${sel.includes(k)}">${esc(l)}</button>`).join("")}</div>`;
+    const scale = (k, l) => `<div class="pz-sc"><span>${l}</span><div class="pz-sv" data-sc="${k}" role="group" aria-label="${l}, de 1 a 5">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-n="${n}" aria-pressed="${M[k] === n}" aria-label="${l}: ${n} de 5">${n}</button>`).join("")}</div><small><i>Muy bajo</i><i>Muy alto</i></small></div>`;
+    const save = (id, data) => sb.from("docs").upsert({ user_id: S.user.id, col: "mente", id, data, updated_at: new Date().toISOString() }).then(({ error }) => { if (error) toast("No se pudo guardar"); });
+    function body() {
+      if (step === "permiso") return { t: "Psicología", s: "Antes de empezar", b: `<p class="pz-p">Para darte consejos según cómo llegas cada día, Tickora tiene que guardar cómo te sientes. Es información sobre tu salud: necesita tu permiso y solo la ves tú.</p>`, f: `<a class="btn" href="#ajustes" data-close>Activar en Ajustes</a>` };
+      if (step === "perfil") return { t: "Conócete", s: "Tres preguntas, solo la primera vez. Así los consejos serán tuyos.", b: `<div class="pz-q"><b>¿Qué es lo que más te saca de tu plan?</b><small>Elige hasta tres</small>${chips("trig", PTRIG, P.trig, 1)}</div><div class="pz-q"><b>¿Qué te ayuda a volver a la calma?</b><small>Elige las que te funcionen; la primera será la que te proponga</small>${chips("calm", PCALM, P.calm, 1)}</div><div class="pz-q"><b>¿Cómo quieres que te hable?</b>${chips("tone", PTONE, [P.tone], 0)}</div>`, f: `<button type="button" class="btn" data-go="perfil-ok" ${P.trig.length && P.calm.length ? "" : "disabled"}>Guardar y seguir</button>` };
+      if (step === "hoy") return { t: "¿Cómo llegas hoy?", s: "20 segundos. Contesta con lo primero que te salga.", b: `<div class="pz-q">${scale("r", "Descanso")}${scale("c", "Calma")}${scale("f", "Enfoque")}</div><div class="pz-q"><b>¿Cómo ves el mercado hoy?</b>${chips("mood", PMOOD, [M.mood], 0)}</div><div class="pz-q"><b>¿Algo te ronda la cabeza?</b>${chips("head", PHEAD, M.head || [], 1)}</div>`, f: `<button type="button" class="btn" data-go="hoy-ok" ${mDone(M) ? "" : "disabled"}>Ver mi consejo</button>` };
+      const D = hData(), a = psyAdvice(M, D), sc = mScore(M), tone = P.tone || "cercano", tip = a.tip, tl = (PTRIG.find(x => x[0] === a.main) || [])[1];
+      const pers = a.personal && tl ? (tone === "directo" ? `Tu punto débil: ${tl.toLowerCase()}.` : `Nos dijiste que «${tl.toLowerCase()}» es lo que más te saca del plan. Hoy puede aparecer.`) : "";
+      const added = M.sit === a.sit && M.then === a.then;
+      return { t: "Tu día", s: cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })), b: `
+        <div class="pz-score"><div class="pz-ring" style="--p:${sc}"><b class="mono">${sc}</b></div><div><b>${mLabel(sc)}</b><small>Descanso ${M.r} · Calma ${M.c} · Enfoque ${M.f}</small></div></div>
+        <div class="pz-tip"><small>Para ti, hoy</small><b>${esc(tip[0])}</b>${pers ? `<p class="pz-pers">${esc(pers)}</p>` : ""}<p>${esc(tone === "directo" ? tip[1] : tip[2])}</p>${tip[3] && tone !== "directo" ? `<em>Estudio: ${esc(tip[3])}</em>` : ""}</div>
+        <div class="pz-si"><small>Tu regla de hoy</small><p><b>Si</b> ${esc(a.sit)} <b>→</b> ${esc(a.then)}</p>${added ? `<span class="pz-ok">${ico("check", 14, 2.6)} Está en tu cuadro de Mi plan</span>` : `<button type="button" class="btn2" data-go="si-add">Llevarla a Mi plan hoy</button>`}</div>
+        <div class="pz-data"><small>Lo que dicen tus datos</small><p>${esc(mPattern())}</p></div>
+        <div class="pz-links"><button type="button" class="pz-l" data-go="hoy">Cambiar mis respuestas de hoy</button><button type="button" class="pz-l" data-go="perfil">Editar lo que me saca del plan</button></div>`,
+        f: `<span class="pz-more">Ver más:</span><a class="pz-l" href="#rendimiento" data-close>Rendimiento</a><a class="pz-l" href="#progreso" data-close>Disciplina</a><a class="pz-l" href="#emociones" data-close>Emociones</a>` };
+    }
+    function paint() {
+      const x = body();
+      box.innerHTML = `<div class="xdrawer-p pzp"><div class="xdr-h pz-h"><div><b>${esc(x.t)}</b>${x.s ? `<small>${esc(x.s)}</small>` : ""}</div><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div><div class="xdr-b">${x.b}</div>${x.f ? `<div class="xdr-f">${x.f}</div>` : ""}</div>`;
+      const sb0 = box.querySelector(".xdr-b"); if (sb0) sb0.scrollTop = 0;
+    }
+    function refresh() {
+      ["resultados", "plan"].forEach(k => { const t = document.querySelector('.hb-t[data-hc="' + k + '"]:not(.sel)'); if (t) { t.innerHTML = appTile(k, hData()); bindWidgets(t); } });
+    }
+    function sync() {
+      box.querySelectorAll(".pz-chips").forEach(g => { const k = g.dataset.g, cur = k === "trig" || k === "calm" ? P[k] : k === "tone" ? [P.tone] : k === "mood" ? [M.mood] : M.head || []; g.querySelectorAll(".pz-chip").forEach(c => c.setAttribute("aria-pressed", cur.includes(c.dataset.v))); });
+      box.querySelectorAll(".pz-sv").forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", M[g.dataset.sc] === +b.dataset.n)));
+      const po = box.querySelector('[data-go="perfil-ok"]'); if (po) po.disabled = !(P.trig.length && P.calm.length);
+      const ho = box.querySelector('[data-go="hoy-ok"]'); if (ho) ho.disabled = !mDone(M);
+    }
+    const close = () => { box.classList.remove("in"); setTimeout(() => box.remove(), 200); document.removeEventListener("keydown", ek); const t = document.querySelector('.hb-t[data-hc="resultados"]'); t && t.focus({ preventScroll: true }); };
+    const ek = e => { if (e.key === "Escape") close(); };
+    box.addEventListener("click", e => {
+      if (e.target === box || e.target.closest("[data-x]")) return close();
+      if (e.target.closest("[data-close]")) { box.remove(); document.removeEventListener("keydown", ek); return; }
+      const ch = e.target.closest(".pz-chip");
+      if (ch) {
+        const g = ch.parentElement.dataset.g, v = ch.dataset.v;
+        if (g === "trig" || g === "calm") { const arr = P[g]; P[g] = arr.includes(v) ? arr.filter(x => x !== v) : g === "trig" && arr.length >= 3 ? arr : arr.concat(v); if (g === "trig" && arr.length >= 3 && !arr.includes(v)) toast("Elige como mucho tres"); }
+        else if (g === "tone") P.tone = v;
+        else if (g === "mood") M.mood = M.mood === v ? undefined : v;
+        else if (g === "head") { let arr = M.head || []; if (v === "nada") arr = arr.includes("nada") ? [] : ["nada"]; else { arr = arr.filter(x => x !== "nada"); arr = arr.includes(v) ? arr.filter(x => x !== v) : arr.concat(v); } M.head = arr; }
+        return sync();
+      }
+      const sv = e.target.closest(".pz-sv button"); if (sv) { M[sv.parentElement.dataset.sc] = +sv.dataset.n; return sync(); }
+      const go = e.target.closest("[data-go]"); if (!go || go.disabled) return;
+      const g = go.dataset.go;
+      if (g === "perfil-ok") { S.menteP = { trig: P.trig, calm: P.calm, tone: P.tone }; save("perfil", S.menteP); step = mDone(M) ? "resultado" : "hoy"; paint(); refresh(); }
+      else if (g === "hoy-ok") { M.ts = Date.now(); S.mente[day] = Object.assign({}, M); save("d" + day, S.mente[day]); step = "resultado"; paint(); refresh(); }
+      else if (g === "si-add") { const a = psyAdvice(M, hData()); M.sit = a.sit; M.then = a.then; S.mente[day] = Object.assign({}, M); save("d" + day, S.mente[day]); paint(); refresh(); toast("Añadida a tu cuadro de Mi plan"); }
+      else { step = g; paint(); }
+    });
+    paint(); document.addEventListener("keydown", ek); document.body.appendChild(box);
+    requestAnimationFrame(() => box.classList.add("in")); setTimeout(() => { const x = box.querySelector(".xdr-b .pz-sv button, .xdr-b .pz-chip, .xdr-b [data-go]") || box.querySelector("[data-x]"); x && x.focus(); }, 80);
   }
   /* ===== Mi plan: tus normas de hoy en directo, la norma en foco, tus reglas y tu compromiso ===== */
   const NK = f => /stop al entrar|Deja el stop/i.test(f) ? "stop" : /tamaño con tu riesgo/i.test(f) ? "risk" : /horario/i.test(f) ? "hora" : /máximo/i.test(f) ? "max" : /límite/i.test(f) ? "lim" : null;
@@ -273,9 +360,10 @@
     const icon = s => s === "ok" ? ico("check", 13, 2.6) : s === "bad" ? ico("x", 12, 2.6) : s === "warn" ? "<b>!</b>" : "";
     const list = rows.map(([k, l, sub, s]) => `<div class="pl-r ${s}${focus && focus[0] === k ? " foc" : ""}"><span class="pl-i">${icon(s)}</span><span class="pl-l">${l}${focus && focus[0] === k ? ' <em>en foco</em>' : ""}</span><small>${sub}</small></div>`).join("");
     const ok = S.planOk && S.planOk.day === todayKey();
-    const rules = (p.rules || []).filter(r => r.si || r.entonces).slice(0, 3);
+    const mt = healthOk() ? (S.mente || {})[todayKey()] : null, hoyR = mt && mt.sit ? `<div class="pl-hoy"><em>Hoy</em><b>Si</b> ${esc(mt.sit)} <b>→</b> ${esc(mt.then)}</div>` : "";
+    const rules = (p.rules || []).filter(r => r.si || r.entonces).slice(0, hoyR ? 2 : 3);
     const right = `<div class="pl-foc">${focus ? `<small>Tu norma en foco</small><b>${NLAB[focus[0]]}</b><span>La rompiste ${focus[1]} ${focus[1] === 1 ? "vez" : "veces"} en los últimos 30 días. Hoy, ojo con esta.</span>` : closed(S.trades).length ? `<small>Tu norma en foco</small><b>Ninguna rota en 30 días</b><span>Sigue así: lo difícil es mantenerlo.</span>` : `<small>Tu norma en foco</small><b>Aparecerá con tus operaciones</b><span>Te marcaré la norma que más te cuesta.</span>`}</div>
-      <div class="pl-si">${rules.length ? rules.map(r => `<div><b>Si</b> ${esc(String(r.si || "").replace(/,$/, ""))} <b>→</b> ${esc(r.entonces || "")}</div>`).join("") : `<div class="pl-empty">Añade tus reglas «si pasa esto → hago esto» en <a href="#plan" data-stop>Mi plan</a>.</div>`}</div>`;
+      <div class="pl-si">${hoyR}${rules.length ? rules.map(r => `<div><b>Si</b> ${esc(String(r.si || "").replace(/,$/, ""))} <b>→</b> ${esc(r.entonces || "")}</div>`).join("") : `<div class="pl-empty">Añade tus reglas «si pasa esto → hago esto» en <a href="#plan" data-stop>Mi plan</a>.</div>`}</div>`;
     const commit = ok ? `<span class="pl-done" title="Lo decides en frío: los cambios del plan valen desde mañana">${ico("check", 14, 2.6)} Comprometido a las ${new Date(S.planOk.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>` : `<button type="button" class="pl-btn" data-pcommit data-stop title="Lo decides en frío: los cambios del plan valen desde mañana">Me comprometo hoy</button>`;
     return `<div class="ps-h"><b class="hb-ch-n">${esc(name)}</b>${racha ? `<span class="pl-racha">${racha} ${racha === 1 ? "día" : "días"} seguidos en plan</span>` : ""}<span style="flex:1"></span>${commit}${rbtn(href, name)}</div>
       <div class="pl-b"><div class="pl-list"><small class="pl-t">Tus normas de hoy</small>${list}</div><div class="pl-right">${right}</div></div>`;
@@ -287,7 +375,7 @@
   }
   async function loadMente() {
     if (S.menteLoaded || S.menteLoading || !healthOk()) return; S.menteLoading = true;
-    try { const { data, error } = await sb.from("docs").select("id,data").eq("col", "mente"); if (!error) { S.mente = Object.assign({}, ...(data || []).map(d => ({ [String(d.id).slice(1)]: d.data }))); S.menteLoaded = true; } }
+    try { const { data, error } = await sb.from("docs").select("id,data").eq("col", "mente"); if (!error) { S.mente = {}; (data || []).forEach(d => { if (d.id === "perfil") S.menteP = d.data; else S.mente[String(d.id).slice(1)] = d.data; }); S.menteLoaded = true; } }
     finally { S.menteLoading = false; }
     const t = document.querySelector('.hb-t[data-hc="resultados"]:not(.sel)');
     if (t) { t.innerHTML = appTile("resultados", hData()); bindWidgets(t); }
@@ -314,7 +402,7 @@
   function bindTiles() {
     $$("[data-href]").forEach(el => {
       const k = el.dataset.hc;
-      const act = kb => { if (!k || S.hcSel === k) location.hash = el.dataset.href; else selTile(k, kb); };
+      const act = kb => { if (k === "resultados") { if (S.hcSel) selTile(null); psyPanel(); return; } if (!k || S.hcSel === k) location.hash = el.dataset.href; else selTile(k, kb); };
       el.addEventListener("click", e => { if (e.target.closest("[data-stop]")) return; act(false); });
       el.addEventListener("keydown", e => { if (e.target === el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); act(true); } });
     });
