@@ -1264,3 +1264,11 @@ button.mc-d:focus-visible{outline:2px solid var(--cobalto);outline-offset:1px}
 .hd-sub h2{margin:0;font-size:22px;font-weight:400;letter-spacing:-.02em;color:var(--hb-ink)}
 @media (max-width:1023px){.hd-top{grid-template-columns:1fr}.hd-hrs li{grid-template-columns:96px auto;}.hd-hrs li small{grid-column:1/-1;justify-self:start;text-align:left}}
 .hd-c>.x-ch{align-self:flex-start}
+
+/* Antes de operar: rojo hasta cumplir todo, verde al terminar */
+.hd-prep{transition:border-color .4s,box-shadow .4s}
+.hd-prep.req{border-color:color-mix(in srgb,var(--neg) 55%,var(--hb-line));box-shadow:0 0 0 1px color-mix(in srgb,var(--neg) 25%,transparent),0 0 26px -4px color-mix(in srgb,var(--neg) 45%,transparent)}
+.hd-prep.done{border-color:color-mix(in srgb,var(--pos) 55%,var(--hb-line));box-shadow:0 0 0 1px color-mix(in srgb,var(--pos) 25%,transparent),0 0 26px -4px color-mix(in srgb,var(--pos) 45%,transparent)}
+.hd-steps li.hd-prep-st{display:block;font-size:12px;font-weight:600;padding-top:8px;border-top:1px solid var(--hb-line)}
+.hd-prep.req .hd-prep-st{color:var(--neg)}
+.hd-prep.done .hd-prep-st{color:var(--pos)}

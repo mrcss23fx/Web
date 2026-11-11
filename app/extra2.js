@@ -694,11 +694,15 @@
     // preparación
     const nh = (D.todayEv || []).filter(e => e.impact === "High").sort((a, b) => a.ts - b.ts);
     const step = (done, title, sub, act) => `<li class="${done ? "ok" : ""}"><span class="hd-ck">${done ? I('<path d="M4.5 10.5l3.5 3.5 7.5-8"/>', 12, 2.6) : ""}</span><div><b>${title}</b><small>${sub}</small></div>${act || ""}</li>`;
-    const prep = `<div class="hd-c"><h3>Antes de operar</h3><ul class="hd-steps">
+    let nvSeen = false; try { nvSeen = localStorage.getItem("tk-nv") === todayKey(); } catch (e) { }
+    const hOk = healthOk(), newsOk = !!S.news && (!!S.news.err || !nh.length || nvSeen);
+    const prepOk = (md || !hOk) && ok && newsOk && (!!(m && m.sit) || !hOk);
+    const prep = `<div class="hd-c hd-prep ${prepOk ? "done" : "req"}"><h3>Antes de operar</h3><ul class="hd-steps">
       ${step(md, "Cuéntame cómo llegas", md ? `${mLabel(sc)} · para hoy: ${esc(psyAdvice(m, D).tip[0].toLowerCase())}` : healthOk() ? "5 preguntas, 15 segundos" : "Actívalo en Ajustes", md ? "" : healthOk() ? `<button type="button" class="x-ch" data-hd="checkin">Hacer ahora</button>` : `<a class="x-ch" href="#ajustes">Ajustes</a>`)}
       ${step(ok, "Comprométete con tu plan", ok ? "Hecho a las " + new Date(S.planOk.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "Riesgo " + num(p.riskPct, 2).replace(/,?0+$/, "") + " % · máximo " + mx + " · límite −" + fmtLim(L), ok ? "" : `<button type="button" class="x-ch" data-pcommit>Me comprometo</button>`)}
-      ${step(!!(S.news && !S.news.err) && !nh.length, nh.length ? "Ojo con las noticias fuertes" : "Noticias fuertes", !S.news ? "Cargando…" : nh.length ? nh.map(e => hhmm(e.ts)).join(" · ") + " · ten cuidado cerca de esas horas" : "Hoy no hay noticias de alto impacto", `<a class="x-ch" href="#noticias">Ver</a>`)}
-      ${step(!!(m && m.sit), "Ten tu regla de hoy a mano", m && m.sit ? `Si ${esc(m.sit)} → ${esc(m.then)}` : "Sale de tu consejo, después del chequeo", "")}
+      ${step(newsOk, nh.length ? "Mira las noticias fuertes" : "Noticias fuertes", !S.news ? "Cargando…" : S.news.err ? "No se pudo cargar el calendario" : nh.length ? nh.map(e => hhmm(e.ts)).join(" · ") + (nvSeen ? " · vistas, ten cuidado cerca de esas horas" : " · ábrelas antes de operar") : "Hoy no hay noticias de alto impacto", nh.length && !nvSeen ? `<a class="x-ch" href="#noticias" data-hd="newsv">Ver</a>` : "")}
+      ${hOk ? step(!!(m && m.sit), "Ten tu regla de hoy a mano", m && m.sit ? `Si ${esc(m.sit)} → ${esc(m.then)}` : "Sale de tu consejo, después del chequeo", "") : ""}
+      <li class="hd-prep-st" aria-live="polite">${prepOk ? "Todo listo. Puedes operar." : "Completa todos los pasos antes de operar."}</li>
     </ul></div>`;
     // noticias de hoy
     const evs = (D.todayEv || []).filter(e => NEWS_IMP[e.impact] >= 2).sort((a, b) => a.ts - b.ts).slice(0, 7);
@@ -789,6 +793,7 @@
       const b = e.target.closest("[data-hd]"); if (!b) return; const k = b.dataset.hd;
       if (k === "down") { const el = document.getElementById("hday"); el && el.scrollIntoView({ behavior: "smooth", block: "start" }); }
       else if (k === "checkin") { window.scrollTo({ top: 0, behavior: "smooth" }); S.hqEdit = !mDone((S.mente || {})[todayKey()]) ? false : S.hqEdit; setTimeout(() => { const f = document.querySelector("#hxq .hx-a"); f && f.focus({ preventScroll: true }); }, 450); }
+      else if (k === "newsv") { try { localStorage.setItem("tk-nv", todayKey()); } catch (e) { } }
       else if (k === "psy") psyPanel();
       else if (k === "informe") { S.repDay = todayKey(); location.hash = "#informe"; }
       else if (k === "cierre") { const Dd = DI(); if (!Dd) return; await Dd.loadPages(); const p = Dd.newPage(null); p.title = "Cierre del " + new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long" }); p.html = "<h3>Lo que hice bien</h3><p></p><h3>Lo que mejoraría</h3><p></p><h3>Una cosa para mañana</h3><p></p>"; await Dd.savePage(p); location.hash = "#diario/" + encodeURIComponent(p.id); }
