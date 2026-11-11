@@ -2,7 +2,7 @@
    Usa las utilidades de la página principal (S, sb, esc, fmtR, evaluate, tradeStats…). */
 (function () {
   "use strict";
-  const { S, sb, esc, SVG, fmtR, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
+  const { S, sb, esc, SVG, fmtR, fmtV, fmtVt, fmtMoney, mOf, sumM, oneR, dispCur, moneyOn, prefU, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
   const V = window.TK_VIEWS = {};
   const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
   const I = (p, sz, w) => SVG(p, sz || 18, w || 1.8);
@@ -55,10 +55,10 @@
   }
   function histCards(L) {
     const st = tradeStats(L), pf = st.pf == null ? "—" : st.pf === Infinity ? "∞" : num(st.pf, 2), wl = st.avgW != null && st.avgL ? num(Math.abs(st.avgW / st.avgL), 2) : "—";
-    return `<div class="xkgrid">${statCard("Resultado", st.n ? fmtR(st.tot) : "0,0 R", st.n + " operaciones cerradas", spark(st.curve, 96, 40), "Suma de todas las operaciones filtradas, en R")}
+    return `<div class="xkgrid">${statCard("Resultado", st.n ? fmtV(st.tot, st.mt) : fmtV(0, 0), st.n + " operaciones cerradas", spark(st.curve, 96, 40), "Suma de todas las operaciones filtradas, en R")}
       ${statCard("Factor de beneficio", pf, "lo ganado ÷ lo perdido", ring(st.pf == null ? 0 : Math.min(100, (st.pf === Infinity ? 3 : st.pf) / 3 * 100)), "Por encima de 1 ganas más de lo que pierdes")}
       ${statCard("Acierto", st.win == null ? "—" : num(st.win, 0) + " %", st.n ? closed(L).filter(t => t.r > 0).length + " de " + st.n : "", ring(st.win))}
-      ${statCard("Ganancia / pérdida media", wl, st.avgW != null ? fmtR(st.avgW) + " / " + (st.avgL != null ? fmtR(st.avgL) : "—") : "", "", "Cuánto ganas de media en las ganadoras frente a lo que pierdes en las perdedoras")}</div>`;
+      ${statCard("Ganancia / pérdida media", wl, st.avgW != null ? fmtV(st.avgW, st.mW) + " / " + (st.avgL != null ? fmtV(st.avgL, st.mL) : "—") : "", "", "Cuánto ganas de media en las ganadoras frente a lo que pierdes en las perdedoras")}</div>`;
   }
   const visCols = () => { const h = histState(), health = healthOk(); return HGROUPS.map(([g, ks]) => [g, ks.filter(k => !h.hide.includes(k) && (k !== "feel" || health))]).filter(g => g[1].length); };
   function histTable(L) {
@@ -74,7 +74,7 @@
         case "account": return `<td class="muted">${esc(acctLabel(t.account))}</td>`;
         case "side": return `<td><span class="xside ${t.side}">${t.side === "buy" ? "Compra" : "Venta"}</span></td>`;
         case "status": return `<td>${t.status === "closed" ? "Cerrada" : `<span class="xtag">Abierta</span>`}</td>`;
-        case "r": return `<td class="mono"><b>${t.status === "closed" ? fmtR(t.r) : "—"}</b></td>`;
+        case "r": return `<td class="mono"><b>${t.status === "closed" ? fmtV(t.r, mOf(t)) : "—"}</b></td>`;
         case "risk_pct": return `<td class="mono">${t.risk_pct != null ? fmtPct(t.risk_pct) : "—"}</td>`;
         case "open_price": case "close_price": case "sl": case "tp": return `<td class="mono">${px(t[k])}</td>`;
         case "dur": return `<td class="mono">${dur(t.open_time, t.close_time)}</td>`;
@@ -247,7 +247,7 @@
   function emoBars(E) {
     if (!E.length) return empty("Aún no hay emociones anotadas", "Anota cómo te sentías en cada operación (abajo tienes las últimas) y aquí verás cuáles te ayudan y cuáles te cuestan.");
     const mx = Math.max(0.5, ...E.map(e => Math.abs(e.avg))), sorted = E.slice().sort((a, b) => b.avg - a.avg);
-    return `<div class="xbars" role="img" aria-label="Resultado medio por emoción">${sorted.map(e => { const w = Math.abs(e.avg) / mx * 50; return `<div class="xbar"><span class="xbar-l">${esc(e.f)}</span><div class="xbar-t"><span class="xbar-z"></span><i class="${e.avg < 0 ? "neg" : ""}" style="${e.avg < 0 ? `right:50%;width:${w}%` : `left:50%;width:${w}%`}"></i></div><span class="xbar-v mono">${fmtR(e.avg)}</span><span class="xbar-n muted">${e.n} op.</span></div>`; }).join("")}</div>`;
+    return `<div class="xbars" role="img" aria-label="Resultado medio por emoción">${sorted.map(e => { const w = Math.abs(e.avg) / mx * 50; return `<div class="xbar"><span class="xbar-l">${esc(e.f)}</span><div class="xbar-t"><span class="xbar-z"></span><i class="${e.avg < 0 ? "neg" : ""}" style="${e.avg < 0 ? `right:50%;width:${w}%` : `left:50%;width:${w}%`}"></i></div><span class="xbar-v mono">${fmtV(e.avg)}</span><span class="xbar-n muted">${e.n} op.</span></div>`; }).join("")}</div>`;
   }
   /* registro de emociones sin operación (chequeos), guardado en docs «emo» */
   const MOMENTS = [["antes", "Antes de operar"], ["durante", "Durante la sesión"], ["despues", "Después de operar"], ["fuera", "Fuera del mercado"]];
@@ -292,7 +292,7 @@
       const L = S.trades.filter(t => !from || new Date(t.open_time) >= from), E = emoStats(L), C = closed(L);
       const ok = E.filter(e => e.n >= 2), best = ok.slice().sort((a, b) => b.avg - a.avg)[0], worst = ok.slice().sort((a, b) => a.sum - b.sum)[0], freq = E.slice().sort((a, b) => b.n - a.n)[0];
       const tagged = C.filter(t => (t.review || {}).feel).length, untag = S.trades.filter(t => t.status === "closed" && !(t.review || {}).feel).sort((a, b) => new Date(b.open_time) - new Date(a.open_time)).slice(0, 5);
-      const insight = worst && worst.avg < 0 ? `Cuando operas <b>${esc(worst.f.toLowerCase())}</b>, cumples el plan el ${num(worst.gp, 0)} % de las veces y pierdes ${fmtR(worst.avg)} de media. La próxima vez que lo notes, para cinco minutos antes de entrar.` : best ? `Tu mejor estado es <b>${esc(best.f.toLowerCase())}</b>: ${fmtR(best.avg)} de media y ${num(best.gp, 0)} % dentro del plan. Fíjate en qué haces esos días.` : "";
+      const insight = worst && worst.avg < 0 ? `Cuando operas <b>${esc(worst.f.toLowerCase())}</b>, cumples el plan el ${num(worst.gp, 0)} % de las veces y pierdes ${fmtV(worst.avg)} de media. La próxima vez que lo notes, para cinco minutos antes de entrar.` : best ? `Tu mejor estado es <b>${esc(best.f.toLowerCase())}</b>: ${fmtV(best.avg)} de media y ${num(best.gp, 0)} % dentro del plan. Fíjate en qué haces esos días.` : "";
       const so = S.emoSort || "n", sorter = { n: (a, b) => b.n - a.n, best: (a, b) => b.avg - a.avg, worst: (a, b) => a.avg - b.avg, int: (a, b) => (b.ai || 0) - (a.ai || 0) }[so];
       const log = (S.emoLog || []).filter(x => !from || x.ts >= from).sort((a, b) => b.ts - a.ts);
       const logCount = {}; log.forEach(x => logCount[x.feel] = (logCount[x.feel] || 0) + 1);
@@ -300,19 +300,19 @@
         <div class="xhead"><div><h1>Emociones</h1><div class="small muted">Qué emociones te ayudan y cuáles te cuestan · ${tagged} de ${C.length} operaciones anotadas</div></div>
           <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="eNew" style="height:38px">${I('<circle cx="10" cy="10" r="7.5"/><path d="M7 12a4 4 0 006 0M7.5 8h.01M12.5 8h.01"/>', 16)} Registrar emoción</button>
           <select class="xsel" id="ePer" aria-label="Periodo">${[["30", "Últimos 30 días"], ["90", "Últimos 90 días"], ["all", "Todo el tiempo"]].map(([k, l]) => `<option value="${k}" ${per === k ? "selected" : ""}>${l}</option>`).join("")}</select></div></div>
-        <div class="xkgrid x3">${statCard("La emoción más rentable", best ? esc(best.f) : "—", best ? fmtR(best.avg) + " por operación · " + best.n + " op." : "Necesita 2 operaciones o más")}
-          ${statCard("La emoción que más te cuesta", worst && worst.sum < 0 ? esc(worst.f) : "—", worst && worst.sum < 0 ? fmtR(worst.sum) + " en total · " + worst.n + " op." : "Nada en negativo")}
+        <div class="xkgrid x3">${statCard("La emoción más rentable", best ? esc(best.f) : "—", best ? fmtV(best.avg) + " por operación · " + best.n + " op." : "Necesita 2 operaciones o más")}
+          ${statCard("La emoción que más te cuesta", worst && worst.sum < 0 ? esc(worst.f) : "—", worst && worst.sum < 0 ? fmtV(worst.sum, worst.msum) + " en total · " + worst.n + " op." : "Nada en negativo")}
           ${statCard("La más frecuente", freq ? esc(freq.f) : "—", freq ? freq.n + " de " + tagged + " operaciones anotadas" : "")}</div>
         ${insight ? `<div class="card xinsight">${I('<path d="M10 2.5a5.5 5.5 0 00-3.2 10l.2 2.5h6l.2-2.5A5.5 5.5 0 0010 2.5zM7.5 17.5h5"/>', 20)}<div>${insight}</div></div>` : ""}
-        <div class="card stack" style="gap:12px"><div class="between"><h2 class="h2b">Métricas emocionales</h2><span class="small muted">resultado medio en R por operación</span></div>${emoBars(E)}</div>
+        <div class="card stack" style="gap:12px"><div class="between"><h2 class="h2b">Métricas emocionales</h2><span class="small muted">resultado medio por operación</span></div>${emoBars(E)}</div>
         <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Desglose de las emociones</h2><select class="xsel" id="eSort" aria-label="Ordenar">${ESORT.map(([k, l]) => `<option value="${k}" ${so === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-          <div class="xtablewrap"><table class="xtable"><thead><tr><th>Emoción</th><th>Registros</th><th>Intensidad media</th><th>Acierto</th><th>Dentro del plan</th><th>R total</th><th>R por operación</th><th>Chequeos</th></tr></thead><tbody>
-          ${E.length ? E.sort(sorter).map(e => `<tr><td><b>${esc(e.f)}</b></td><td class="mono">${e.n}</td><td class="mono">${e.ai == null ? "—" : num(e.ai, 1) + " / 5"}</td><td class="mono">${num(e.wr, 0)} %</td><td class="mono">${num(e.gp, 0)} %</td><td class="mono"><b>${fmtR(e.sum)}</b></td><td class="mono">${fmtR(e.avg)}</td><td class="mono">${logCount[e.f] || 0}</td></tr>`).join("") : `<tr><td colspan="8" class="muted" style="padding:16px">Sin datos todavía.</td></tr>`}
+          <div class="xtablewrap"><table class="xtable"><thead><tr><th>Emoción</th><th>Registros</th><th>Intensidad media</th><th>Acierto</th><th>Dentro del plan</th><th>Total</th><th>Por operación</th><th>Chequeos</th></tr></thead><tbody>
+          ${E.length ? E.sort(sorter).map(e => `<tr><td><b>${esc(e.f)}</b></td><td class="mono">${e.n}</td><td class="mono">${e.ai == null ? "—" : num(e.ai, 1) + " / 5"}</td><td class="mono">${num(e.wr, 0)} %</td><td class="mono">${num(e.gp, 0)} %</td><td class="mono"><b>${fmtV(e.sum, e.msum)}</b></td><td class="mono">${fmtV(e.avg)}</td><td class="mono">${logCount[e.f] || 0}</td></tr>`).join("") : `<tr><td colspan="8" class="muted" style="padding:16px">Sin datos todavía.</td></tr>`}
           </tbody></table></div></div>
         <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Registro de emociones</h2><span class="small muted">${log.length} chequeo${log.length === 1 ? "" : "s"}</span></div>
           ${log.length ? `<div class="elog">${log.slice(0, 12).map(x => `<div class="elogi"><span class="elogd">${new Date(x.ts).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span><b>${esc(x.feel)}</b><span class="xtag">${x.int}/5</span><span class="small muted">${(MOMENTS.find(m => m[0] === x.when) || ["", ""])[1]}</span>${x.note ? `<span class="small elogn">${esc(x.note)}</span>` : ""}<button type="button" class="xib" data-edel="${esc(x.id)}" aria-label="Borrar" title="Borrar">${I(IC.trash, 15)}</button></div>`).join("")}</div>` : `<div class="small muted">Registra cómo te sientes antes, durante o después de operar, aunque no abras ninguna operación. Con el tiempo verás qué estados se repiten.</div>`}</div>
         ${untag.length ? `<div class="card stack" style="gap:12px"><div class="between"><h2 class="h2b">Sin anotar</h2><span class="small muted">toca cómo te sentías al entrar</span></div>
-          ${untag.map(t => `<div class="xtagrow" data-tid="${esc(t.id)}"><div class="xtagrow-h"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"} · ${fmtDT(t.open_time)} · <span class="mono">${fmtR(t.r)}</span></div><div class="row" style="gap:6px;flex-wrap:wrap">${FEELS.map(f => `<button type="button" class="chip" data-qfeel="${esc(f)}">${esc(f)}</button>`).join("")}</div></div>`).join("")}</div>` : ""}
+          ${untag.map(t => `<div class="xtagrow" data-tid="${esc(t.id)}"><div class="xtagrow-h"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"} · ${fmtDT(t.open_time)} · <span class="mono">${fmtV(t.r, mOf(t))}</span></div><div class="row" style="gap:6px;flex-wrap:wrap">${FEELS.map(f => `<button type="button" class="chip" data-qfeel="${esc(f)}">${esc(f)}</button>`).join("")}</div></div>`).join("")}</div>` : ""}
       </div>`;
     },
     bind() {
@@ -337,7 +337,7 @@
 /* ======================= DIARIO ======================= */
 (function () {
   "use strict";
-  const { S, sb, esc, SVG, fmtR, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
+  const { S, sb, esc, SVG, fmtR, fmtV, fmtVt, fmtMoney, mOf, sumM, oneR, dispCur, moneyOn, prefU, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
   const V = window.TK_VIEWS, { $, $$, I, IC, norm, fmtD, empty } = window.TK_X;
   const COVERS = {
     cobalto: "linear-gradient(120deg,#1d3fd6 0%,#3b6bff 45%,#7fa0ff 100%)",
@@ -624,7 +624,7 @@
 /* ======================= BACKTESTING: SESIONES ======================= */
 (function () {
   "use strict";
-  const { S, sb, esc, SVG, fmtR, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
+  const { S, sb, esc, SVG, fmtR, fmtV, fmtVt, fmtMoney, mOf, sumM, oneR, dispCur, moneyOn, prefU, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
   const V = window.TK_VIEWS, { $, $$, I, IC, fmtD, statCard, empty, ring } = window.TK_X;
   const SIZES = [10000, 25000, 50000, 100000, 150000, 200000];
   const RANGES = [["1d", "1 día", 1], ["1w", "1 semana", 7], ["1m", "1 mes", 30], ["3m", "3 meses", 91], ["6m", "6 meses", 182], ["1y", "1 año", 365]];
@@ -644,7 +644,7 @@
     if (x.mode !== "fondeo") return "";
     const rp = x.risk || 0.5, tg = x.target / rp, dl = x.daily / rp, ml = x.max / rp;
     const byDay = {}; sessTrades(x.id).forEach(t => { const d = dayKey(t.open_time); byDay[d] = (byDay[d] || 0) + t.r; });
-    const worstDay = Math.min(0, ...Object.values(byDay)), bars = [["Objetivo", st.tot / tg, `${fmtR(st.tot)} de +${num(tg, 1)} R`], ["Peor día frente al límite diario", Math.abs(worstDay) / dl, `${fmtR(worstDay)} de −${num(dl, 1)} R`, true], ["Caída máxima frente al límite", Math.abs(st.dd) / ml, `${fmtR(st.dd)} de −${num(ml, 1)} R`, true]];
+    const worstDay = Math.min(0, ...Object.values(byDay)), bars = [["Objetivo", st.tot / tg, `${fmtV(st.tot, st.mt)} de +${num(tg, 1)} R`], ["Peor día frente al límite diario", Math.abs(worstDay) / dl, `${fmtV(worstDay)} de −${num(dl, 1)} R`, true], ["Caída máxima frente al límite", Math.abs(st.dd) / ml, `${fmtV(st.dd, st.mdd)} de −${num(ml, 1)} R`, true]];
     const fail = Math.abs(worstDay) >= dl || Math.abs(st.dd) >= ml, pass = !fail && st.tot >= tg;
     return `<div class="stack" style="gap:9px">${bars.map(([l, f, v, risk]) => `<div class="pbar"><div class="between"><span>${l}</span><b>${v}</b></div><div class="pbt ${risk && f >= .7 ? "warn" : ""}"><i style="width:${Math.min(100, Math.max(0, f * 100)).toFixed(1)}%"></i></div></div>`).join("")}
       ${pass ? `<div class="xok">${I(IC.trophy, 15)} Reto superado en la práctica</div>` : fail ? `<div class="xbad">Reto perdido: has tocado un límite</div>` : ""}</div>`;
@@ -655,7 +655,7 @@
       <div class="between" style="align-items:flex-start;gap:10px"><div style="min-width:0"><b class="anum" style="font-size:16px">${esc(x.name || "Sesión")}</b><div class="abro">${esc((x.syms || []).join(" · "))} · ${fmtD(from)} – ${fmtD(to)}</div></div>
         <div class="row" style="gap:6px"><span class="tag">${x.mode === "fondeo" ? "Reto " + k(x.size) : "Clásico"}</span><button type="button" class="xib" data-bsdel="${esc(x.id)}" aria-label="Borrar sesión" title="Borrar sesión">${I(IC.trash, 16)}</button></div></div>
       <div class="pbar"><div class="between small"><span class="muted">Avance del periodo</span><span class="mono">${num(prog * 100, 0)} % · ${new Date(at).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span></div><div class="pbt"><i style="width:${(prog * 100).toFixed(1)}%"></i></div></div>
-      <div class="anums"><div><span>Operaciones</span><b>${st.n}</b></div><div><span>Acierto</span><b>${st.win == null ? "—" : num(st.win, 0) + " %"}</b></div><div><span>Resultado</span><b>${st.n ? fmtR(st.tot) : "—"}</b></div><div><span>Caída máx.</span><b>${st.n ? fmtR(st.dd) : "—"}</b></div></div>
+      <div class="anums"><div><span>Operaciones</span><b>${st.n}</b></div><div><span>Acierto</span><b>${st.win == null ? "—" : num(st.win, 0) + " %"}</b></div><div><span>Resultado</span><b>${st.n ? fmtV(st.tot, st.mt) : "—"}</b></div><div><span>Caída máx.</span><b>${st.n ? fmtV(st.dd, st.mdd) : "—"}</b></div></div>
       <div class="small muted row" style="gap:14px">${I(IC.clock, 14)} ${hms(x.secs)} de estudio · ${(x.bars || 0).toLocaleString("es-ES")} velas repasadas</div>
       ${rulesBars(x, st)}
       <div class="row" style="gap:8px"><button type="button" class="btn" data-bsgo="${esc(x.id)}" style="height:38px;font-size:13.5px">${I(IC.play, 13)} ${x.lastTs ? "Continuar" : "Empezar"}</button>${(x.syms || []).length > 1 ? `<select class="xsel" data-bssym="${esc(x.id)}" aria-label="Mercado">${x.syms.map(s => `<option>${esc(s)}</option>`).join("")}</select>` : ""}</div>
@@ -686,7 +686,7 @@
           return `<div class="bshero bscar s${sl}" id="bsCar" aria-roledescription="carrusel">${SL.map(([m, lb, h, p], i) => `<div class="bsslide ${i === sl ? "on" : ""}" aria-hidden="${i !== sl}"><div class="bshero-t"><div class="lbl" style="color:#a9bcff">${lb}</div><h1>${h}</h1><p>${p}</p>
             <div class="row" style="gap:10px;flex-wrap:wrap"><button type="button" class="btn" data-bsnewm="${m}" ${i !== sl ? 'tabindex="-1"' : ""}>${I(IC.plus, 16, 2)} Nueva sesión</button><button type="button" class="btn2 bsghost" data-bsview ${i !== sl ? 'tabindex="-1"' : ""}>Ver sesiones</button>${i === 0 ? `<a class="btn2 bsghost" href="#analizar" id="bsFree" ${i !== sl ? 'tabindex="-1"' : ""}>Practicar sin sesión</a>` : ""}</div></div>${m === "fondeo" ? heroRing() : heroArt()}</div>`).join("")}
             <div class="bsdots" role="tablist" aria-label="Modos">${SL.map((x, i) => `<button type="button" role="tab" data-bsdot="${i}" aria-selected="${i === sl}" aria-label="${x[1]}"></button>`).join("")}</div></div>`; })()}
-        ${all.length ? `<div class="xkgrid">${statCard("Sesiones", (S.bts || []).length, "", "")}${statCard("Operaciones simuladas", st.n, "", "")}${statCard("Acierto", st.win == null ? "—" : num(st.win, 0) + " %", "", ring(st.win))}${statCard("Resultado", fmtR(st.tot), "todas las sesiones", spark(st.curve, 96, 40))}</div>` : ""}
+        ${all.length ? `<div class="xkgrid">${statCard("Sesiones", (S.bts || []).length, "", "")}${statCard("Operaciones simuladas", st.n, "", "")}${statCard("Acierto", st.win == null ? "—" : num(st.win, 0) + " %", "", ring(st.win))}${statCard("Resultado", fmtV(st.tot, st.mt), "todas las sesiones", spark(st.curve, 96, 40))}</div>` : ""}
         <div class="row" style="gap:14px;flex-wrap:wrap"><h2 class="h2b">Sesiones</h2><span class="small muted">${(S.bts || []).length} en total</span><div class="pills" role="group" aria-label="Filtrar sesiones" style="margin-left:auto">${[["todas", "Todas"], ["clasico", "Clásico"], ["fondeo", "Reto de fondeo"]].map(([a, b]) => `<button type="button" data-bsf="${a}" aria-pressed="${f === a}">${b}</button>`).join("")}</div></div>
         ${!S.btLoaded ? `<div class="agrid" id="bsList" aria-busy="true">${[0, 1, 2].map(() => `<div class="card bsskel"><i style="width:60%"></i><i style="width:40%"></i><i style="height:8px"></i><i style="width:80%"></i><i style="width:50%;height:34px"></i></div>`).join("")}</div>` : L.length ? `<div class="agrid" id="bsList">${L.map(sessCard).join("")}</div>` : `<div class="card bsempty">${empty("Aún no hay sesiones", "Crea una sesión para practicar un mercado en unas fechas concretas, en modo clásico o como un reto de fondeo.", `<button type="button" class="btn" data-bsnew2 style="height:38px">Nueva sesión</button>`)}</div>`}
       </div>`;
@@ -783,7 +783,7 @@
     const r = S.btRun; if (!r) return "";
     const x = (S.bts || []).find(y => y.id === r.id), T = sessTrades(r.id), st = tradeStats(T);
     return `<div class="card bsband" id="bsBand"><div class="row" style="gap:12px;flex-wrap:wrap;align-items:center"><span class="tag">${r.mode === "fondeo" ? "Reto" : "Sesión"}</span><b>${esc(r.name || "Sesión")}</b><span class="small muted">${esc(r.sym)} · hasta ${new Date(r.end).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
-      <span class="small mono" id="bsBandStats">${st.n} op. · ${st.n ? fmtR(st.tot) : "0,0 R"}</span><span style="flex:1"></span><a class="btn2" href="#backtest" style="height:34px">Ver sesiones</a><button type="button" class="btn2" id="bsEnd" style="height:34px">Terminar</button></div>
+      <span class="small mono" id="bsBandStats">${st.n} op. · ${st.n ? fmtV(st.tot, st.mt) : fmtV(0, 0)}</span><span style="flex:1"></span><a class="btn2" href="#backtest" style="height:34px">Ver sesiones</a><button type="button" class="btn2" id="bsEnd" style="height:34px">Terminar</button></div>
       ${x ? `<div style="margin-top:10px">${rulesBars(x, st)}</div>` : ""}</div>`;
   };
   window.tkSessionHooks = {
@@ -808,7 +808,7 @@
 /* ======================= NOTICIAS (calendario económico) ======================= */
 (function () {
   "use strict";
-  const { S, sb, esc, SVG, fmtR, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
+  const { S, sb, esc, SVG, fmtR, fmtV, fmtVt, fmtMoney, mOf, sumM, oneR, dispCur, moneyOn, prefU, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
   const V = window.TK_VIEWS, { $, $$, I, IC, norm, statCard, empty } = window.TK_X;
   const FLAG = { USD: "🇺🇸", EUR: "🇪🇺", GBP: "🇬🇧", JPY: "🇯🇵", AUD: "🇦🇺", CAD: "🇨🇦", CHF: "🇨🇭", NZD: "🇳🇿", CNY: "🇨🇳", ALL: "🌐" };
   const IMP = { High: ["Alto", 3], Medium: ["Medio", 2], Low: ["Bajo", 1], Holiday: ["Festivo", 0] };
@@ -908,7 +908,7 @@
 /* ======================= ASISTENTE ======================= */
 (function () {
   "use strict";
-  const { S, sb, esc, SVG, fmtR, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
+  const { S, sb, esc, SVG, fmtR, fmtV, fmtVt, fmtMoney, mOf, sumM, oneR, dispCur, moneyOn, prefU, num, fmtPct, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, MARKETS, symbolsInfo, lsGet, lsSet, acctName, selAcct, FEELS, greet, initials, minOf, minOfDate } = window.TKAPP;
   const V = window.TK_VIEWS, { $, $$, I, IC, norm, closed } = window.TK_X;
   const DAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   const SUG = ["¿Cómo voy esta semana?", "¿A qué hora opero mejor?", "¿Qué día de la semana me va peor?", "¿Cuál es mi mejor mercado?", "¿Qué norma rompo más?", "¿Qué hago después de una pérdida?", "¿Qué emoción me cuesta más?", "¿Opero demasiado?", "¿Compras o ventas?", "¿Cómo va mi backtesting?"];
@@ -922,17 +922,17 @@
     if (has("hora", "horario", "momento")) {
       const G = groupBy(C, t => new Date(t.open_time).getHours()), b = pick(G, 2, (a, c) => c.st.exp - a.st.exp), w = pick(G, 2, (a, c) => a.st.exp - c.st.exp);
       if (!b) return "Necesito al menos dos operaciones en una misma hora para compararlas.";
-      return `Tu mejor hora es entre las <b>${b.k}:00 y las ${+b.k + 1}:00</b>: ${fmtR(b.st.exp)} por operación en ${b.st.n} operaciones (${num(b.st.win, 0)} % de acierto).${w && w.k !== b.k ? ` La que peor te va: <b>${w.k}:00</b>, con ${fmtR(w.st.exp)} por operación.` : ""}<ul>${li(`Tu horario del plan es ${esc(S.plan.start)}–${esc(S.plan.end)}.`)}${w && w.st.exp < 0 ? li(`Si esa hora está dentro de tu horario, plantéate quitarla desde mañana.`) : ""}</ul>`;
+      return `Tu mejor hora es entre las <b>${b.k}:00 y las ${+b.k + 1}:00</b>: ${fmtV(b.st.exp, b.st.mexp)} por operación en ${b.st.n} operaciones (${num(b.st.win, 0)} % de acierto).${w && w.k !== b.k ? ` La que peor te va: <b>${w.k}:00</b>, con ${fmtV(w.st.exp, w.st.mexp)} por operación.` : ""}<ul>${li(`Tu horario del plan es ${esc(S.plan.start)}–${esc(S.plan.end)}.`)}${w && w.st.exp < 0 ? li(`Si esa hora está dentro de tu horario, plantéate quitarla desde mañana.`) : ""}</ul>`;
     }
     if (has("dia de la semana", "que dia", "lunes", "viernes", "dias")) {
       const G = groupBy(C, t => new Date(t.open_time).getDay()), b = pick(G, 2, (a, c) => c.st.exp - a.st.exp), w = pick(G, 2, (a, c) => a.st.exp - c.st.exp);
       if (!b) return "Todavía hay pocas operaciones por día de la semana para compararlos.";
-      return `Te va mejor el <b>${DAYS[b.k]}</b> (${fmtR(b.st.exp)} por operación, ${b.st.n} op.) y peor el <b>${DAYS[w.k]}</b> (${fmtR(w.st.exp)} por operación, ${w.st.n} op.).`;
+      return `Te va mejor el <b>${DAYS[b.k]}</b> (${fmtV(b.st.exp, b.st.mexp)} por operación, ${b.st.n} op.) y peor el <b>${DAYS[w.k]}</b> (${fmtV(w.st.exp, w.st.mexp)} por operación, ${w.st.n} op.).`;
     }
     if (has("mercado", "simbolo", "par", "activo", "instrumento")) {
       const G = groupBy(C, t => t.symbol), b = pick(G, 2, (a, c) => c.st.tot - a.st.tot), w = pick(G, 2, (a, c) => a.st.tot - c.st.tot);
       if (!b) return "Necesito al menos dos operaciones por mercado para compararlos.";
-      return `Tu mejor mercado es <b>${esc(b.k)}</b>: ${fmtR(b.st.tot)} en ${b.st.n} operaciones.${w && w.k !== b.k ? ` El que más te cuesta es <b>${esc(w.k)}</b>: ${fmtR(w.st.tot)} en ${w.st.n}.` : ""}`;
+      return `Tu mejor mercado es <b>${esc(b.k)}</b>: ${fmtV(b.st.tot, b.st.mt)} en ${b.st.n} operaciones.${w && w.k !== b.k ? ` El que más te cuesta es <b>${esc(w.k)}</b>: ${fmtV(w.st.tot, w.st.mt)} en ${w.st.n}.` : ""}`;
     }
     if (has("norma", "regla", "plan", "cumplo", "disciplina")) {
       const ev = C.map(evaluate), good = ev.filter(e => e.good).length, fails = {};
@@ -945,29 +945,29 @@
       for (let i = 1; i < S2.length; i++) if (S2[i - 1].r < 0 && dayKey(S2[i - 1].open_time) === dayKey(S2[i].open_time)) after.push(S2[i]);
       if (after.length < 2) return "Aún no hay suficientes operaciones justo después de una pérdida (el mismo día) para sacar conclusiones.";
       const st = tradeStats(after), all = tradeStats(C), gp = after.filter(t => evaluate(t).good).length / after.length * 100;
-      return `Después de una pérdida, el mismo día, has hecho <b>${after.length}</b> operaciones: ${fmtR(st.exp)} por operación frente a ${fmtR(all.exp)} de tu media, y cumples el plan el ${num(gp, 0)} % de las veces.${st.exp < all.exp ? " <b>Te va peor tras perder.</b> Prueba la regla: tras una pérdida, cinco minutos fuera de la pantalla." : " Gestionas bien las pérdidas."}`;
+      return `Después de una pérdida, el mismo día, has hecho <b>${after.length}</b> operaciones: ${fmtV(st.exp, st.mexp)} por operación frente a ${fmtV(all.exp, all.mexp)} de tu media, y cumples el plan el ${num(gp, 0)} % de las veces.${st.exp < all.exp ? " <b>Te va peor tras perder.</b> Prueba la regla: tras una pérdida, cinco minutos fuera de la pantalla." : " Gestionas bien las pérdidas."}`;
     }
     if (has("emocion", "siento", "sentia", "miedo", "ansiedad", "fomo")) {
       if (!(S.consents && S.consents.health)) return `Para responder sobre emociones tienes que activar el permiso en <a href="#ajustes">Ajustes → Permisos</a> y anotar cómo te sentías en cada operación.`;
       const G = groupBy(C.filter(t => (t.review || {}).feel), t => t.review.feel), w = pick(G, 2, (a, c) => a.st.tot - c.st.tot), b = pick(G, 2, (a, c) => c.st.exp - a.st.exp);
       if (!w) return `Anota tu emoción en más operaciones (te lo pongo fácil en <a href="#emociones">Emociones</a>) y podré compararlas.`;
-      return `La emoción que más te cuesta es <b>${esc(w.k.toLowerCase())}</b>: ${fmtR(w.st.tot)} en ${w.st.n} operaciones.${b && b.k !== w.k ? ` La que mejor te va: <b>${esc(b.k.toLowerCase())}</b>, ${fmtR(b.st.exp)} por operación.` : ""}`;
+      return `La emoción que más te cuesta es <b>${esc(w.k.toLowerCase())}</b>: ${fmtV(w.st.tot, w.st.mt)} en ${w.st.n} operaciones.${b && b.k !== w.k ? ` La que mejor te va: <b>${esc(b.k.toLowerCase())}</b>, ${fmtV(b.st.exp, b.st.mexp)} por operación.` : ""}`;
     }
     if (has("demasiad", "sobreoper", "cuantas", "numero de operaciones")) {
       const G = groupBy(C, t => dayKey(t.open_time)), over = G.filter(g => g.l.length > S.plan.maxTrades), ok = G.filter(g => g.l.length <= S.plan.maxTrades);
       const so = tradeStats(over.flatMap(g => g.l)), sk = tradeStats(ok.flatMap(g => g.l));
-      return over.length ? `Has pasado tu máximo de ${S.plan.maxTrades} operaciones en <b>${over.length} de ${G.length}</b> días. Esos días: ${fmtR(so.exp)} por operación; el resto: ${fmtR(sk.exp)}.` : `No has pasado tu máximo de ${S.plan.maxTrades} operaciones ningún día. Bien.`;
+      return over.length ? `Has pasado tu máximo de ${S.plan.maxTrades} operaciones en <b>${over.length} de ${G.length}</b> días. Esos días: ${fmtV(so.exp, so.mexp)} por operación; el resto: ${fmtV(sk.exp, sk.mexp)}.` : `No has pasado tu máximo de ${S.plan.maxTrades} operaciones ningún día. Bien.`;
     }
     if (has("compra", "venta", "largo", "corto", "direccion")) {
       const b = tradeStats(C.filter(t => t.side === "buy")), s = tradeStats(C.filter(t => t.side === "sell"));
-      return `Compras: ${b.n} op., ${b.n ? fmtR(b.tot) + " (" + num(b.win, 0) + " % de acierto)" : "—"}. Ventas: ${s.n} op., ${s.n ? fmtR(s.tot) + " (" + num(s.win, 0) + " % de acierto)" : "—"}.`;
+      return `Compras: ${b.n} op., ${b.n ? fmtV(b.tot, b.mt) + " (" + num(b.win, 0) + " % de acierto)" : "—"}. Ventas: ${s.n} op., ${s.n ? fmtV(s.tot, s.mt) + " (" + num(s.win, 0) + " % de acierto)" : "—"}.`;
     }
     if (has("backtest", "simulad", "practica", "sesion")) {
       const L = (S.btTrades || []);
       if (!S.btLoaded) { if (window.tkLoadSessions) tkLoadSessions(); return "Estoy cargando tus sesiones de backtesting. Pregúntamelo otra vez en un momento."; }
       if (!L.length) return `Aún no tienes operaciones simuladas en sesiones. Crea una en <a href="#backtest">Backtesting</a>.`;
       const st = tradeStats(L.map(t => ({ r: +t.r, status: "closed", open_time: t.exit_time })));
-      return `En tus sesiones de backtesting llevas <b>${st.n}</b> operaciones simuladas: ${fmtR(st.tot)}, ${num(st.win, 0)} % de acierto y una caída máxima de ${fmtR(st.dd)}.`;
+      return `En tus sesiones de backtesting llevas <b>${st.n}</b> operaciones simuladas: ${fmtV(st.tot, st.mt)}, ${num(st.win, 0)} % de acierto y una caída máxima de ${fmtV(st.dd, st.mdd)}.`;
     }
     // resumen (semana por defecto, mes si se pide)
     const month = has("mes"), from = new Date(); from.setHours(0, 0, 0, 0); if (month) from.setDate(1); else from.setDate(from.getDate() - ((from.getDay() + 6) % 7));
@@ -976,7 +976,7 @@
       return `No he entendido la pregunta. Puedo responderte sobre esto:<ul>${SUG.map(s => li(`<button type="button" class="link" data-ask="${esc(s)}">${esc(s)}</button>`)).join("")}</ul>`;
     }
     if (!L.length) return `${month ? "Este mes" : "Esta semana"} aún no has cerrado operaciones.`;
-    return `${month ? "Este mes" : "Esta semana"}: <b>${st.n}</b> operaciones, <b>${fmtR(st.tot)}</b>, ${num(st.win, 0)} % de acierto y <b>${good} de ${st.n}</b> dentro del plan.${st.dd < 0 ? ` Peor caída: ${fmtR(st.dd)}.` : ""}`;
+    return `${month ? "Este mes" : "Esta semana"}: <b>${st.n}</b> operaciones, <b>${fmtV(st.tot, st.mt)}</b>, ${num(st.win, 0)} % de acierto y <b>${good} de ${st.n}</b> dentro del plan.${st.dd < 0 ? ` Peor caída: ${fmtV(st.dd, st.mdd)}.` : ""}`;
   }
   const CMDS = [["semana", "Cómo voy esta semana", "¿Cómo voy esta semana?"], ["mes", "Resumen del mes", "Resumen del mes"], ["hora", "Mi mejor hora", "¿A qué hora opero mejor?"], ["dia", "Mejor y peor día", "¿Qué día de la semana me va peor?"], ["mercado", "Mi mejor mercado", "¿Cuál es mi mejor mercado?"], ["normas", "Qué norma rompo más", "¿Qué norma rompo más?"], ["perdida", "Después de una pérdida", "¿Qué hago después de una pérdida?"], ["emocion", "La emoción que más me cuesta", "¿Qué emoción me cuesta más?"], ["sobreoperar", "¿Opero demasiado?", "¿Opero demasiado?"], ["direccion", "Compras o ventas", "¿Compras o ventas?"], ["backtesting", "Mi backtesting", "¿Cómo va mi backtesting?"]];
   const chats = () => lsGet("tk-chats", []), saveChats = L => lsSet("tk-chats", L.slice(0, 30));

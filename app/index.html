@@ -138,14 +138,14 @@ h3{font-family:var(--head);letter-spacing:-.015em}
 .xinsight{display:flex;gap:12px;align-items:flex-start;font-size:14.5px;line-height:1.55;border-color:color-mix(in srgb,var(--cobalto) 40%,transparent)}
 .xinsight svg{color:var(--cobalto2);flex:none;margin-top:2px}
 .xbars{display:flex;flex-direction:column;gap:10px}
-.xbar{display:grid;grid-template-columns:150px 1fr 70px 50px;gap:12px;align-items:center;font-size:13.5px}
+.xbar{display:grid;grid-template-columns:150px 1fr minmax(70px,auto) 50px;gap:12px;align-items:center;font-size:13.5px}
 .xbar-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .xbar-t{position:relative;height:14px;border-radius:6px;background:var(--sub)}
 .xbar-z{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--borde)}
 .xbar-t i{position:absolute;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,var(--btn),var(--cobalto2))}
 .xbar-t i.neg{background:transparent;border:1.5px solid var(--cobalto)}
 .xbar-v{text-align:right;font-weight:700}
-@media (max-width:560px){.xbar{grid-template-columns:96px 1fr 58px}.xbar-n{display:none}}
+@media (max-width:560px){.xbar{grid-template-columns:86px 1fr minmax(58px,auto)}.xbar-n{display:none}}
 .xtagrow{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:var(--sub)}
 .xtagrow-h{font-size:13.5px}
 /* diario */
@@ -881,6 +881,7 @@ body.bt-mode .live-only{display:none!important}
 .logo::after{content:"";position:absolute;left:11px;top:10px;width:8px;height:9px;border-radius:2px;background:#fbe27a}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--tinta);color:var(--card);padding:10px 16px;border-radius:12px;font-size:14px;z-index:50;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(0,0,0,.18)}
 @media (min-width:1024px){.toast{bottom:24px}}
+.mv{white-space:nowrap;font-variant-numeric:tabular-nums}.xbar-v .mv{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.15}.xbar-v tk-r{margin:0}tk-r{display:inline;font-size:max(.56em,9.5px);font-weight:500;opacity:.58;margin-left:.42em;letter-spacing:0;vertical-align:.08em}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="../config.js"></script>
@@ -914,6 +915,36 @@ function refreshWidgets(){const t=document.getElementById("ticker");if(t)t.datas
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const num=(v,d=1)=>Number(v).toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d});
 const fmtR=r=>r==null||!isFinite(r)?"—":(r>0?"+":r<0?"−":"")+num(Math.abs(r),1)+" R";
+/* ---------- dinero: cada usuario elige moneda; la R va en pequeño ---------- */
+const CURS={EUR:"€",USD:"$",GBP:"£",CHF:"CHF"};
+function prefU(){const m=(typeof S!=="undefined"&&S.user&&S.user.user_metadata)||{};return {unit:m.unit||"m",cur:m.cur||"auto",sess:!!m.unitSess}}
+function fxLoad(){let c=null;try{c=JSON.parse(localStorage.getItem("tk-fx")||"null")}catch(e){}if(c&&c.rates)FXR=c.rates;if(c&&Date.now()-c.t<12*36e5)return;
+  const get=u=>fetch(u).then(r=>r.ok?r.json():null);get("https://api.frankfurter.dev/v1/latest").catch(()=>null).then(j=>j&&j.rates?j:get("https://api.frankfurter.app/latest")).then(j=>{if(!j||!j.rates)return;const had=!!FXR;FXR=Object.assign({EUR:1},j.rates);try{localStorage.setItem("tk-fx",JSON.stringify({t:Date.now(),rates:FXR}))}catch(e){}if(!had&&typeof render==="function"&&S.user)render()}).catch(()=>{})}
+let FXR=null;
+function fx(v,from,to){if(v==null||!isFinite(v))return null;from=(from||"").toUpperCase();if(!from||!to||from===to)return v;if(!FXR||!FXR[from]||!FXR[to])return null;return v/FXR[from]*FXR[to]}
+function tradeCur(){const c={};((typeof S!=="undefined"&&S.trades)||[]).forEach(t=>{if(t.currency)c[t.currency.toUpperCase()]=(c[t.currency.toUpperCase()]||0)+1});const k=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];return k||null}
+function dispCur(){const p=prefU(),tc=tradeCur();if(p.cur!=="auto"){if(tc&&tc!==p.cur&&!(FXR&&FXR[tc]&&FXR[p.cur]))return tc;return p.cur}return tc||"EUR"}
+let ONER={k:"",v:null};
+function oneR(){const T=(typeof S!=="undefined"&&S.trades)||[],c=dispCur(),k=c+"|"+T.length+"|"+(S.selAcct||"")+"|"+(FXR?1:0);if(ONER.k===k)return ONER.v;
+  const rm=T.filter(t=>t.risk_money!=null&&+t.risk_money>0).slice(0,30).map(t=>fx(+t.risk_money,t.currency,c)).filter(v=>v!=null).sort((a,b)=>a-b);
+  let v=rm.length?rm[Math.floor(rm.length/2)]:null;
+  if(v==null){const st=T.filter(t=>t.profit!=null&&t.r!=null&&Math.abs(+t.r)>.2).slice(0,30).map(t=>fx(Math.abs(+t.profit/+t.r),t.currency,c)).filter(v=>v!=null).sort((a,b)=>a-b);if(st.length)v=st[Math.floor(st.length/2)]}
+  if(v==null&&typeof acctList==="function"){try{const A=acctList().map(x=>x.a).filter(a=>a&&+a.size>0);const a=A[0];if(a){const rp=+a.risk||(S.plan&&S.plan.riskPct)||.5;v=fx(+a.size*rp/100,a.currency||"USD",c)}}catch(e){}}
+  ONER={k,v};return v}
+function mOf(t){if(!t)return null;const c=dispCur();
+  if(t.profit!=null&&t.profit!==""&&isFinite(+t.profit))return fx((+t.profit)+(+t.commission||0)+(+t.swap||0),t.currency||c,c);
+  if(t.r==null||!isFinite(+t.r))return null;
+  if(t.risk_money!=null&&+t.risk_money>0)return fx(+t.r*+t.risk_money,t.currency||c,c);
+  const o=oneR();return o==null?null:+t.r*o}
+const sumM=L=>{let s=0,k=0;L.forEach(t=>{const m=mOf(t);if(m!=null){s+=m;k++}});return k?s:null};
+function fmtMoney(m,sign){if(m==null||!isFinite(m))return "—";const a=Math.abs(m),c=dispCur(),sy=CURS[c]||c;return (sign===false?"":m>0.004?"+":m<-0.004?"−":"")+num(a,a>=1000?0:2)+" "+sy}
+const moneyOn=()=>{const p=prefU();return p.unit!=="r"&&!(p.sess&&typeof S!=="undefined"&&S.plan&&inSession(S.plan))};
+function mFor(r,m){if(m===undefined){const o=oneR();m=o==null||r==null?null:r*o}return m}
+function fmtV(r,m){if(r==null||!isFinite(r))return "—";if(!moneyOn())return fmtR(r);m=mFor(r,m);if(m==null||!isFinite(m))return fmtR(r);return `<span class="mv">${fmtMoney(m)}<tk-r>${fmtR(r)}</tk-r></span>`}
+function fmtVt(r,m){if(r==null||!isFinite(r))return "—";if(!moneyOn())return fmtR(r);m=mFor(r,m);if(m==null||!isFinite(m))return fmtR(r);return fmtMoney(m)+" ("+fmtR(r)+")"}
+const fmtVabs=r=>fmtV(Math.abs(r)).replace('<span class="mv">+','<span class="mv">').replace("<tk-r>+","<tk-r>").replace(/^\+/,"");
+const fmtLim=(r,short)=>{const o=oneR(),rt=num(r,1).replace(/,0$/,"");if(!(moneyOn()&&o!=null))return num(r,1)+" R";const m=Math.round(r*o),c=dispCur();return num(m,0)+"\u00a0"+(CURS[c]||c)+(short?"":" ("+rt+" R)")};
+fxLoad();
 const fmtPct=p=>p==null?"—":num(p,p<1?2:1).replace(/,?0+$/,"")+" %";
 const hhmm=t=>t?new Date(t).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}):"—";
 const dayKey=t=>{const d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
@@ -1085,12 +1116,12 @@ function vela(r,h=36){
 function regla(trades,dayR,limit){
   const x=r=>Math.max(1,Math.min(99,(r+2.5)/5*100));
   const wall=x(-limit);
-  let h=`<div class="regla" role="img" aria-label="Regla de R: tu límite está en −${num(limit,1)} R y el día va en ${fmtR(dayR)}">`;
+  let h=`<div class="regla" role="img" aria-label="Regla de R: tu límite está en −${num(limit,1)} R y el día va en ${fmtVt(dayR)}">`;
   h+=`<div style="position:absolute;left:0;top:24px;width:${wall}%;height:30px;background:repeating-linear-gradient(135deg,var(--linea) 0 4px,var(--card) 4px 8px);border-right:2px solid var(--tinta)"></div>`;
   h+=`<div style="position:absolute;left:0;top:54px;width:100%;height:1px;background:var(--gris)"></div>`;
   h+=`<div class="lbl" style="position:absolute;left:4px;top:8px;font-size:9px">Límite −${num(limit,1)} R</div>`;
   [-2,-1,0,1,2].forEach(r=>{h+=`<div style="position:absolute;left:${x(r)}%;top:${r?49:47}px;width:${r?1:2}px;height:${r?10:14}px;background:${r?"var(--gris)":"var(--tinta)"}"></div><span class="mono" style="position:absolute;left:calc(${x(r)}% - 7px);top:66px;font-size:10px;color:${r?"var(--suave)":"var(--tinta)"};font-weight:${r?400:700}">${r>0?"+":r<0?"−":""}${Math.abs(r)}</span>`});
-  trades.filter(t=>t.r!=null).forEach(t=>{h+=`<div title="${esc(t.symbol)} ${fmtR(t.r)}" style="position:absolute;left:calc(${x(t.r)}% - 6px);top:36px;width:12px;height:12px;border-radius:50%;background:var(--tinta)"></div><div class="mono" style="position:absolute;left:calc(${x(t.r)}% - 26px);width:52px;text-align:center;top:20px;font-size:9px;color:var(--suave)">${esc(t.symbol.slice(0,8))}</div>`});
+  trades.filter(t=>t.r!=null).forEach(t=>{h+=`<div title="${esc(t.symbol)} ${fmtVt(t.r, mOf(t))}" style="position:absolute;left:calc(${x(t.r)}% - 6px);top:36px;width:12px;height:12px;border-radius:50%;background:var(--tinta)"></div><div class="mono" style="position:absolute;left:calc(${x(t.r)}% - 26px);width:52px;text-align:center;top:20px;font-size:9px;color:var(--suave)">${esc(t.symbol.slice(0,8))}</div>`});
   h+=`<div style="position:absolute;left:calc(${x(dayR)}% - 7px);top:26px;width:14px;display:flex;flex-direction:column;align-items:center"><div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid var(--cobalto)"></div><div style="width:2px;height:19px;background:var(--cobalto)"></div></div><div class="mono" style="position:absolute;left:calc(${x(dayR)}% - 12px);top:8px;font-size:10px;font-weight:700;color:var(--cobalto)">HOY</div>`;
   return h+"</div>";
 }
@@ -1121,18 +1152,18 @@ function ticketDia(today,dayR,p){
         if(!t.tp){sub+=" · a mejorar: pon objetivo";icon=`<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 3 V8 M7 10.6 V11" fill="none" stroke="var(--ambarT)" stroke-width="2.2" stroke-linecap="round"/></svg>`}
         else icon=ico("check",14,2.6,"var(--cobalto)")}
     }
-    return `<a class="tkline" href="#op/${encodeURIComponent(t.id)}"><div class="ldr"><span class="nm">${hhmm(t.open_time)} ${esc((t.symbol||"").toUpperCase())} ${t.side==="buy"?"COMPRA":"VENTA"}</span><span class="dots"></span><b>${closed?fmtR(t.r):"abierta"}</b></div><div class="tksub">${icon}<span>${esc(sub)}</span></div></a>`;
+    return `<a class="tkline" href="#op/${encodeURIComponent(t.id)}"><div class="ldr"><span class="nm">${hhmm(t.open_time)} ${esc((t.symbol||"").toUpperCase())} ${t.side==="buy"?"COMPRA":"VENTA"}</span><span class="dots"></span><b>${closed?fmtV(t.r, mOf(t)):"abierta"}</b></div><div class="tksub">${icon}<span>${esc(sub)}</span></div></a>`;
   }).join("");
   const n=p.maxTrades-today.length;
   const free=n>0?`— queda${n>1?"n":""} ${n} operaci${n>1?"ones libres":"ón libre"} —`:n===0?"— has llegado a tu máximo —":`— ${-n} por encima de tu máximo —`;
   const margin=Math.max(0,p.dayLimitR+dayR);
   return `<div class="tk"><div class="paper">
-    <div class="tkhead"><span class="tkbrand">TICKORA</span><span class="lbl">Tu día en R · ${today.length} de ${p.maxTrades}</span></div>
+    <div class="tkhead"><span class="tkbrand">TICKORA</span><span class="lbl">Tu día · ${today.length} de ${p.maxTrades}</span></div>
     <div class="cut"></div>
     ${lines||`<div class="tkfree">— aún sin operaciones —</div>`}
     <div class="tkfree">${free}</div>
     <div class="cut"></div>
-    <div class="tktot"><span class="k">TOTAL</span><span class="v"><span class="rot">${today.some(t=>t.status==="closed")?fmtR(dayR):"0,0 R"}</span></span></div>
+    <div class="tktot"><span class="k">TOTAL</span><span class="v"><span class="rot">${today.some(t=>t.status==="closed")?fmtV(dayR,sumM(today.filter(t=>t.status==="closed"&&t.r!=null))):fmtV(0, 0)}</span></span></div>
     <div class="tkstats"><div><span>LÍMITE</span><b>−${num(p.dayLimitR,1)} R</b></div><div><span>MARGEN</span><b>${num(margin,1)} R</b></div><div><span>NORMAS</span><b>${tot?ok+" de "+tot:"—"}</b></div></div>
   </div><div class="zig"></div></div>`;
 }
@@ -1245,17 +1276,17 @@ function radarHex(sc){
 function heat7(info,weeks){
   const end=new Date();end.setHours(0,0,0,0);const start=new Date(end);start.setDate(start.getDate()-((end.getDay()+6)%7)-7*(weeks-1));
   let cols="";for(let w=0;w<weeks;w++){let c="";for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+w*7+i);const x=info.byDay[dayKey(d)];
-    const cls=d>end?"hz":x?(x.every(t=>evaluate(t).good)?"hg":"hbad"):"h0";c+=`<i class="${cls}" title="${d.toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"})}${x?" · "+x.length+" op. · "+fmtR(x.reduce((a,t)=>a+(t.r||0),0)):""}"></i>`}cols+=`<div class="hc7">${c}</div>`}
+    const cls=d>end?"hz":x?(x.every(t=>evaluate(t).good)?"hg":"hbad"):"h0";c+=`<i class="${cls}" title="${d.toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"})}${x?" · "+x.length+" op. · "+fmtVt(x.reduce((a,t)=>a+(t.r||0),0)):""}"></i>`}cols+=`<div class="hc7">${c}</div>`}
   return `<div class="heat7"><div class="hd7">${"LMXJVSD".split("").map(d=>`<span>${d}</span>`).join("")}</div><div class="hg7">${cols}</div></div>`;
 }
 function ticketMini(today,dayR,p){
   const closed=today.filter(t=>t.status==="closed"), fails=closed.reduce((a,t)=>a+evaluate(t).fail.length,0);
-  const lines=today.slice(0,6).map(t=>`<a class="tl2" href="#op/${encodeURIComponent(t.id)}"><span>${esc(t.symbol)}</span><b>${t.status==="closed"?fmtR(t.r):"abierta"}</b></a>`).join("")||`<div class="small" style="color:var(--suave);text-align:center;padding:4px 0">Aún sin operaciones hoy</div>`;
+  const lines=today.slice(0,6).map(t=>`<a class="tl2" href="#op/${encodeURIComponent(t.id)}"><span>${esc(t.symbol)}</span><b>${t.status==="closed"?fmtV(t.r, mOf(t)):"abierta"}</b></a>`).join("")||`<div class="small" style="color:var(--suave);text-align:center;padding:4px 0">Aún sin operaciones hoy</div>`;
   return `<div class="tkm"><div class="tkm-in">
     <div class="tkm-h">TICKORA</div>
     ${lines}
     <div class="tkm-cut"></div>
-    <div class="tkm-tot"><span>TOTAL</span><b>${closed.length?fmtR(dayR):"0,0 R"}</b></div>
+    <div class="tkm-tot"><span>TOTAL</span><b>${closed.length?fmtV(dayR,sumM(closed.filter(t=>t.r!=null))):fmtV(0, 0)}</b></div>
     <div class="tkm-r"><span>Límite diario:</span><b>${num(p.dayLimitR,1)} R</b></div>
     <div class="tkm-r"><span>Margen:</span><b>${num(Math.max(0,p.dayLimitR+dayR),1)} R</b></div>
     <div class="tkm-ok ${fails?"bad":""}">${fails?"!":SVG(IC2.check,16,2.4)} ${fails?fails+" norma"+(fails>1?"s":"")+" sin cumplir":"Normas cumplidas"}</div>
@@ -1287,7 +1318,7 @@ function acctTrades(a){return (S.allTrades||S.trades).filter(t=>a.number&&String
 function acctStats(a){
   if(typeof a!=="object")a={number:a};
   const L=acctTrades(a), tk=todayKey(), st=tradeStats(L), T=L.filter(t=>dayKey(t.open_time)===tk);
-  return {L,st,today:T.reduce((s,t)=>s+t.r,0),todayN:T.length,days:new Set(L.map(t=>dayKey(t.open_time))).size,sum:L.reduce((s,t)=>s+t.r,0)};
+  return {L,st,today:T.reduce((s,t)=>s+t.r,0),mToday:sumM(T.filter(t=>t.r!=null)),todayN:T.length,days:new Set(L.map(t=>dayKey(t.open_time))).size,sum:L.reduce((s,t)=>s+t.r,0),msum:sumM(L.filter(t=>t.r!=null))};
 }
 const METR={r:["Resultado","R"],trades:["Operaciones",""],days:["Días operados",""],win:["Acierto","%"],good:["Operaciones dentro del plan","%"],gooddays:["Días con todo dentro del plan",""],streak:["Racha de días en plan",""],pf:["Factor de beneficio",""]};
 const PERI={hoy:"hoy",semana:"esta semana",mes:"este mes",total:"en total"};
@@ -1302,12 +1333,12 @@ function metricVal(L,m){
   if(m==="pf")return st.pf===Infinity?99:st.pf;
   return null;
 }
-const fmtM=(m,v)=>v==null?"—":METR[m][1]==="R"?fmtR(v):METR[m][1]==="%"?num(v,0)+" %":m==="pf"?num(v,2):String(Math.round(v));
+const fmtM=(m,v)=>v==null?"—":METR[m][1]==="R"?fmtV(v):METR[m][1]==="%"?num(v,0)+" %":m==="pf"?num(v,2):String(Math.round(v));
 function goalsBlock(a,x){
   const BP=S.basePlan||S.plan, rp=nOr(a.risk)||BP.riskPct||1, toR=(v,u)=>u==="R"?v:v/rp, out=[];
   const bar=(label,val,frac,state,hint)=>`<div class="pbar"><div class="between"><span>${label}</span><b class="${state==="ok"?"okc":state==="warn"?"wc":""}">${state==="ok"?SVG(IC2.check,14,2.4)+" ":""}${val}</b></div><div class="pbt ${state==="warn"?"warn":""}"><i style="width:${(Math.max(0,Math.min(1,frac||0))*100).toFixed(1)}%"></i></div>${hint?`<div class="pbh">${hint}</div>`:""}</div>`;
   const uTxt=(v,u)=>u==="R"?num(v,1)+" R":fmtPct(v)+" ≈ "+num(v/rp,1)+" R";
-  const tg=nOr(a.target);if(tg){const need=toR(tg,a.targetU);out.push(bar("Objetivo de beneficio",`${fmtR(x.sum)} de +${num(need,1)} R`,x.sum/need,x.sum>=need?"ok":"",`Meta: ${uTxt(tg,a.targetU)}`+(a.deadline?` · fecha límite ${new Date(a.deadline+"T12:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} (${Math.max(0,Math.ceil((new Date(a.deadline+"T23:59")-Date.now())/864e5))} días)`:"")))}
+  const tg=nOr(a.target);if(tg){const need=toR(tg,a.targetU);out.push(bar("Objetivo de beneficio",`${fmtV(x.sum, x.msum)} de +${num(need,1)} R`,x.sum/need,x.sum>=need?"ok":"",`Meta: ${uTxt(tg,a.targetU)}`+(a.deadline?` · fecha límite ${new Date(a.deadline+"T12:00").toLocaleDateString("es-ES",{day:"numeric",month:"short"})} (${Math.max(0,Math.ceil((new Date(a.deadline+"T23:59")-Date.now())/864e5))} días)`:"")))}
   const dd=nOr(a.dailyDD);if(dd){const lim=toR(dd,a.dailyU),left=Math.max(0,lim+Math.min(0,x.today));out.push(bar("Te queda hoy",`${num(left,1)} R`,left/lim,left/lim<.35?"warn":"",`Pérdida máx. diaria: ${uTxt(dd,a.dailyU)}`+(BP.dayLimitR>lim?` · <b>tu plan permite ${num(BP.dayLimitR,1)} R: se usa el de la cuenta</b>`:"")))}
   const mx=nOr(a.maxDD);if(mx){const lim=toR(mx,a.maxU),left=Math.max(0,lim+Math.min(0,x.sum));out.push(bar("Te queda en total",`${num(left,1)} R`,left/lim,left/lim<.35?"warn":"",`Pérdida máx. total: ${uTxt(mx,a.maxU)}`))}
   const md=nOr(a.minDays);if(md)out.push(bar("Días operados",`${x.days} de ${md}`,x.days/md,x.days>=md?"ok":"",""));
@@ -1383,7 +1414,7 @@ function acctCard({a,b}){
   const head=`<div class="between" style="align-items:flex-start;gap:10px"><div class="row" style="gap:12px;min-width:0"><span class="aic">${SVG(ICA[a.type]||ICA.otra,20)}</span><div style="min-width:0"><b class="anum" style="font-size:17px">${esc(a.name||(a.number?"#"+a.number:"Cuenta"))}</b><div class="abro">${esc(a.broker||"Sin bróker")}${a.number?" · #"+esc(a.number):""}</div></div></div>
     <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">${a.type?`<span class="tag">${ATIPO[a.type]}</span>`:`<span class="tag warn">Sin datos</span>`}${a.type==="fondeo"&&a.phase?`<span class="tag">${AFASE[a.phase]}</span>`:""}${a.status&&a.status!=="activa"?`<span class="tag muted">${AEST[a.status]}</span>`:""}</div></div>`;
   const conn=`<div class="ast ${on?"on":""}" style="font-size:13.5px"><span class="dot" style="${b?"":"background:var(--borde)"}"></span>${b?(on?"Conectada a MT5":"MT5 sin señal"):"Sin conectar a MT5"}</div>`;
-  const nums=`<div class="anums"><div><span>Operaciones</span><b>${x.st.n}</b></div><div><span>Acierto</span><b>${x.st.win==null?"—":num(x.st.win,0)+"%"}</b></div><div><span>Resultado</span><b>${x.st.n?fmtR(x.sum):"—"}</b></div><div><span>Saldo</span><b>${hide?SVG(IC2.lock,14)+" Oculto":i.balance!=null?esc(money(i.balance,i.currency)):nOr(a.size)?esc(money(a.size,a.currency))+"<small> inicial</small>":"—"}</b></div></div>`;
+  const nums=`<div class="anums"><div><span>Operaciones</span><b>${x.st.n}</b></div><div><span>Acierto</span><b>${x.st.win==null?"—":num(x.st.win,0)+"%"}</b></div><div><span>Resultado</span><b>${x.st.n?fmtV(x.sum, x.msum):"—"}</b></div><div><span>Saldo</span><b>${hide?SVG(IC2.lock,14)+" Oculto":i.balance!=null?esc(money(i.balance,i.currency)):nOr(a.size)?esc(money(a.size,a.currency))+"<small> inicial</small>":"—"}</b></div></div>`;
   const key=acctKey({a}),cur=S.acctSel===key;
   const acts=a.id?`<div class="row" style="gap:8px;flex-wrap:wrap">${cur?`<span class="tag" style="height:36px;padding:0 14px">${SVG(IC2.check,14,2.4)} La estás viendo</span>`:`<button type="button" class="btn" data-ause="${esc(key)}" style="height:36px;font-size:13.5px">Usar esta cuenta</button>`}<button type="button" class="btn2" data-aedit="${esc(a.id)}" style="height:36px">Editar</button></div>`:`<button type="button" class="btn" data-anew="${esc(a.number)}" style="height:38px">Añadir sus datos</button>`;
   return `<article class="card stack acc2 ${S.acctSel===acctKey({a})?"cur":""}" style="gap:14px">${head}${conn}${nums}${goalsBlock(a,x)}${acts}</article>`;
@@ -1447,7 +1478,7 @@ function viewCuentas(){
 function acctRowsHtml(list){const p=S.plan,hide=inSession(p);return list.map(({a,b})=>{const i=(b&&b.last_info)||{},on=isLive(b),x=acctStats(a);
     return `<div class="arow"><div style="min-width:0"><div class="row" style="gap:8px;flex-wrap:wrap"><b class="anum">${esc(a.name||"#"+(a.number||"—"))}</b>${a.type?`<span class="tag">${ATIPO[a.type]}${a.type==="fondeo"&&a.phase?" · "+AFASE[a.phase]:""}</span>`:`<a class="tag warn" href="#cuentas">Añadir datos</a>`}</div><div class="abro">${esc(a.broker||i.broker||"Bróker")}${a.name&&a.number?" · #"+esc(a.number):""}</div></div>
       <div class="ast ${on?"on":""}"><span class="dot" style="${b?"":"background:var(--borde)"}"></span>${b?(on?"Conectada":"Sin señal"):"Sin MT5"}</div>
-      <div class="abal2"><div>Saldo: <b>${hide?"———":i.balance!=null?esc(money(i.balance,i.currency)):nOr(a.size)?esc(money(a.size,a.currency)):"—"}</b></div><div>Hoy: <b class="acc">${fmtR(x.today)}</b></div></div>
+      <div class="abal2"><div>Saldo: <b>${hide?"———":i.balance!=null?esc(money(i.balance,i.currency)):nOr(a.size)?esc(money(a.size,a.currency)):"—"}</b></div><div>Hoy: <b class="acc">${fmtV(x.today, x.mToday)}</b></div></div>
       <a class="amore" href="#cuentas" aria-label="Ver la cuenta">${SVG(IC2.dots,18)}</a></div>`}).join("")}
 function acctRows(){
   const one=selAcct();
@@ -1477,7 +1508,7 @@ function viewHoy(){
   const normas=`<div class="card stack" style="gap:10px"><div class="between"><h2>Tus normas de hoy</h2><a class="small" href="#plan">Ver mi plan</a></div>
     <div class="hchk">${chk.map(([l,ok,sub])=>`<div class="hchk-i ${today.length?(ok?"hk-ok":"hk-bad"):""}"><span class="hchk-c">${today.length?(ok?SVG(IC2.check,14,2.6):"!"):""}</span><span>${l}</span><small>${today.length?sub:""}</small></div>`).join("")}</div>
     ${(p.rules||[]).length?`<div class="hrules">${(p.rules||[]).map(r=>`<div><b>Si</b> ${esc(String(r.si||"").replace(/,$/,""))} <b>→</b> ${esc(r.entonces||"")}</div>`).join("")}</div>`:""}</div>`;
-  const ops=today.length?today.map(t=>{const ev=evaluate(t);return `<a class="op" href="#op/${encodeURIComponent(t.id)}">${thumb(t,72,46)}<div style="min-width:0"><div class="opname" style="font-weight:600;font-size:15px">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"}</div><div class="small muted">${hhmm(t.open_time)} · ${ev.title.toLowerCase()}${t.status==="closed"?(ev.good?", dentro del pacto":", "+ev.fail.length+" norma"+(ev.fail.length>1?"s":"")+" sin cumplir"):""}</div></div><div class="mono" style="font-weight:700;font-size:14px">${t.status==="closed"?fmtR(t.r):"abierta"}</div></a>`}).reverse().join(""):"";
+  const ops=today.length?today.map(t=>{const ev=evaluate(t);return `<a class="op" href="#op/${encodeURIComponent(t.id)}">${thumb(t,72,46)}<div style="min-width:0"><div class="opname" style="font-weight:600;font-size:15px">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"}</div><div class="small muted">${hhmm(t.open_time)} · ${ev.title.toLowerCase()}${t.status==="closed"?(ev.good?", dentro del pacto":", "+ev.fail.length+" norma"+(ev.fail.length>1?"s":"")+" sin cumplir"):""}</div></div><div class="mono" style="font-weight:700;font-size:14px">${t.status==="closed"?fmtV(t.r, mOf(t)):"abierta"}</div></a>`}).reverse().join(""):"";
   return `<div class="stack dash" style="gap:18px">
     ${S.dbMissing?`<div class="card" style="background:var(--ambarB);color:var(--ambarT)"><b>Falta preparar la base de datos.</b></div>`:""}
     <div class="hoy3">
@@ -1487,9 +1518,9 @@ function viewHoy(){
           <a class="btn btn-an" href="#analizar">Analizar ${SVG(IC2.arrow,18,2)}</a>
         </div>
         <div class="k3grid">
-          ${k3("Resultado de hoy",`<div class="k3b">${closedToday.length?fmtR(dayR):"0,0 R"}</div><div class="k3s">${closedToday.length} cerrada${closedToday.length===1?"":"s"}</div>`,spark(cumToday,72,36))}
+          ${k3("Resultado de hoy",`<div class="k3b">${closedToday.length?fmtV(dayR,sumM(closedToday.filter(t=>t.r!=null))):fmtV(0, 0)}</div><div class="k3s">${closedToday.length} cerrada${closedToday.length===1?"":"s"}</div>`,spark(cumToday,72,36))}
           ${k3("Operaciones",`<div class="k3b">${today.length} de ${p.maxTrades}</div>${seg(today.length,p.maxTrades)}`,"")}
-          ${k3("Aún puedes perder",`<div class="k3b">${num(margin,1)} R</div><div class="k3s">tu límite del día es ${num(p.dayLimitR,1)} R</div>`,"")}
+          ${k3("Aún puedes perder",`<div class="k3b">${fmtVabs(margin)}</div><div class="k3s">tu límite del día es ${fmtLim(p.dayLimitR)}</div>`,"")}
         </div>
         ${normas}
         <div class="card" style="padding:12px 16px"><div class="between" style="padding-bottom:2px"><h2>Operaciones de hoy</h2><a class="small" href="#informe">Ver informe del día</a></div>${ops||`<div class="small muted" style="padding:10px 0">Aún no has operado hoy. Llegan solas desde MetaTrader.</div>`}</div>
@@ -1515,7 +1546,7 @@ function viewOp(id){
   const bien=ev.checks.filter(c=>c.ok).slice(0,3);
   return `<div class="stack" style="max-width:820px">
     <div class="between" style="align-items:center"><a href="#hoy" class="row" style="gap:6px;font-weight:600;font-size:14px;text-decoration:none">${ico("back",18,2.2)}Hoy</a><span class="lbl">${t.source==="mt5"?"Entró sola desde MT5":"Apuntada a mano"}</span></div>
-    <div class="row" style="gap:14px">${vela(t.r,56)}<div style="flex:1;min-width:0"><h1 style="font-size:24px">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"}</h1><div class="mono small muted">${fechaCorta(t.open_time)} · ${hhmm(t.open_time)}${t.close_time?" → "+hhmm(t.close_time):""} · ${t.volume!=null?num(t.volume,2)+" lotes":""}${t.risk_pct!=null?" · riesgo "+fmtPct(t.risk_pct):""}</div></div><div class="mono" style="font-weight:700;font-size:22px">${t.status==="closed"?fmtR(t.r):"abierta"}</div></div>
+    <div class="row" style="gap:14px">${vela(t.r,56)}<div style="flex:1;min-width:0"><h1 style="font-size:24px">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"}</h1><div class="mono small muted">${fechaCorta(t.open_time)} · ${hhmm(t.open_time)}${t.close_time?" → "+hhmm(t.close_time):""} · ${t.volume!=null?num(t.volume,2)+" lotes":""}${t.risk_pct!=null?" · riesgo "+fmtPct(t.risk_pct):""}</div></div><div class="mono" style="font-weight:700;font-size:22px">${t.status==="closed"?fmtV(t.r, mOf(t)):"abierta"}</div></div>
     <div class="card stack" style="gap:10px"><div class="between"><h2>Así estaba el gráfico</h2><span class="small muted">captura automática</span></div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">${img("capture_entry","Entrada · "+hhmm(t.open_time))}${img("capture_exit",t.close_time?"Salida · "+hhmm(t.close_time):"Salida")}</div></div>
     <div class="card stack" style="gap:10px">
       <div class="between" style="align-items:center"><h2>${ev.title}</h2><span class="badge" style="color:var(--cobalto);background:var(--cobaltoC)">${ev.okCount} de ${ev.total} normas</span></div>
@@ -1536,13 +1567,16 @@ function tradeStats(list){
   const sw=w.reduce((a,t)=>a+t.r,0),sl=l.reduce((a,t)=>a+t.r,0),tot=sw+sl;
   let cum=0,peak=0,dd=0;const curve=[0];
   L.slice().sort((a,b)=>new Date(a.open_time)-new Date(b.open_time)).forEach(t=>{cum+=t.r;curve.push(cum);peak=Math.max(peak,cum);dd=Math.min(dd,cum-peak)});
-  return {n:L.length,win:L.length?w.length/L.length*100:null,avgW:w.length?sw/w.length:null,avgL:l.length?sl/l.length:null,exp:L.length?tot/L.length:null,pf:l.length?sw/Math.abs(sl):(w.length?Infinity:null),tot,dd,curve};
+  const LS=L.slice().sort((a,b)=>new Date(a.open_time)-new Date(b.open_time)),M=LS.map(t=>mOf(t)),mk=M.every(v=>v!=null)&&M.length;let mc=0,mp=0,mdd=0;if(mk)M.forEach(v=>{mc+=v;mp=Math.max(mp,mc);mdd=Math.min(mdd,mc-mp)});
+  const MW=mk?LS.map((t,i)=>[t.r,M[i]]).filter(x=>x[0]>0).map(x=>x[1]):[],ML=mk?LS.map((t,i)=>[t.r,M[i]]).filter(x=>x[0]<0).map(x=>x[1]):[],sm=a=>a.reduce((x,y)=>x+y,0);
+  return {n:L.length,win:L.length?w.length/L.length*100:null,avgW:w.length?sw/w.length:null,avgL:l.length?sl/l.length:null,exp:L.length?tot/L.length:null,pf:l.length?sw/Math.abs(sl):(w.length?Infinity:null),tot,dd,curve,
+    mt:mk?mc:undefined,mW:mk&&MW.length?sm(MW)/MW.length:undefined,mL:mk&&ML.length?sm(ML)/ML.length:undefined,mexp:mk?mc/L.length:undefined,mdd:mk?mdd:undefined};
 }
 function curveSvg(c){
   if(c.length<2)return `<div class="small muted" style="padding:20px 0">La curva aparecerá con tus primeras operaciones cerradas.</div>`;
   const W=600,H=130,mn=Math.min(0,...c),mx=Math.max(0,...c),rg=(mx-mn)||1,X=i=>i/(c.length-1)*W,Y=v=>8+(mx-v)/rg*(H-16);
   const pts=c.map((v,i)=>X(i).toFixed(1)+","+Y(v).toFixed(1)).join(" ");
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:130px;display:block" role="img" aria-label="Curva de resultados en R: ${fmtR(c[c.length-1])}"><line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--linea)" stroke-dasharray="4 4"/><polygon points="0,${Y(0)} ${pts} ${W},${Y(0)}" fill="var(--cobaltoA)"/><polyline points="${pts}" fill="none" stroke="var(--cobalto)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:130px;display:block" role="img" aria-label="Curva de resultados en R: ${fmtVt(c[c.length-1])}"><line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--linea)" stroke-dasharray="4 4"/><polygon points="0,${Y(0)} ${pts} ${W},${Y(0)}" fill="var(--cobaltoA)"/><polyline points="${pts}" fill="none" stroke="var(--cobalto)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
 }
 function viewProgreso(){
   const now=new Date(), y=now.getFullYear(), mo=now.getMonth();
@@ -1553,7 +1587,7 @@ function viewProgreso(){
   const fails={};evs.forEach(x=>x.ev.fail.forEach(f=>{fails[f.bad]=(fails[f.bad]||0)+1}));
   const FL=Object.entries(fails).sort((a,b)=>b[1]-a[1]), fmx=FL.length?FL[0][1]:1;
   const ring=v=>{const a=Math.max(0,Math.min(100,v||0))/100,C=2*Math.PI*20;return `<svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="20" fill="none" stroke="var(--linea)" stroke-width="6"/><circle cx="27" cy="27" r="20" fill="none" stroke="var(--cobalto)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C*a).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 27 27)"/></svg>`};
-  const bars=evs.slice(-40).map(x=>{const r=x.t.r||0,h=Math.max(3,Math.min(60,Math.abs(r)*26));return `<a href="#op/${encodeURIComponent(x.t.id)}" title="${esc(x.t.symbol)} ${fmtR(r)} · ${x.ev.good?"buena":"evitable"}" style="display:block;position:relative;width:12px;height:128px;flex:none"><span style="position:absolute;left:0;${r>=0?`bottom:64px`:`top:64px`};width:12px;height:${h}px;border-radius:3px;${x.ev.good?"background:var(--cobalto)":"background:repeating-linear-gradient(135deg,var(--gris) 0 1.5px,transparent 1.5px 4px);border:1.5px solid var(--gris)"}"></span></a>`}).join("");
+  const bars=evs.slice(-40).map(x=>{const r=x.t.r||0,h=Math.max(3,Math.min(60,Math.abs(r)*26));return `<a href="#op/${encodeURIComponent(x.t.id)}" title="${esc(x.t.symbol)} ${fmtVt(r)} · ${x.ev.good?"buena":"evitable"}" style="display:block;position:relative;width:12px;height:128px;flex:none"><span style="position:absolute;left:0;${r>=0?`bottom:64px`:`top:64px`};width:12px;height:${h}px;border-radius:3px;${x.ev.good?"background:var(--cobalto)":"background:repeating-linear-gradient(135deg,var(--gris) 0 1.5px,transparent 1.5px 4px);border:1.5px solid var(--gris)"}"></span></a>`}).join("");
   const list=evs.slice().reverse().slice(0,10).map(({t,ev})=>`<a class="op" href="#op/${encodeURIComponent(t.id)}">${thumb(t,72,46)}<div style="min-width:0"><div class="opname" style="font-weight:600">${esc(t.symbol)} · ${t.side==="buy"?"Compra":"Venta"} <span class="mono small muted">${fechaCorta(t.open_time)}</span></div><div class="small" style="color:var(--tinta2)">${esc(ev.mejora?"A mejorar: "+ev.mejora.split(".")[0]:ev.checks.filter(c=>c.ok)[0]?ev.checks.filter(c=>c.ok)[0].good:"")}</div></div><div style="text-align:right"><div class="small" style="color:var(--cobalto);font-weight:700">${ev.title}</div></div></a>`).join("");
   const perL=P==="1M"?"este mes":"los últimos "+nM+" meses";
   return `<div class="stack">
@@ -1902,6 +1936,12 @@ function viewPlan(mode){
         <h2>Permisos</h2>
         <div class="row" style="justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:14px">Cómo te sientes y tu sueño</div><div class="small muted">Para el semáforo y para apuntar cómo te sentías al entrar. Son datos de salud: solo los ves tú y puedes quitar el permiso cuando quieras.</div></div><button type="button" class="toggle" role="switch" aria-checked="${health}" aria-label="Permiso para datos de salud" id="healthToggle"></button></div>
       </div>
+      <div class="card stack" style="gap:12px" id="unidad">${(()=>{const pu=prefU(),tc=tradeCur();return `
+        <div class="between" style="align-items:center"><h2>Cómo ves tus resultados</h2><div class="seg" role="group" aria-label="Unidad de resultados">${[["m","Dinero"],["r","Solo R"]].map(([k,l])=>`<button type="button" data-unit="${k}" aria-pressed="${pu.unit===k}">${l}</button>`).join("")}</div></div>
+        <div class="small muted">Con «Dinero», cada resultado sale en tu moneda y la R al lado en pequeño: <b class="mono" style="color:var(--tinta)">${fmtMoney(125.4).replace(/^\+?/,"+")}<tk-r>+1,0 R</tk-r></b></div>
+        <div class="between" style="align-items:center;gap:12px${pu.unit==="r"?";opacity:.45;pointer-events:none":""}"><div><div style="font-weight:600;font-size:14px">Moneda</div><div class="small muted">Si tu cuenta va en otra, se convierte al cambio del día</div></div><select class="input" data-cur style="width:auto;min-width:150px">${[["auto","Automática"+(tc?" ("+tc+")":"")],["EUR","Euro (€)"],["USD","Dólar ($)"],["GBP","Libra (£)"],["CHF","Franco suizo (CHF)"]].map(([k,l])=>`<option value="${k}" ${pu.cur===k?"selected":""}>${l}</option>`).join("")}</select></div>
+        <label class="between" style="align-items:center;gap:12px;cursor:pointer${pu.unit==="r"?";opacity:.45;pointer-events:none":""}"><div><div style="font-weight:600;font-size:14px">Solo R mientras operas</div><div class="small muted">En tu horario de sesión se esconde el dinero. Ayuda a juzgar la operación y no la cantidad.</div></div><input type="checkbox" data-usess ${pu.sess?"checked":""} style="width:20px;height:20px;accent-color:var(--cobalto)"></label>`})()}
+      </div>
       <div class="card stack" style="gap:10px">
         <div class="between" style="align-items:center"><h2>Apariencia</h2><div class="seg" role="group" aria-label="Apariencia">${["system","light","dark"].map(t=>`<button type="button" data-theme-set="${t}" aria-pressed="${getThemePref()===t}">${{system:"Automática",light:"Clara",dark:"Oscura"}[t]}</button>`).join("")}</div></div>
         <div class="between" style="align-items:center"><div><div style="font-weight:600;font-size:14px">Color principal</div><div class="small muted">Botones, enlaces y gráficos</div></div><button type="button" class="btn2" data-style-open style="height:36px">Cambiar color</button></div>
@@ -1970,6 +2010,10 @@ function render(){
     r.view==="grupo"?viewSoon("Grupo","Los grupos nuevos, donde solo se comparte disciplina y nunca dinero, llegan en el último paso de esta versión. Mientras tanto, tus grupos siguen en la versión anterior."):
     r.view==="aprender"?viewSoon("Aprender","Las lecciones llegarán cuando termines el bootcamp. Tus apuntes siguen en la versión anterior."):viewHoy());
   $app.innerHTML=r.view==="inicio"||r.view==="app"?homeShell(content):r.view==="analizar"?shell("analizar",content):homeShell(content,r.view==="op"?"historial":r.view);
+  {const savePref=async patch=>{S.user.user_metadata=Object.assign({},S.user.user_metadata||{},patch);ONER.k="";render();const {error}=await sb.auth.updateUser({data:patch});toast(error?"No se pudo guardar":"Guardado")};
+   document.querySelectorAll("[data-unit]").forEach(b=>b.onclick=()=>{if(prefU().unit!==b.dataset.unit)savePref({unit:b.dataset.unit})});
+   const cu=document.querySelector("[data-cur]");if(cu)cu.onchange=()=>savePref({cur:cu.value});
+   const us=document.querySelector("[data-usess]");if(us)us.onchange=()=>savePref({unitSess:us.checked});}
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{applyTheme(b.dataset.themeSet);document.querySelectorAll("[data-theme-set]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.themeSet===b.dataset.themeSet)));refreshWidgets()});
   document.querySelectorAll("[data-theme-toggle]").forEach(b=>b.onclick=()=>{applyTheme(isDark()?"light":"dark");refreshWidgets()});
   bindAcctMenus();
@@ -2171,11 +2215,11 @@ if(SB_OK){
   sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>onSession(session,event),0)});
   sb.auth.getSession().then(({data})=>onSession(data.session,"INIT"));
 }else render();
-window.TKAPP={S,sb,esc,SVG,fmtR,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
+window.TKAPP={S,sb,esc,SVG,fmtR,fmtV,fmtVt,fmtMoney,mOf,sumM,oneR,dispCur,moneyOn,prefU,CURS,fmtVabs,fmtLim,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
 })();
 </script>
 <link rel="stylesheet" href="extra2.css?v=32">
-<script src="extra.js?v=5"></script>
-<script src="extra2.js?v=32"></script>
+<script src="extra.js?v=6"></script>
+<script src="extra2.js?v=34"></script>
 </body>
 </html>

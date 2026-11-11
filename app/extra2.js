@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   const A = window.TKAPP;
-  const { S, sb, esc, SVG, fmtR, num, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, lsGet, lsSet, acctName, selAcct, FEELS, greet, money, inSession, MESES_L, NAV_APPS, appOf, ico, isDark } = A;
+  const { S, sb, esc, SVG, fmtR, fmtV, fmtVt, fmtMoney, mOf, sumM, oneR, dispCur, moneyOn, prefU, CURS, fmtVabs, fmtLim, num, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, lsGet, lsSet, acctName, selAcct, FEELS, greet, money, inSession, MESES_L, NAV_APPS, appOf, ico, isDark } = A;
   const V = window.TK_VIEWS;
   if (!(NAV_APPS || []).some(a => a[0] === "calendario")) {
     let tried = false; try { tried = sessionStorage.getItem("tk-fresh") === "1"; sessionStorage.setItem("tk-fresh", "1"); } catch (e) {}
@@ -75,7 +75,7 @@
   const CATDESC = {
     hoy: "Lo que llevas hoy, tus límites y tu horario", noticias: "Noticias que mueven el mercado esta semana", plan: "Tus normas, tus límites y tu horario",
     analizar: "Gráfico en directo", backtest: "Crea y continúa tus sesiones", btanalisis: "Tus estadísticas de práctica", btops: "Todo lo que has operado practicando", btnotas: "Tus notas de cada sesión",
-    rendimiento: "Todos tus números en R", progreso: "Cuánto cumples tu plan y qué normas rompes", emociones: "Qué emociones te ayudan y cuáles te cuestan", historial: "Todas tus operaciones en una tabla", calendario: "Tu resultado de cada día; toca uno para ver su informe",
+    rendimiento: "Todos tus números, en dinero y en R", progreso: "Cuánto cumples tu plan y qué normas rompes", emociones: "Qué emociones te ayudan y cuáles te cuestan", historial: "Todas tus operaciones en una tabla", calendario: "Tu resultado de cada día; toca uno para ver su informe",
     diario: "Tus páginas", cuentas: "Demo, fondeo y capital propio", finanzas: "Lo que pagas y cobras", asistente: "Pregunta por tus números"
   };
   const MAINV = { calendario: "calendario" };
@@ -104,15 +104,15 @@
         const nw = new Date(), y = nw.getFullYear(), m = nw.getMonth(), off = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate(), by = {};
         closed(S.trades).forEach(t => { const d = new Date(dateOf(t)); if (d.getFullYear() === y && d.getMonth() === m) (by[d.getDate()] = by[d.getDate()] || []).push(t); });
         const st = {}; Object.keys(by).forEach(d => { st[d] = tradeStats(by[d]); });
-        const vals = Object.values(st), tot = vals.reduce((a, s) => a + s.tot, 0), pd = vals.filter(s => s.tot > 0).length, nd = vals.filter(s => s.tot < 0).length, mx = Math.max(.5, ...vals.map(s => Math.abs(s.tot)));
+        const vals = Object.values(st), tot = vals.reduce((a, s) => a + s.tot, 0), mtot = vals.reduce((a, s) => a + (s.mt || 0), 0), pd = vals.filter(s => s.tot > 0).length, nd = vals.filter(s => s.tot < 0).length, mx = Math.max(.5, ...vals.map(s => Math.abs(s.tot)));
         let cells = ["L", "M", "X", "J", "V", "S", "D"].map(d => `<span class="mc-wd">${d}</span>`).join("");
         for (let i = 0; i < off; i++) cells += '<span class="mc-d bl"></span>';
         for (let d = 1; d <= dim; d++) {
           const s = st[d], k = dayKey(new Date(y, m, d)), td = d === nw.getDate() ? " hoy" : "", we = (off + d - 1) % 7 >= 5 ? " we" : "";
-          cells += s ? `<button type="button" class="mc-d ${s.tot > 0 ? "p" : s.tot < 0 ? "n" : "z"}${td}" style="--a:${(.3 + Math.min(1, Math.abs(s.tot) / mx) * .6).toFixed(2)}" data-repday="${k}" data-stop aria-label="${d}: ${fmtR(s.tot)}. Ver informe del día" title="${fmtR(s.tot)} · ${s.n} op.">${d}</button>`
+          cells += s ? `<button type="button" class="mc-d ${s.tot > 0 ? "p" : s.tot < 0 ? "n" : "z"}${td}" style="--a:${(.3 + Math.min(1, Math.abs(s.tot) / mx) * .6).toFixed(2)}" data-repday="${k}" data-stop aria-label="${d}: ${fmtVt(s.tot, s.mt)}. Ver informe del día" title="${fmtVt(s.tot, s.mt)} · ${s.n} op.">${d}</button>`
             : `<span class="mc-d${d > nw.getDate() ? " f" : ""}${we}${td}">${d}</span>`;
         }
-        return `<div class="hb-mc-h"><b>${cap(nw.toLocaleDateString("es-ES", { month: "long", year: "numeric" }))}</b>${vals.length ? `<span class="mono ${tot > 0 ? "cpos" : tot < 0 ? "cneg" : ""}">${fmtR(tot)}</span>` : ""}</div>
+        return `<div class="hb-mc-h"><b>${cap(nw.toLocaleDateString("es-ES", { month: "long", year: "numeric" }))}</b>${vals.length ? `<span class="mono ${tot > 0 ? "cpos" : tot < 0 ? "cneg" : ""}">${fmtV(tot, mtot)}</span>` : ""}</div>
           <div class="hb-mc">${cells}</div>
           ${tFoot(name, vals.length ? pd + (pd === 1 ? " día" : " días") + " en verde · " + nd + " en rojo" : "Aún sin días operados este mes", href)}`;
       }
@@ -126,21 +126,21 @@
     const fe = {}; S.trades.forEach(t => { const f = (t.review || {}).feel; if (f) fe[f] = (fe[f] || 0) + 1; }); const topF = Object.entries(fe).sort((a, b) => b[1] - a[1])[0];
     const w = tradeStats(closed(S.trades.filter(t => new Date(t.open_time) >= Date.now() - 7 * 864e5))), mx = D.p.maxTrades || 3;
     const M = {
-      hoy: [D.st.n ? fmtR(D.st.tot) : "—", D.today.length + " de " + mx + " operaciones", D.today.length / mx],
+      hoy: [D.st.n ? fmtV(D.st.tot, D.st.mt) : "—", D.today.length + " de " + mx + " operaciones", D.today.length / mx],
       plan: [esc(D.p.start) + "–" + esc(D.p.end), "máximo " + mx + " operaciones", null],
       grupo: ["Pronto", "llega en el último paso", null],
       analizar: [esc((S.an && S.an.sym) || "EURUSD"), "se abre en " + (TFL[lsGet("tk-tf", "5m")] || ""), null],
       backtest: [String(D.sess.length), D.sess.length === 1 ? "sesión" : "sesiones", null],
       btanalisis: [BT() ? BT().hms(D.sess.reduce((a, x) => a + (x.secs || 0), 0)) : "—", "de estudio", null],
-      btops: [String(sim.length), sst.n ? fmtR(sst.tot) + " simulado" : "simuladas", null],
-      btcal: [sst.n ? fmtR(sst.tot) : "—", "resultado simulado", null],
+      btops: [String(sim.length), sst.n ? fmtV(sst.tot, sst.mt) + " simulado" : "simuladas", null],
+      btcal: [sst.n ? fmtV(sst.tot, sst.mt) : "—", "resultado simulado", null],
       btnotas: [String((S.pages || []).filter(x => !x.isTpl && (x.bt || x.tpl === "bt")).length), "notas", null],
-      rendimiento: [D.s90.n ? fmtR(D.s90.tot) : "—", "en 90 días", D.s90.win != null ? D.s90.win / 100 : null],
+      rendimiento: [D.s90.n ? fmtV(D.s90.tot, D.s90.mt) : "—", "en 90 días", D.s90.win != null ? D.s90.win / 100 : null],
       progreso: [D.C90.length ? Math.round(D.good / D.C90.length * 100) + " %" : "—", "dentro del plan", D.C90.length ? D.good / D.C90.length : null],
       emociones: [healthOk() ? (topF ? esc(topF[0]) : "—") : "Desactivado", healthOk() ? "la más frecuente" : "actívalo en Ajustes", null],
       historial: [String(S.allTrades.length), "operaciones", null],
-      calendario: [w.n ? fmtR(w.tot) : "—", "últimos 7 días", null],
-      informe: [D.st.n ? fmtR(D.st.tot) : "—", "hoy", null],
+      calendario: [w.n ? fmtV(w.tot, w.mt) : "—", "últimos 7 días", null],
+      informe: [D.st.n ? fmtV(D.st.tot, D.st.mt) : "—", "hoy", null],
       diario: [String(D.pages.length), D.pages.length === 1 ? "página" : "páginas", null],
       cuentas: [String((S.accts || []).filter(a => a.status !== "archivada").length), "cuentas activas", null],
       finanzas: [inSession(D.p) ? "Bloqueado" : "Disponible", inSession(D.p) ? "hasta las " + esc(D.p.end) : "cobros y gastos", null],
@@ -151,7 +151,7 @@
     return M[k] || ["", "", null];
   }
   const greetLine = D => D.phase === "antes" ? `tu sesión empieza a las ${esc(D.p.start)}.` : D.phase === "en" ? "opera tu plan con calma." : D.today.length ? "buen trabajo hoy." : "que tengas un buen día.";
-  const metaRow = D => `<div class="hb-meta"><span>${I(IC.cal, 15)} ${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))}</span><span>${I(IC.clock, 15)} ${D.phase === "en" ? "En tu horario" : D.phase === "antes" ? "Antes de tu horario" : "Fuera de horario"}</span><span>${I('<path d="M3 14l4-5 4 3 6-8"/>', 15)} ${D.st.n ? fmtR(D.st.tot) + " hoy" : "Sin operaciones hoy"}</span></div>`;
+  const metaRow = D => `<div class="hb-meta"><span>${I(IC.cal, 15)} ${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))}</span><span>${I(IC.clock, 15)} ${D.phase === "en" ? "En tu horario" : D.phase === "antes" ? "Antes de tu horario" : "Fuera de horario"}</span><span>${I('<path d="M3 14l4-5 4 3 6-8"/>', 15)} ${D.st.n ? fmtV(D.st.tot, D.st.mt) + " hoy" : "Sin operaciones hoy"}</span></div>`;
   const loadAll = () => {
     const again = () => { if (/^#?(inicio|app\/.*)?$/.test(location.hash.replace(/^#/, ""))) re(); };
     if (!S.news && window.tkLoadNews) tkLoadNews().then(again);
@@ -205,7 +205,7 @@
     const tf = ph === "antes" ? 0 : ph === "despues" ? 1 : (D.now - D.a) / Math.max(1, D.b - D.a);
     const nh = D.nextHigh && dayKey(D.nextHigh.ts) === todayKey() ? D.nextHigh : null;
     return `<div class="x-h"><b class="hb-ch-n">${esc(name)}</b><span class="x-pill">${chip}</span><span style="flex:1"></span>${rbtn(href, name)}</div>
-      <div class="x-big"><div><b class="mono">${D.st.n ? fmtR(D.st.tot) : "0 R"}</b><small>${D.st.n ? D.st.n + (D.st.n === 1 ? " cerrada hoy" : " cerradas hoy") : "Aún sin operaciones hoy"}</small></div>${sp}</div>
+      <div class="x-big"><div><b class="mono">${D.st.n ? fmtV(D.st.tot, D.st.mt) : fmtV(0, 0)}</b><small>${D.st.n ? D.st.n + (D.st.n === 1 ? " cerrada hoy" : " cerradas hoy") : "Aún sin operaciones hoy"}</small></div>${sp}</div>
       <div class="x-segs" role="img" aria-label="${used} de ${mx} operaciones"><div>${segs}</div><span>${used} de ${mx} operaciones</span></div>
       <div class="hb-sbar" role="img" aria-label="Horario ${esc(p.start)} a ${esc(p.end)}"><span>${esc(p.start)}</span><div><em style="width:${(tf * 100).toFixed(1)}%"></em></div><span>${esc(p.end)}</span></div>
       <div class="x-line x-more">${I('<rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4"/>', 14, 1.8)}${nh ? `Noticia fuerte a las <b>${hhmm(nh.ts)}</b> · ${esc(nh.country || nh.cur || "")} ${esc(nh.title || "")}` : "Sin noticias fuertes hoy"}</div>
@@ -214,14 +214,14 @@
   function accR(a) {
     const L = (S.allTrades || S.trades).filter(t => a.number && String(t.account || "") === String(a.number) && t.status === "closed" && t.r != null && (!a.start || dayKey(t.open_time) >= a.start));
     const sum = L.reduce((s, t) => s + (+t.r || 0), 0), rp = +a.risk || (S.basePlan || S.plan).riskPct || 1, tg = +a.target || 0, need = tg ? (a.targetU === "R" ? tg : tg / rp) : 0;
-    return { sum, n: L.length, need };
+    return { sum, msum: sumM(L), n: L.length, need };
   }
   function cuentasTile(D, name, href) {
     const A = (S.accts || []).filter(a => a.status !== "archivada"), ord = { fondeo: 0, propia: 1, demo: 2 };
     const L = A.slice().sort((a, b) => (ord[a.type] ?? 3) - (ord[b.type] ?? 3)).slice(0, 3);
     const TIPO = { fondeo: "Fondeo", propia: "Capital propio", demo: "Demo", otra: "Otra" }, FASE = { f1: "Fase 1", f2: "Fase 2", fin: "Financiada" };
     const rows = L.map(a => { const x = accR(a), pr = x.need ? Math.max(0, Math.min(1, x.sum / x.need)) : null;
-      return `<div class="x-acc"><div class="x-acc-t"><b>${esc(acctName(a))}</b><span class="x-tag">${TIPO[a.type] || "Cuenta"}${a.type === "fondeo" && a.phase ? " · " + FASE[a.phase] : ""}</span><span style="flex:1"></span><span class="mono">${x.n ? fmtR(x.sum) : "—"}</span></div>${pr != null ? `<div class="x-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div><small>${Math.round(pr * 100)} % del objetivo de +${num(x.need, 1)} R</small>` : ""}</div>`; }).join("");
+      return `<div class="x-acc"><div class="x-acc-t"><b>${esc(acctName(a))}</b><span class="x-tag">${TIPO[a.type] || "Cuenta"}${a.type === "fondeo" && a.phase ? " · " + FASE[a.phase] : ""}</span><span style="flex:1"></span><span class="mono">${x.n ? fmtV(x.sum, x.msum) : "—"}</span></div>${pr != null ? `<div class="x-prog"><i style="width:${(pr * 100).toFixed(1)}%"></i></div><small>${Math.round(pr * 100)} % del objetivo de ${fmtV(x.need)}</small>` : ""}</div>`; }).join("");
     const lock = inSession(D.p);
     return `<div class="x-h"><b class="hb-ch-n">${esc(name)}</b><span class="x-pill">${A.length} ${A.length === 1 ? "cuenta" : "cuentas"}</span><span style="flex:1"></span>${rbtn(href, name)}</div>
       <div class="x-accs">${rows || `<p class="x-empty">Añade tu cuenta de fondeo, real o demo para ver cómo va cada una.</p>`}</div>
@@ -258,7 +258,7 @@
   function btTile(D, name, href) {
     const i = Math.min(S.hbBt || 0, Math.max(0, D.sess.length - 1)), x = D.sess[i];
     const L = typeof simAll === "function" ? simAll() : [], st = tradeStats(L);
-    const stats = st.n ? `<span><b class="mono">${st.n}</b> ${st.n === 1 ? "operación" : "operaciones"}</span><span><b class="mono">${Math.round(st.win)} %</b> acierto</span><span><b class="mono">${fmtR(st.tot)}</b> en práctica</span>` : `<span>Aún sin operaciones de práctica</span>`;
+    const stats = st.n ? `<span><b class="mono">${st.n}</b> ${st.n === 1 ? "operación" : "operaciones"}</span><span><b class="mono">${Math.round(st.win)} %</b> acierto</span><span><b class="mono">${fmtV(st.tot, st.mt)}</b> en práctica</span>` : `<span>Aún sin operaciones de práctica</span>`;
     let row;
     if (x) {
       const from = new Date(x.from + "T00:00").getTime(), to = new Date(x.to + "T23:59").getTime(), pr = Math.max(0, Math.min(1, ((x.lastTs || from) - from) / (to - from)));
@@ -430,7 +430,7 @@
     const st = (k, warn) => fails.has(k) ? "bad" : warn ? "warn" : used ? "ok" : "idle";
     const rows = [
       ["max", "Máximo " + mx + (mx === 1 ? " operación" : " operaciones"), used > mx ? "te pasaste" : used === mx ? "llegaste: cierra el día" : used ? "llevas " + used : "aún ninguna", st("max", used === mx)],
-      ["lim", "Límite del día −" + num(L, 1) + " R", D.st.n ? "llevas " + fmtR(dr) : "sin pérdidas", dr <= -L ? "bad" : st("lim", D.st.n && dr <= -L * .6)],
+      ["lim", "Límite del día −" + fmtLim(L, 1), D.st.n ? "llevas " + fmtV(dr, D.st.mt).replace(/<tk-r>.*?<\/tk-r>/, "") : "sin pérdidas", dr <= -L ? "bad" : st("lim", D.st.n && dr <= -L * .6)],
       ["hora", "Horario " + esc(p.start) + "–" + esc(p.end), D.phase === "antes" ? "empieza a las " + esc(p.start) : D.phase === "en" ? "estás dentro" : "terminado", fails.has("hora") ? "bad" : D.phase === "en" ? "ok" : "idle"],
       ["risk", "Riesgo " + rp + " % por operación", fails.has("risk") ? "hoy te pasaste" : used ? "respetado" : "", st("risk")],
       ["stop", "Stop al entrar y sin moverlo", fails.has("stop") ? "hoy no" : used ? "bien" : "", st("stop")]
@@ -631,7 +631,7 @@
     /* 3 · el precio de lo evitable (este mes) */
     const m0 = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), CM = C.filter(t => dayKey(dateOf(t)) >= m0), EV = CM.filter(t => !evaluate(t).good);
     const tot = CM.reduce((a, t) => a + (+t.r || 0), 0), evs = EV.reduce((a, t) => a + (+t.r || 0), 0);
-    X.cost = `<div class="hd-c">${tagP(3)}<h3>El precio de lo evitable</h3>${!CM.length ? `<p class="hd-e">Este mes aún no hay operaciones cerradas.</p>` : !EV.length ? `<p class="hd-big"><b class="mono">0</b> operaciones fuera de plan este mes</p><p class="hd-e">Todo lo que has operado este mes ha seguido tu plan.</p>` : evs < 0 ? `<p class="hd-big"><b class="mono">${fmtR(evs)}</b> te han costado ${EV.length} ${EV.length === 1 ? "operación" : "operaciones"} fuera de plan</p><p class="hd-e">Sin ellas irías <b>${fmtR(tot - evs)}</b> este mes en vez de <b>${fmtR(tot)}</b>.</p>` : `<p class="hd-big"><b class="mono">${fmtR(evs)}</b> te han dado ${EV.length} ${EV.length === 1 ? "operación" : "operaciones"} fuera de plan</p><p class="hd-e">Han salido bien, pero son hábitos que tarde o temprano salen caros.</p>`}</div>`;
+    X.cost = `<div class="hd-c">${tagP(3)}<h3>El precio de lo evitable</h3>${!CM.length ? `<p class="hd-e">Este mes aún no hay operaciones cerradas.</p>` : !EV.length ? `<p class="hd-big"><b class="mono">0</b> operaciones fuera de plan este mes</p><p class="hd-e">Todo lo que has operado este mes ha seguido tu plan.</p>` : evs < 0 ? `<p class="hd-big"><b class="mono">${fmtV(evs)}</b> te han costado ${EV.length} ${EV.length === 1 ? "operación" : "operaciones"} fuera de plan</p><p class="hd-e">Sin ellas irías <b>${fmtV(tot - evs)}</b> este mes en vez de <b>${fmtV(tot)}</b>.</p>` : `<p class="hd-big"><b class="mono">${fmtV(evs)}</b> te han dado ${EV.length} ${EV.length === 1 ? "operación" : "operaciones"} fuera de plan</p><p class="hd-e">Han salido bien, pero son hábitos que tarde o temprano salen caros.</p>`}</div>`;
     /* 4 · zona de no operar por noticias */
     X.news = `<div class="hd-c hd-nz ${toNews != null && toNews <= 15 && toNews >= -15 ? "hot" : ""}">${tagP(4)}<h3>Zona de noticias</h3>${!S.news ? `<p class="hd-e">Cargando el calendario…</p>` : nh ? (toNews <= 15 && toNews >= -15 ? `<p class="hd-big"><b>Ahora mismo</b> estás en zona de noticia</p><p class="hd-e">${esc(nh.country || "")} ${esc(nh.title || "")} a las ${hhmm(nh.ts)}. Mejor fuera hasta las ${hhmm(nh.ts + 15 * 6e4)}.</p>` : `<p class="hd-big"><b class="mono">${mins(toNews)}</b> para ${esc(nh.country || "")} ${esc(nh.title || "")}</p><p class="hd-e">Mejor fuera de ${hhmm(nh.ts - 15 * 6e4)} a ${hhmm(nh.ts + 15 * 6e4)}.</p>`) : `<p class="hd-e">No quedan noticias de impacto alto hoy.</p>`}</div>`;
     /* 5 · aviso de calentón y pausa */
@@ -652,7 +652,7 @@
     /* 8 · la operación para aprender */
     const C7 = C.filter(t => new Date(dateOf(t)) >= now - 7 * 864e5);
     const evT = C7.filter(t => !evaluate(t).good).sort((a, b) => (+a.r || 0) - (+b.r || 0))[0], glT = C7.filter(t => evaluate(t).good && +t.r < 0).at(-1), lt = evT || glT;
-    X.learn = `<div class="hd-c">${tagP(8)}<h3>La operación para aprender</h3>${lt ? `<a class="hd-lt" href="#op/${encodeURIComponent(lt.id)}"><span class="mono">${new Date(lt.open_time).toLocaleDateString("es-ES", { weekday: "short", day: "numeric" })}</span><b>${esc(lt.symbol || "")}</b><span>${lt.side === "buy" ? "Compra" : "Venta"}</span><span class="mono">${fmtR(+lt.r)}</span></a><p class="hd-e">${evT ? `Te saltaste «${esc((NLAB[NK((evaluate(lt).fail[0] || {}).fix || "")] || "tu plan").toLowerCase())}». ¿Qué te empujó a hacerlo y qué harás la próxima vez?` : "Perdiste haciendo todo bien. ¿Qué te dice esta operación de tu plan? Una buena pérdida también enseña."}</p><a class="x-ch" href="#op/${encodeURIComponent(lt.id)}">Revisarla</a>` : `<p class="hd-e">Esta semana no hay operaciones fuera de plan ni pérdidas que revisar.</p>`}</div>`;
+    X.learn = `<div class="hd-c">${tagP(8)}<h3>La operación para aprender</h3>${lt ? `<a class="hd-lt" href="#op/${encodeURIComponent(lt.id)}"><span class="mono">${new Date(lt.open_time).toLocaleDateString("es-ES", { weekday: "short", day: "numeric" })}</span><b>${esc(lt.symbol || "")}</b><span>${lt.side === "buy" ? "Compra" : "Venta"}</span><span class="mono">${fmtV(+lt.r, mOf(lt))}</span></a><p class="hd-e">${evT ? `Te saltaste «${esc((NLAB[NK((evaluate(lt).fail[0] || {}).fix || "")] || "tu plan").toLowerCase())}». ¿Qué te empujó a hacerlo y qué harás la próxima vez?` : "Perdiste haciendo todo bien. ¿Qué te dice esta operación de tu plan? Una buena pérdida también enseña."}</p><a class="x-ch" href="#op/${encodeURIComponent(lt.id)}">Revisarla</a>` : `<p class="hd-e">Esta semana no hay operaciones fuera de plan ni pérdidas que revisar.</p>`}</div>`;
     /* 9 · descubrimiento */
     let disc = "";
     if (C.length >= 15) {
@@ -691,13 +691,13 @@
     let racha = 0; for (const k of Object.keys(byDay).sort().reverse()) { if (byDay[k].every(t => evaluate(t).good)) racha++; else break; }
     const margin = Math.max(0, L + Math.min(0, dr));
     const kpi = (lbl, val, sub) => `<div class="hd-k"><span>${lbl}</span><b class="mono">${val}</b><small>${sub}</small></div>`;
-    const kpis = `<div class="hd-kpis">${kpi("Resultado de hoy", D.st.n ? fmtR(D.st.tot) : "0 R", D.st.n ? D.st.n + (D.st.n === 1 ? " cerrada" : " cerradas") : "sin operaciones")}${kpi("Operaciones", used + " de " + mx, used >= mx ? "has llegado al máximo" : (mx - used) + " por delante")}${kpi("Aún puedes perder", num(margin, 1) + " R", "límite del día −" + num(L, 1) + " R")}${kpi("Cómo llegas", md ? String(sc) : "—", md ? mLabel(sc) : "sin chequeo hoy")}${kpi("Dentro del plan", cl.length ? Math.round(good / cl.length * 100) + " %" : "—", racha ? racha + (racha === 1 ? " día seguido" : " días seguidos") : "hoy")}</div>`;
+    const kpis = `<div class="hd-kpis">${kpi("Resultado de hoy", D.st.n ? fmtV(D.st.tot, D.st.mt) : fmtV(0, 0), D.st.n ? D.st.n + (D.st.n === 1 ? " cerrada" : " cerradas") : "sin operaciones")}${kpi("Operaciones", used + " de " + mx, used >= mx ? "has llegado al máximo" : (mx - used) + " por delante")}${kpi("Aún puedes perder", fmtVabs(margin), "límite del día −" + fmtLim(L))}${kpi("Cómo llegas", md ? String(sc) : "—", md ? mLabel(sc) : "sin chequeo hoy")}${kpi("Dentro del plan", cl.length ? Math.round(good / cl.length * 100) + " %" : "—", racha ? racha + (racha === 1 ? " día seguido" : " días seguidos") : "hoy")}</div>`;
     // preparación
     const nh = (D.todayEv || []).filter(e => e.impact === "High").sort((a, b) => a.ts - b.ts);
     const step = (done, title, sub, act) => `<li class="${done ? "ok" : ""}"><span class="hd-ck">${done ? I('<path d="M4.5 10.5l3.5 3.5 7.5-8"/>', 12, 2.6) : ""}</span><div><b>${title}</b><small>${sub}</small></div>${act || ""}</li>`;
     const prep = `<div class="hd-c"><h3>Antes de operar</h3><ul class="hd-steps">
       ${step(md, "Cuéntame cómo llegas", md ? `${mLabel(sc)} · para hoy: ${esc(psyAdvice(m, D).tip[0].toLowerCase())}` : healthOk() ? "5 preguntas, 15 segundos" : "Actívalo en Ajustes", md ? "" : healthOk() ? `<button type="button" class="x-ch" data-hd="checkin">Hacer ahora</button>` : `<a class="x-ch" href="#ajustes">Ajustes</a>`)}
-      ${step(ok, "Comprométete con tu plan", ok ? "Hecho a las " + new Date(S.planOk.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "Riesgo " + num(p.riskPct, 2).replace(/,?0+$/, "") + " % · máximo " + mx + " · límite −" + num(L, 1) + " R", ok ? "" : `<button type="button" class="x-ch" data-pcommit>Me comprometo</button>`)}
+      ${step(ok, "Comprométete con tu plan", ok ? "Hecho a las " + new Date(S.planOk.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "Riesgo " + num(p.riskPct, 2).replace(/,?0+$/, "") + " % · máximo " + mx + " · límite −" + fmtLim(L), ok ? "" : `<button type="button" class="x-ch" data-pcommit>Me comprometo</button>`)}
       ${step(!!(S.news && !S.news.err) && !nh.length, nh.length ? "Ojo con las noticias fuertes" : "Noticias fuertes", !S.news ? "Cargando…" : nh.length ? nh.map(e => hhmm(e.ts)).join(" · ") + " · ten cuidado cerca de esas horas" : "Hoy no hay noticias de alto impacto", `<a class="x-ch" href="#noticias">Ver</a>`)}
       ${step(!!(m && m.sit), "Ten tu regla de hoy a mano", m && m.sit ? `Si ${esc(m.sit)} → ${esc(m.then)}` : "Sale de tu consejo, después del chequeo", "")}
     </ul></div>`;
@@ -710,18 +710,18 @@
     const advice = `<div class="hd-c hd-tip"><h3>Tu consejo de hoy</h3>${tip ? `<b>${esc(tip.tip[0])}</b><p>${esc(tip.tip[2])}</p>${tip.tip[3] ? `<small>Estudio: ${esc(tip.tip[3])}</small>` : ""}<button type="button" class="x-ch" data-hd="psy">Ver mi día completo</button>` : `<p class="hd-e">Contesta las 5 preguntas de arriba y aquí tendrás un consejo hecho para ti.</p><button type="button" class="x-ch" data-hd="checkin">Empezar</button>`}</div>`;
     // operaciones
     const ops = `<div class="hd-c hd-wide"><h3>Operaciones de hoy</h3>${D.today.length ? `<ul class="hd-ops">${D.today.slice().sort((a, b) => new Date(b.open_time) - new Date(a.open_time)).map(t => { const ev = t.status === "closed" ? evaluate(t) : null, side = t.side === "buy" ? "Compra" : "Venta";
-      return `<li><a href="#op/${encodeURIComponent(t.id)}"><span class="mono">${hhmm(t.open_time)}</span><b>${esc(t.symbol || "")}</b><span>${side}</span><span class="mono r">${t.status === "closed" && t.r != null ? fmtR(+t.r) : "abierta"}</span>${ev ? `<em class="${ev.good ? "ok" : "bad"}">${ev.good ? "Dentro del plan" : "Fuera: " + esc((ev.fail[0] && NLAB[NK(ev.fail[0].fix)]) || "revisar")}</em>` : `<em>en curso</em>`}</a></li>`; }).join("")}</ul>` : `<p class="hd-e">${ph === "antes" ? "Tu sesión aún no ha empezado." : ph === "en" ? "Aún no has operado. No operar también es una buena sesión si no aparece tu setup." : "Hoy no has operado."}</p>`}<button type="button" class="hd-more" data-hd="informe">Ver el informe del día</button></div>`;
+      return `<li><a href="#op/${encodeURIComponent(t.id)}"><span class="mono">${hhmm(t.open_time)}</span><b>${esc(t.symbol || "")}</b><span>${side}</span><span class="mono r">${t.status === "closed" && t.r != null ? fmtV(+t.r, mOf(t)) : "abierta"}</span>${ev ? `<em class="${ev.good ? "ok" : "bad"}">${ev.good ? "Dentro del plan" : "Fuera: " + esc((ev.fail[0] && NLAB[NK(ev.fail[0].fix)]) || "revisar")}</em>` : `<em>en curso</em>`}</a></li>`; }).join("")}</ul>` : `<p class="hd-e">${ph === "antes" ? "Tu sesión aún no ha empezado." : ph === "en" ? "Aún no has operado. No operar también es una buena sesión si no aparece tu setup." : "Hoy no has operado."}</p>`}<button type="button" class="hd-more" data-hd="informe">Ver el informe del día</button></div>`;
     // semana
     const mon = new Date(); mon.setHours(12, 0, 0, 0); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
     let wt = 0, wd = 0, wok = 0;
     const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dayKey(d), Ld = byDay[k] || [], st = tradeStats(Ld); if (Ld.length) { wt += st.tot; wd++; if (Ld.every(t => evaluate(t).good)) wok++; }
-      return `<div class="hd-wd ${Ld.length ? (st.tot > 0 ? "p" : st.tot < 0 ? "n" : "z") : ""}${k === todayKey() ? " hoy" : ""}"><span>${["L", "M", "X", "J", "V", "S", "D"].at(i)}</span><b class="mono">${Ld.length ? fmtR(st.tot) : "·"}</b></div>`; }).join("");
-    const week = `<div class="hd-c"><h3>Esta semana</h3><div class="hd-week">${days}</div><p class="hd-ws"><b class="mono">${wd ? fmtR(wt) : "0 R"}</b> en ${wd} ${wd === 1 ? "día" : "días"} · <b>${wok} de ${wd}</b> en plan</p><a class="hd-more" href="#calendario">Abrir el calendario</a></div>`;
+      return `<div class="hd-wd ${Ld.length ? (st.tot > 0 ? "p" : st.tot < 0 ? "n" : "z") : ""}${k === todayKey() ? " hoy" : ""}"><span>${["L", "M", "X", "J", "V", "S", "D"].at(i)}</span><b class="mono">${Ld.length ? fmtV(st.tot, st.mt) : "·"}</b></div>`; }).join("");
+    const week = `<div class="hd-c"><h3>Esta semana</h3><div class="hd-week">${days}</div><p class="hd-ws"><b class="mono">${wd ? fmtV(wt) : fmtV(0, 0)}</b> en ${wd} ${wd === 1 ? "día" : "días"} · <b>${wok} de ${wd}</b> en plan</p><a class="hd-more" href="#calendario">Abrir el calendario</a></div>`;
     // cuentas de fondeo: lo que te queda hoy
     const F = (S.accts || []).filter(a => a.status !== "archivada" && a.type === "fondeo").slice(0, 3);
     const acc = F.length ? `<div class="hd-c"><h3>Tus cuentas de fondeo</h3><ul class="hd-acc">${F.map(a => { const rp = +a.risk || (S.basePlan || p).riskPct || 1, dd = +a.dailyDD || 0, lim = dd ? (a.dailyU === "R" ? dd : dd / rp) : 0;
       const T = (S.allTrades || S.trades).filter(t => a.number && String(t.account || "") === String(a.number) && t.status === "closed" && t.r != null && dayKey(t.open_time) === todayKey()), td = T.reduce((s, t) => s + (+t.r || 0), 0), x = accR(a), pr = x.need ? Math.max(0, Math.min(1, x.sum / x.need)) : null;
-      return `<li><div><b>${esc(acctName(a))}</b><small>${a.phase === "f2" ? "Fase 2" : a.phase === "fin" ? "Financiada" : "Fase 1"}${pr != null ? " · " + Math.round(pr * 100) + " % del objetivo" : ""}</small></div><span>${lim ? `Te queda hoy <b class="mono">${num(Math.max(0, lim + Math.min(0, td)), 1)} R</b>` : `Hoy <b class="mono">${fmtR(td)}</b>`}</span></li>`; }).join("")}</ul><a class="hd-more" href="#cuentas">Ver cuentas</a></div>` : "";
+      return `<li><div><b>${esc(acctName(a))}</b><small>${a.phase === "f2" ? "Fase 2" : a.phase === "fin" ? "Financiada" : "Fase 1"}${pr != null ? " · " + Math.round(pr * 100) + " % del objetivo" : ""}</small></div><span>${lim ? `Te queda hoy <b class="mono">${num(Math.max(0, lim + Math.min(0, td)), 1)} R</b>` : `Hoy <b class="mono">${fmtV(td)}</b>`}</span></li>`; }).join("")}</ul><a class="hd-more" href="#cuentas">Ver cuentas</a></div>` : "";
     // cierre
     const close = `<div class="hd-c hd-close"><h3>Cierre del día</h3>${ph === "despues" ? `<p>Dos minutos para cerrar bien: qué hiciste bien, qué mejorarías y una cosa para mañana.</p><button type="button" class="x-ch pri" data-hd="cierre">Escribir mi cierre</button>` : `<p class="hd-e">Al terminar tu horario (${esc(p.end)}) aquí escribirás tu cierre del día: qué hiciste bien, qué mejorarías y una cosa para mañana.</p>`}<button type="button" class="hd-more" data-hd="informe">Informe del día</button></div>`;
     const order = ph === "despues" ? [kpis, `<div class="hd-g">${ops}${close}</div>`, `<div class="hd-g">${week}${advice}${acc || news}</div>`] : ph === "en" ? [kpis, `<div class="hd-g">${ops}${advice}</div>`, `<div class="hd-g">${news}${week}${acc || prep}</div>`] : [kpis, `<div class="hd-g">${prep}${news}${advice}</div>`, `<div class="hd-g">${ops}${week}</div>`, acc ? `<div class="hd-g two">${acc}${close}</div>` : `<div class="hd-g two">${close}</div>`];
@@ -866,7 +866,7 @@
     (S.pages || []).forEach(p => { if (norm((p.title || "") + " " + DI().txt(p.html)).includes(q)) out.push({ t: p.title || "Sin título", s: p.isTpl ? "Plantilla" : "Página del diario", go: () => location.hash = "#diario/" + encodeURIComponent(p.id), i: "diario" }); });
     (S.bts || []).forEach(x => { if (norm(x.name + " " + (x.syms || []).join(" ")).includes(q)) out.push({ t: x.name, s: "Sesión de backtesting", go: () => location.hash = "#backtest", i: "backtest" }); });
     const tr = S.trades.filter(t => norm(t.symbol).includes(q)).slice(0, 6);
-    tr.forEach(t => out.push({ t: `${t.symbol} · ${t.side === "buy" ? "Compra" : "Venta"} · ${fmtDT(t.open_time)}`, s: t.status === "closed" ? fmtR(t.r) : "Abierta", go: () => location.hash = "#op/" + encodeURIComponent(t.id), i: "historial" }));
+    tr.forEach(t => out.push({ t: `${t.symbol} · ${t.side === "buy" ? "Compra" : "Venta"} · ${fmtDT(t.open_time)}`, s: t.status === "closed" ? fmtVt(t.r, mOf(t)) : "Abierta", go: () => location.hash = "#op/" + encodeURIComponent(t.id), i: "historial" }));
     return out.slice(0, 12);
   }
   function bindSearch(inp, box, onGo) {
@@ -986,7 +986,7 @@
           : `<div class="xsec">Color principal en modo claro</div><div class="stcp"><input type="color" data-cl value="${cl}" aria-label="Color en modo claro"><input class="input mono" data-clt value="${cl}" maxlength="7" aria-label="Código del color en modo claro"><span class="stprev" style="background:${cl}"></span></div>
              <div class="xsec">Color principal en modo oscuro</div><div class="stcp"><input type="color" data-cd value="${cd}" aria-label="Color en modo oscuro"><input class="input mono" data-cdt value="${cd}" maxlength="7" aria-label="Código del color en modo oscuro"><span class="stprev" style="background:${cd}"></span></div>
              <div class="small muted">Se usa en botones, enlaces, el menú y los gráficos.</div>`}
-          <div class="callout" style="margin-top:6px">${I('<circle cx="10" cy="10" r="7"/><path d="M10 9v4.5M10 6.5v.01"/>', 18)}<div class="small">Los resultados se siguen mostrando en R y sin rojo ni verde, como pusiste en tu plan: así juzgas el proceso y no el dinero.</div></div>
+          <div class="callout" style="margin-top:6px">${I('<circle cx="10" cy="10" r="7"/><path d="M10 9v4.5M10 6.5v.01"/>', 18)}<div class="small">${moneyOn() ? "Los resultados se muestran en tu moneda con la R al lado y sin rojo ni verde: así juzgas el proceso y no solo el dinero." : "Los resultados se siguen mostrando en R y sin rojo ni verde, como pusiste en tu plan: así juzgas el proceso y no el dinero."}</div></div>
         </div>
         <div class="xdr-f"><span class="row" style="gap:6px">${sw(tab === "custom" ? cl : (PRESETS.flatMap(g => g[2]).find(x => x[0] === pick) || [, , "#2443c7"])[2], tab === "custom" ? cd : (PRESETS.flatMap(g => g[2]).find(x => x[0] === pick) || [, , , "#4f7dff"])[3])}</span><span style="flex:1"></span><button type="button" class="btn2" data-reset style="height:40px">Restablecer</button><button type="button" class="btn" data-save style="height:40px">Guardar estilo</button></div></div>`;
     };
@@ -1035,23 +1035,23 @@
       const bySym = {}; C.forEach(t => (bySym[t.symbol] = bySym[t.symbol] || []).push(t));
       const accts = (S.accts || []).filter(a => a.number).map(a => { const T = closed(perFilter(S.allTrades.filter(t => String(t.account || "") === String(a.number)), per)); return { a, st: tradeStats(T) }; }).filter(x => x.st.n);
       return `<div class="stack" style="gap:18px">
-        <div class="xhead"><div><h1>Rendimiento</h1><div class="small muted">${st.n} operaciones cerradas${selAcct() ? " de " + esc(acctName(selAcct().a)) : ""} · todo en R</div></div>
+        <div class="xhead"><div><h1>Rendimiento</h1><div class="small muted">${st.n} operaciones cerradas${selAcct() ? " de " + esc(acctName(selAcct().a)) : ""} · ${moneyOn() ? "en " + dispCur() + " y en R" : "todo en R"}</div></div>
           <div class="pseg" role="group" aria-label="Periodo">${PERS.map(([k, l]) => `<button type="button" data-rper="${k}" aria-pressed="${per === k}">${l}</button>`).join("")}</div></div>
         <div class="xkgrid">
-          ${kpi("Resultado neto", st.n ? fmtR(st.tot) : "—", st.n + " operaciones", spark(curve, 96, 40), "Suma de todas las operaciones cerradas del periodo")}
+          ${kpi("Resultado neto", st.n ? fmtV(st.tot, st.mt) : "—", st.n + " operaciones", spark(curve, 96, 40), "Suma de todas las operaciones cerradas del periodo")}
           ${kpi("Factor de beneficio", fpf(st.pf), "lo ganado ÷ lo perdido", ring(st.pf == null ? 0 : Math.min(100, (st.pf === Infinity ? 3 : st.pf) / 3 * 100)), "Por encima de 1 ganas más de lo que pierdes")}
-          ${kpi("Mejor frente a peor", best ? `<span style="font-size:.78em;white-space:nowrap">${fmtR(best.r)} / ${fmtR(worst.r)}</span>` : "—", best ? `${esc(best.symbol)} · ${esc(worst.symbol)}` : "", best ? meter(Math.max(0, best.r), Math.abs(Math.min(0, worst.r)), "mejor", "peor") : "", "Tu mejor y tu peor operación del periodo")}
-          ${kpi("Ganancia media", st.avgW != null ? fmtR(st.avgW) : "—", wins + " ganadoras", "", "Lo que ganas de media en cada operación ganadora")}
-          ${kpi("Relación ganancia / pérdida", rr != null ? num(rr, 2) : "—", st.avgL != null ? "pérdida media " + fmtR(st.avgL) : "", ring(rr == null ? 0 : Math.min(100, rr / 3 * 100)), "Ganancia media dividida entre la pérdida media")}
-          ${kpi("Esperanza", st.exp != null ? fmtR(st.exp) : "—", "por operación", "", "Lo que ganas o pierdes de media por operación")}
-          ${kpi("Peor caída", st.n ? fmtR(st.dd) : "—", "desde el máximo", "", "Lo máximo que has bajado desde tu mejor momento en el periodo")}
+          ${kpi("Mejor frente a peor", best ? `<span style="font-size:.78em;white-space:nowrap">${fmtV(best.r, mOf(best))} / ${fmtV(worst.r, mOf(worst))}</span>` : "—", best ? `${esc(best.symbol)} · ${esc(worst.symbol)}` : "", best ? meter(Math.max(0, best.r), Math.abs(Math.min(0, worst.r)), "mejor", "peor") : "", "Tu mejor y tu peor operación del periodo")}
+          ${kpi("Ganancia media", st.avgW != null ? fmtV(st.avgW, st.mW) : "—", wins + " ganadoras", "", "Lo que ganas de media en cada operación ganadora")}
+          ${kpi("Relación ganancia / pérdida", rr != null ? num(rr, 2) : "—", st.avgL != null ? "pérdida media " + fmtV(st.avgL, st.mL) : "", ring(rr == null ? 0 : Math.min(100, rr / 3 * 100)), "Ganancia media dividida entre la pérdida media")}
+          ${kpi("Esperanza", st.exp != null ? fmtV(st.exp, st.mexp) : "—", "por operación", "", "Lo que ganas o pierdes de media por operación")}
+          ${kpi("Peor caída", st.n ? fmtV(st.dd, st.mdd) : "—", "desde el máximo", "", "Lo máximo que has bajado desde tu mejor momento en el periodo")}
           ${kpi("Ganadoras frente a perdedoras", st.win == null ? "—" : num(st.win, 0) + " %", "", C.length ? meter(wins, losses, wins + " ganadoras", losses + " perdedoras") : "", "Porcentaje de operaciones ganadoras")}
         </div>
         <div class="xg3">
           <div class="card stack" style="gap:10px"><h2 class="h2b">Curva de resultado</h2>${lineChart(curve, { from: f0, to: f1, label: "Resultado acumulado en R", emptyText: "Aún no hay datos. Conecta MT5 o añade operaciones." })}</div>
-          <div class="card stack" style="gap:10px"><h2 class="h2b">Caída desde el máximo</h2>${lineChart(ddc, { from: f0, to: f1, dd: true, label: "Caída desde el máximo en R", emptyText: "Aún no hay datos." })}<div class="small muted">Peor caída: <b class="mono">${fmtR(st.dd)}</b></div></div>
+          <div class="card stack" style="gap:10px"><h2 class="h2b">Caída desde el máximo</h2>${lineChart(ddc, { from: f0, to: f1, dd: true, label: "Caída desde el máximo en R", emptyText: "Aún no hay datos." })}<div class="small muted">Peor caída: <b class="mono">${fmtV(st.dd, st.mdd)}</b></div></div>
           <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Crecimiento de las cuentas</h2><a class="btn2" href="#cuentas" style="height:32px">${I(IC.plus, 14, 2)} Añadir cuenta</a></div>
-            ${accts.length ? `<div class="stack" style="gap:10px">${accts.map(x => `<a class="racc" href="#cuentas"><div class="between"><b>${esc(acctName(x.a))}</b><span class="mono">${fmtR(x.st.tot)}</span></div>${spark(x.st.curve, 260, 34)}<span class="small muted">${x.st.n} op. · ${num(x.st.win, 0)} % acierto</span></a>`).join("")}</div>` : `<div class="xchart-empty">${(S.accts || []).length ? "Tus cuentas aún no tienen operaciones en este periodo." : "Aún no hay cuentas. Añade una para ver cómo crece cada una."}</div>`}</div>
+            ${accts.length ? `<div class="stack" style="gap:10px">${accts.map(x => `<a class="racc" href="#cuentas"><div class="between"><b>${esc(acctName(x.a))}</b><span class="mono">${fmtV(x.st.tot, x.st.mt)}</span></div>${spark(x.st.curve, 260, 34)}<span class="small muted">${x.st.n} op. · ${num(x.st.win, 0)} % acierto</span></a>`).join("")}</div>` : `<div class="xchart-empty">${(S.accts || []).length ? "Tus cuentas aún no tienen operaciones en este periodo." : "Aún no hay cuentas. Añade una para ver cómo crece cada una."}</div>`}</div>
         </div>
         <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Resultado por mes</h2><span class="small muted">últimos 12 meses</span></div>${barsV(byMonth, { label: "Resultado por mes" })}</div>
         <div class="xg2">
@@ -1060,14 +1060,14 @@
         </div>
         <div class="card stack" style="gap:10px"><h2 class="h2b">Resultado por mercado</h2>
           <div class="xtablewrap"><table class="xtable"><thead><tr><th>Mercado</th><th>Operaciones</th><th>Acierto</th><th>Factor de beneficio</th><th>Esperanza</th><th>Resultado</th></tr></thead><tbody>
-          ${Object.entries(bySym).map(([k, l]) => [k, tradeStats(l)]).sort((a, b) => b[1].tot - a[1].tot).map(([k, s]) => `<tr><td><b>${esc(k)}</b></td><td class="mono">${s.n}</td><td class="mono">${num(s.win, 0)} %</td><td class="mono">${fpf(s.pf)}</td><td class="mono">${fmtR(s.exp)}</td><td class="mono"><b>${fmtR(s.tot)}</b></td></tr>`).join("") || `<tr><td colspan="6" class="muted" style="padding:16px">Sin operaciones en este periodo.</td></tr>`}</tbody></table></div></div>
+          ${Object.entries(bySym).map(([k, l]) => [k, tradeStats(l)]).sort((a, b) => b[1].tot - a[1].tot).map(([k, s]) => `<tr><td><b>${esc(k)}</b></td><td class="mono">${s.n}</td><td class="mono">${num(s.win, 0)} %</td><td class="mono">${fpf(s.pf)}</td><td class="mono">${fmtV(s.exp, s.mexp)}</td><td class="mono"><b>${fmtV(s.tot, s.mt)}</b></td></tr>`).join("") || `<tr><td colspan="6" class="muted" style="padding:16px">Sin operaciones en este periodo.</td></tr>`}</tbody></table></div></div>
       </div>`;
     },
     bind() { $$("[data-rper]").forEach(b => b.onclick = () => { S.rendPer = b.dataset.rper; re(); }); }
   };
 
   /* ======================= CALENDARIO: real o práctica, en grande; al tocar un día se abre su informe ======================= */
-  const cR = v => `<b class="mono ${v > 0 ? "cpos" : v < 0 ? "cneg" : ""}">${fmtR(v)}</b>`;
+  const cR = (v, m) => `<b class="mono ${v > 0 ? "cpos" : v < 0 ? "cneg" : ""}">${fmtV(v, m)}</b>`;
   const calSrcL = () => S.calSrc === "bt" ? simAll() : closed(S.trades);
   function calendar(key, L, opts) {
     const st = S[key] || (S[key] = { y: new Date().getFullYear(), m: new Date().getMonth(), mode: "mes" });
@@ -1078,9 +1078,9 @@
     if (st.mode === "anio") {
       const months = MESES_L.map((ml, m) => { const l = L.filter(t => { const d = new Date(dateOf(t)); return d.getFullYear() === st.y && d.getMonth() === m; }); return { m, ml, st: tradeStats(l) }; });
       const tot = months.reduce((a, x) => a + x.st.tot, 0), n = months.reduce((a, x) => a + x.st.n, 0), mx = Math.max(.5, ...months.map(x => Math.abs(x.st.tot)));
-      return `<div class="card stack calcard" style="gap:16px"><div class="calh"><div><div class="calbig">${n ? cR(tot) : `<b class="mono">0,0 R</b>`}</div><div class="small muted">${n} operaciones en ${st.y}</div></div>
+      return `<div class="card stack calcard" style="gap:16px"><div class="calh"><div><div class="calbig">${n ? cR(tot, months.reduce((a, x) => a + (x.st.mt || 0), 0)) : `<b class="mono">${fmtV(0, 0)}</b>`}</div><div class="small muted">${n} operaciones en ${st.y}</div></div>
         <div class="row" style="gap:8px;flex-wrap:wrap">${src}${modeB}<div class="calnav"><button type="button" class="xpb" data-cnav="-1" aria-label="Año anterior">${I(IC.left, 16, 2)}</button><b>${st.y}</b><button type="button" class="xpb" data-cnav="1" aria-label="Año siguiente">${I(IC.right, 16, 2)}</button></div></div></div>
-        <div class="calyear">${months.map(x => `<button type="button" class="calm ${x.st.n ? (x.st.tot < 0 ? "neg" : "pos") : ""}" style="--a:${x.st.n ? (.15 + Math.abs(x.st.tot) / mx * .55).toFixed(2) : 0}" data-cmonth="${x.m}"><b>${cap(x.ml)}</b><span class="mono">${x.st.n ? fmtR(x.st.tot) : "—"}</span><small>${x.st.n ? x.st.n + " op. · " + num(x.st.win, 0) + " % acierto" : "sin operaciones"}</small></button>`).join("")}</div>${leg}</div>`;
+        <div class="calyear">${months.map(x => `<button type="button" class="calm ${x.st.n ? (x.st.tot < 0 ? "neg" : "pos") : ""}" style="--a:${x.st.n ? (.15 + Math.abs(x.st.tot) / mx * .55).toFixed(2) : 0}" data-cmonth="${x.m}"><b>${cap(x.ml)}</b><span class="mono">${x.st.n ? fmtV(x.st.tot, x.st.mt) : "—"}</span><small>${x.st.n ? x.st.n + " op. · " + num(x.st.win, 0) + " % acierto" : "sin operaciones"}</small></button>`).join("")}</div>${leg}</div>`;
     }
     const first = new Date(st.y, st.m, 1), off = (first.getDay() + 6) % 7, days = new Date(st.y, st.m + 1, 0).getDate(), weeks = Math.ceil((off + days) / 7);
     const monthL = L.filter(t => { const d = new Date(dateOf(t)); return d.getFullYear() === st.y && d.getMonth() === st.m; }), mst = tradeStats(monthL);
@@ -1094,13 +1094,13 @@
         const dn = w * 7 + c - off + 1, dt = new Date(st.y, st.m, dn), k = dayKey(dt), inM = dn >= 1 && dn <= days, l = inM ? byDay[k] || [] : [], s = tradeStats(l);
         wl.push(...l);
         const a = s.n ? (.18 + Math.min(1, Math.abs(s.tot) / mxAbs) * .62).toFixed(2) : 0, cls = s.n ? (s.tot > 0 ? "pos" : s.tot < 0 ? "neg" : "zero") : "";
-        grid += `<${s.n ? `button type="button" data-cday="${k}" aria-label="${dt.getDate()}: ${fmtR(s.tot)}, ${s.n} operaciones. Ver informe"` : "div"} class="calc ${inM ? "" : "out"} ${cls} ${k === todayKey() ? "today" : ""} ${S.calSel === k ? "sel" : ""}" style="--a:${a}"><span class="cald">${dt.getDate()}</span>${s.n ? `<b class="mono">${fmtR(s.tot)}</b><small>${s.n} op.${s.win != null ? " · " + num(s.win, 0) + " %" : ""}</small>` : ""}</${s.n ? "button" : "div"}>`;
+        grid += `<${s.n ? `button type="button" data-cday="${k}" aria-label="${dt.getDate()}: ${fmtVt(s.tot, s.mt)}, ${s.n} operaciones. Ver informe"` : "div"} class="calc ${inM ? "" : "out"} ${cls} ${k === todayKey() ? "today" : ""} ${S.calSel === k ? "sel" : ""}" style="--a:${a}"><span class="cald">${dt.getDate()}</span>${s.n ? `<b class="mono">${fmtV(s.tot, s.mt)}</b><small>${s.n} op.${s.win != null ? " · " + num(s.win, 0) + " %" : ""}</small>` : ""}</${s.n ? "button" : "div"}>`;
       }
       const ws = tradeStats(wl); W.push({ w: w + 1, l: wl, st: ws });
       grid += `<div class="calc calw"><span class="cald">Semana ${w + 1}</span>${ws.n ? `${cR(ws.tot)}<small>${(n => n + (n === 1 ? " día" : " días"))(new Set(wl.map(t => dayKey(dateOf(t)))).size)} · ${ws.n} op.</small>` : `<small>—</small>`}</div>`;
     }
-    const wkRows = W.map(x => `<tr><td><b>Semana ${x.w}</b></td><td class="mono">${x.st.n || "—"}</td><td class="mono">${x.st.win == null ? "—" : num(x.st.win, 0) + " %"}</td><td class="mono">${x.st.avgW != null ? fmtR(x.st.avgW) : "—"}</td><td class="mono">${x.st.avgL != null ? fmtR(x.st.avgL) : "—"}</td><td>${x.st.n ? cR(x.st.tot) : "—"}</td></tr>`).join("");
-    return `<div class="card stack calcard" style="gap:16px"><div class="calh"><div><div class="calbig">${mst.n ? cR(mst.tot) : `<b class="mono">0,0 R</b>`}</div><div class="small muted">${cap(MESES_L[st.m])} de ${st.y} · ${inMonth.length} días operados · <span class="cpos">${pos} positivos</span>, <span class="cneg">${neg} negativos</span></div></div>
+    const wkRows = W.map(x => `<tr><td><b>Semana ${x.w}</b></td><td class="mono">${x.st.n || "—"}</td><td class="mono">${x.st.win == null ? "—" : num(x.st.win, 0) + " %"}</td><td class="mono">${x.st.avgW != null ? fmtV(x.st.avgW, x.st.mW) : "—"}</td><td class="mono">${x.st.avgL != null ? fmtV(x.st.avgL, x.st.mL) : "—"}</td><td>${x.st.n ? cR(x.st.tot) : "—"}</td></tr>`).join("");
+    return `<div class="card stack calcard" style="gap:16px"><div class="calh"><div><div class="calbig">${mst.n ? cR(mst.tot, mst.mt) : `<b class="mono">${fmtV(0, 0)}</b>`}</div><div class="small muted">${cap(MESES_L[st.m])} de ${st.y} · ${inMonth.length} días operados · <span class="cpos">${pos} positivos</span>, <span class="cneg">${neg} negativos</span></div></div>
         <div class="row" style="gap:8px;flex-wrap:wrap">${src}${modeB}<div class="calnav"><button type="button" class="xpb" data-cnav="-1" aria-label="Mes anterior">${I(IC.left, 16, 2)}</button><b>${cap(MESES_L[st.m])} ${st.y}</b><button type="button" class="xpb" data-cnav="1" aria-label="Mes siguiente">${I(IC.right, 16, 2)}</button></div><button type="button" class="btn2" data-ctoday style="height:34px">Hoy</button></div></div>
       <div class="calwrap"><div class="calgrid big" style="--wk:${weeks}">${grid}</div></div>${leg}</div>
       <div class="card stack" style="gap:10px"><h2 class="h2b">Resumen por semanas</h2><div class="xtablewrap"><table class="xtable"><thead><tr><th>Semana</th><th>Operaciones</th><th>Acierto</th><th>Ganancia media</th><th>Pérdida media</th><th>Resultado</th></tr></thead><tbody>${wkRows}</tbody></table></div></div>`;
@@ -1128,8 +1128,8 @@
     const box = document.createElement("div"); box.className = "xdrawer"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Informe del día");
     box.innerHTML = `<div class="xdrawer-p dpanel"><div class="xdr-h"><div><div class="small muted">${bt ? "Práctica" : "Informe del día"}</div><b style="font-size:18px">${cap(dt.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))}</b></div><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
       <div class="xdr-b">
-        <div class="dp-hero ${st.tot > 0 ? "pos" : st.tot < 0 ? "neg" : ""}"><span>Resultado del día</span><b class="mono">${st.n ? fmtR(st.tot) : "—"}</b><small>${st.n} operación${st.n === 1 ? "" : "es"} cerrada${st.n === 1 ? "" : "s"}${st.win != null ? " · " + num(st.win, 0) + " % acierto" : ""}</small></div>
-        <div class="dp-k">${bt ? `<div><span>Sesiones</span><b>${new Set(L.map(t => t.session_id || "")).size}</b></div><div><span>Mejor operación</span><b class="mono">${C.length ? fmtR(Math.max(...C.map(t => +t.r))) : "—"}</b></div>` : `<div><span>Dentro del plan</span><b>${C.length ? good + " de " + C.length : "—"}</b></div><div><span>Caída máxima</span><b class="mono">${st.n ? fmtR(st.dd) : "—"}</b></div>`}</div>
+        <div class="dp-hero ${st.tot > 0 ? "pos" : st.tot < 0 ? "neg" : ""}"><span>Resultado del día</span><b class="mono">${st.n ? fmtV(st.tot, st.mt) : "—"}</b><small>${st.n} operación${st.n === 1 ? "" : "es"} cerrada${st.n === 1 ? "" : "s"}${st.win != null ? " · " + num(st.win, 0) + " % acierto" : ""}</small></div>
+        <div class="dp-k">${bt ? `<div><span>Sesiones</span><b>${new Set(L.map(t => t.session_id || "")).size}</b></div><div><span>Mejor operación</span><b class="mono">${C.length ? fmtV(Math.max(...C.map(t => +t.r))) : "—"}</b></div>` : `<div><span>Dentro del plan</span><b>${C.length ? good + " de " + C.length : "—"}</b></div><div><span>Caída máxima</span><b class="mono">${st.n ? fmtV(st.dd, st.mdd) : "—"}</b></div>`}</div>
         <div class="xsec">Operaciones</div><div class="stack" style="gap:6px">${rows || `<div class="small muted">Sin operaciones este día.</div>`}</div>
         ${emo.length ? `<div class="xsec">Emociones</div><div class="stack" style="gap:6px">${emo.map(t => `<div class="dp-op"><span>${esc(t.review.feel)}<small>al entrar en ${esc(t.symbol)}</small></span></div>`).join("")}</div>` : ""}
         ${news.length ? `<div class="xsec">Noticias fuertes</div><div class="stack" style="gap:6px">${news.map(e => `<div class="dp-op"><span>${esc(e.country)} · ${esc(e.title)}</span><b class="mono">${new Date(e.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</b></div>`).join("")}</div>` : ""}
@@ -1165,16 +1165,16 @@
           <div class="calnav"><button type="button" class="xpb" data-rday="-1" aria-label="Día anterior">${I(IC.left, 16, 2)}</button><label class="xdate"><input type="date" id="repD" value="${k}" max="${todayKey()}" aria-label="Día"></label><button type="button" class="xpb" data-rday="1" aria-label="Día siguiente" ${k >= todayKey() ? "disabled" : ""}>${I(IC.right, 16, 2)}</button><button type="button" class="btn2" data-rtoday style="height:34px">Hoy</button></div></div>
         <div class="xg-rep">
           <div class="stack" style="gap:12px">
-            ${kpi("Resultado del día", st.n ? fmtR(st.tot) : "—", st.n + " de " + S.plan.maxTrades + " operaciones", "")}
-            ${kpi("Caída máxima", st.n ? fmtR(st.dd) : "—", "desde el máximo del día", "")}
-            ${kpi("Esperanza", st.exp != null ? fmtR(st.exp) : "—", st.win == null ? "" : num(st.win, 0) + " % de acierto", "")}
+            ${kpi("Resultado del día", st.n ? fmtV(st.tot, st.mt) : "—", st.n + " de " + S.plan.maxTrades + " operaciones", "")}
+            ${kpi("Caída máxima", st.n ? fmtV(st.dd, st.mdd) : "—", "desde el máximo del día", "")}
+            ${kpi("Esperanza", st.exp != null ? fmtV(st.exp, st.mexp) : "—", st.win == null ? "" : num(st.win, 0) + " % de acierto", "")}
             ${kpi("Dentro del plan", C.length ? good + " de " + C.length : "—", C.length ? (good === C.length ? "Día limpio" : (C.length - good) + " evitable" + (C.length - good > 1 ? "s" : "")) : "", "")}
           </div>
           <div class="card stack" style="gap:10px"><h2 class="h2b">Métricas del día</h2>${lineChart(curve, { label: "Resultado acumulado del día", from: C.length ? new Date(C[0].open_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "", to: C.length ? new Date(C[C.length - 1].close_time || C[C.length - 1].open_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "", h: 220, emptyText: "Aún no hay datos este día." })}</div>
         </div>
         <div class="xg2 wide">
           <div class="card stack" style="gap:10px"><h2 class="h2b">Resumen de operaciones</h2>
-            ${D.length ? `<div class="xtablewrap"><table class="xtable"><thead><tr><th>Hora</th><th>Símbolo</th><th>Dirección</th><th>Resultado</th><th>Duración</th><th>Plan</th>${healthOk() ? "<th>Emoción</th>" : ""}</tr></thead><tbody>${D.map(t => { const ev = t.status === "closed" ? evaluate(t) : null; return `<tr data-op="${esc(t.id)}" tabindex="0"><td class="mono">${new Date(t.open_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</td><td><b>${esc(t.symbol)}</b></td><td><span class="xside ${t.side}">${t.side === "buy" ? "Compra" : "Venta"}</span></td><td class="mono"><b>${t.status === "closed" ? fmtR(t.r) : "Abierta"}</b></td><td class="mono">${dur(t.open_time, t.close_time)}</td><td>${ev ? (ev.good ? `<span class="xok">${I(IC.check, 14, 2.4)} Dentro</span>` : `<span class="xbad">${esc(ev.fail[0].bad)}</span>`) : "—"}</td>${healthOk() ? `<td>${esc((t.review || {}).feel || "—")}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>` : `<div class="xchart-empty">No operaste este día.</div>`}</div>
+            ${D.length ? `<div class="xtablewrap"><table class="xtable"><thead><tr><th>Hora</th><th>Símbolo</th><th>Dirección</th><th>Resultado</th><th>Duración</th><th>Plan</th>${healthOk() ? "<th>Emoción</th>" : ""}</tr></thead><tbody>${D.map(t => { const ev = t.status === "closed" ? evaluate(t) : null; return `<tr data-op="${esc(t.id)}" tabindex="0"><td class="mono">${new Date(t.open_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</td><td><b>${esc(t.symbol)}</b></td><td><span class="xside ${t.side}">${t.side === "buy" ? "Compra" : "Venta"}</span></td><td class="mono"><b>${t.status === "closed" ? fmtV(t.r, mOf(t)) : "Abierta"}</b></td><td class="mono">${dur(t.open_time, t.close_time)}</td><td>${ev ? (ev.good ? `<span class="xok">${I(IC.check, 14, 2.4)} Dentro</span>` : `<span class="xbad">${esc(ev.fail[0].bad)}</span>`) : "—"}</td>${healthOk() ? `<td>${esc((t.review || {}).feel || "—")}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>` : `<div class="xchart-empty">No operaste este día.</div>`}</div>
           <div class="card stack" style="gap:10px"><h2 class="h2b">Resultado por símbolo</h2>${barsV(Object.entries(bySym).map(([l, v]) => ({ l, v })), { emptyText: "Aún no hay símbolos este día." })}</div>
         </div>
         <div class="xg2">
@@ -1213,14 +1213,14 @@
       return `<div class="stack" style="gap:18px">
         <div class="xhead"><div><h1>Análisis</h1><div class="small muted">Tus estadísticas de práctica: operaciones simuladas, tiempo de estudio y velas repasadas</div></div>${sessSel(f, "btaF")}</div>
         <div class="xkgrid">
-          ${kpi("Resultado neto", st.n ? fmtR(st.tot) : "—", st.n + " operaciones simuladas", spark(curve, 96, 40))}
+          ${kpi("Resultado neto", st.n ? fmtV(st.tot, st.mt) : "—", st.n + " operaciones simuladas", spark(curve, 96, 40))}
           ${kpi("Factor de beneficio", fpf(st.pf), "lo ganado ÷ lo perdido", ring(st.pf == null ? 0 : Math.min(100, (st.pf === Infinity ? 3 : st.pf) / 3 * 100)))}
-          ${kpi("Ganancia media frente a pérdida", rr != null ? num(rr, 2) : "—", st.avgW != null ? fmtR(st.avgW) + " / " + (st.avgL != null ? fmtR(st.avgL) : "—") : "", rr != null ? meter(st.avgW, Math.abs(st.avgL || 0), "ganancia", "pérdida") : "")}
+          ${kpi("Ganancia media frente a pérdida", rr != null ? num(rr, 2) : "—", st.avgW != null ? fmtV(st.avgW, st.mW) + " / " + (st.avgL != null ? fmtV(st.avgL, st.mL) : "—") : "", rr != null ? meter(st.avgW, Math.abs(st.avgL || 0), "ganancia", "pérdida") : "")}
           ${kpi("Tiempo invertido", BT().hms(secs), "practicando en sesiones", "")}
           ${kpi("Velas repasadas", bars.toLocaleString("es-ES"), "avanzando en backtesting", "")}
           ${kpi("Operaciones", st.n, "simuladas", "")}
           ${kpi("Acierto", st.win == null ? "—" : num(st.win, 0) + " %", st.n ? L.filter(t => t.r > 0).length + " de " + st.n : "", ring(st.win))}
-          ${kpi("Caída máxima", st.n ? fmtR(st.dd) : "—", "desde el máximo", "")}
+          ${kpi("Caída máxima", st.n ? fmtV(st.dd, st.mdd) : "—", "desde el máximo", "")}
         </div>
         <div class="xg2">
           <div class="card stack" style="gap:10px"><div class="between"><h2 class="h2b">Tiempo de estudio</h2><span class="small muted">minutos · últimos 14 días</span></div>${barsV(last14, { fmt: v => v + " min", label: "Minutos de estudio por día", emptyText: "Todavía no hay tiempo de estudio. Empieza una sesión y avanza velas." })}</div>
@@ -1244,12 +1244,12 @@
       const P = L.slice(o.page * o.per, (o.page + 1) * o.per);
       return `<div class="stack" style="gap:18px">
         <div class="xhead"><div><h1>Operaciones simuladas</h1><div class="small muted">Todo lo que has operado en backtesting, separado de tus operaciones reales</div></div><button type="button" class="btn2" id="btoCsv" style="height:38px">${I(IC.down, 16)} Exportar CSV</button></div>
-        <div class="xkgrid">${kpi("Resultado neto", st.n ? fmtR(st.tot) : "—", st.n + " operaciones", spark(st.curve, 96, 40))}${kpi("Factor de beneficio", fpf(st.pf), "", ring(st.pf == null ? 0 : Math.min(100, (st.pf === Infinity ? 3 : st.pf) / 3 * 100)))}${kpi("Acierto", st.win == null ? "—" : num(st.win, 0) + " %", "", ring(st.win))}${kpi("Relación ganancia / pérdida", st.avgW != null && st.avgL ? num(Math.abs(st.avgW / st.avgL), 2) : "—", "", "")}</div>
+        <div class="xkgrid">${kpi("Resultado neto", st.n ? fmtV(st.tot, st.mt) : "—", st.n + " operaciones", spark(st.curve, 96, 40))}${kpi("Factor de beneficio", fpf(st.pf), "", ring(st.pf == null ? 0 : Math.min(100, (st.pf === Infinity ? 3 : st.pf) / 3 * 100)))}${kpi("Acierto", st.win == null ? "—" : num(st.win, 0) + " %", "", ring(st.win))}${kpi("Relación ganancia / pérdida", st.avgW != null && st.avgL ? num(Math.abs(st.avgW / st.avgL), 2) : "—", "", "")}</div>
         <div class="card xcard"><div class="xtools"><label class="xsearch">${I(IC.search, 16)}<input id="btoQ" placeholder="Buscar operaciones…" value="${esc(o.q)}" aria-label="Buscar"></label>
           <div class="xfil">${sessSel(o.f, "btoF")}<select class="xsel" id="btoS" aria-label="Dirección"><option value="">Compras y ventas</option><option value="buy" ${o.side === "buy" ? "selected" : ""}>Solo compras</option><option value="sell" ${o.side === "sell" ? "selected" : ""}>Solo ventas</option></select></div></div>
           <div class="xtablewrap"><table class="xtable"><thead><tr class="xgrp"><th colspan="4"><span>Información</span></th><th colspan="2"><span>Rendimiento</span></th><th colspan="4"><span>Precios</span></th><th colspan="2"><span>Fechas</span></th></tr>
             <tr><th>Símbolo</th><th>Sesión</th><th>Dirección</th><th>Marco</th><th>Resultado</th><th>Duración</th><th>Entrada</th><th>Stop</th><th>Objetivo</th><th>Salida</th><th>Fecha de entrada</th><th>Fecha de salida</th></tr></thead>
-            <tbody>${P.length ? P.map(t => `<tr><td><b>${esc(t.symbol)}</b></td><td class="muted">${esc(sessName(t.session_id))}</td><td><span class="xside ${t.side}">${t.side === "buy" ? "Compra" : "Venta"}</span></td><td class="mono">${esc(t.tf || "—")}</td><td class="mono"><b>${t.r != null ? fmtR(+t.r) : "Abierta"}</b></td><td class="mono">${dur(t.entry_time, t.exit_time)}</td><td class="mono">${px(t.entry)}</td><td class="mono">${px(t.stop)}</td><td class="mono">${px(t.tp)}</td><td class="mono">${px(t.exit)}</td><td class="mono">${t.entry_time ? fmtDT(t.entry_time) : "—"}</td><td class="mono">${t.exit_time ? fmtDT(t.exit_time) : "—"}</td></tr>`).join("") : `<tr><td colspan="12">${empty("Aún no hay operaciones simuladas", "Crea una sesión en Backtesting, avanza velas y opera desde el gráfico.", `<a class="btn" href="#backtest" style="height:38px">Ir a sesiones</a>`)}</td></tr>`}</tbody></table></div>
+            <tbody>${P.length ? P.map(t => `<tr><td><b>${esc(t.symbol)}</b></td><td class="muted">${esc(sessName(t.session_id))}</td><td><span class="xside ${t.side}">${t.side === "buy" ? "Compra" : "Venta"}</span></td><td class="mono">${esc(t.tf || "—")}</td><td class="mono"><b>${t.r != null ? fmtV(+t.r, mOf(t)) : "Abierta"}</b></td><td class="mono">${dur(t.entry_time, t.exit_time)}</td><td class="mono">${px(t.entry)}</td><td class="mono">${px(t.stop)}</td><td class="mono">${px(t.tp)}</td><td class="mono">${px(t.exit)}</td><td class="mono">${t.entry_time ? fmtDT(t.entry_time) : "—"}</td><td class="mono">${t.exit_time ? fmtDT(t.exit_time) : "—"}</td></tr>`).join("") : `<tr><td colspan="12">${empty("Aún no hay operaciones simuladas", "Crea una sesión en Backtesting, avanza velas y opera desde el gráfico.", `<a class="btn" href="#backtest" style="height:38px">Ir a sesiones</a>`)}</td></tr>`}</tbody></table></div>
           <div class="xfoot"><span class="muted small">Mostrando ${L.length ? o.page * o.per + 1 : 0}–${Math.min(L.length, (o.page + 1) * o.per)} de ${L.length} operaciones</span><div class="xpager"><button type="button" class="xpb" data-bpg="-1" ${o.page ? "" : "disabled"} aria-label="Página anterior">${I(IC.left, 16, 2)}</button><span class="xpn">${o.page + 1} / ${pages}</span><button type="button" class="xpb" data-bpg="1" ${o.page < pages - 1 ? "" : "disabled"} aria-label="Página siguiente">${I(IC.right, 16, 2)}</button></div>
           <label class="small muted">Filas <select class="xsel" id="btoP">${[10, 25, 50, 100].map(n => `<option ${n === o.per ? "selected" : ""}>${n}</option>`).join("")}</select></label></div></div></div>`;
     },
