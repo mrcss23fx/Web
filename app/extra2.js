@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   const A = window.TKAPP;
-  const { S, sb, esc, SVG, fmtR, fmtV, fmtVt, fmtMoney, mOf, sumM, oneR, dispCur, moneyOn, prefU, CURS, fmtVabs, fmtLim, num, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, lsGet, lsSet, acctName, selAcct, FEELS, greet, money, inSession, MESES_L, NAV_APPS, appOf, ico, isDark } = A;
+  const { S, sb, esc, SVG, fmtR, fmtV, fmtVt, fmtMoney, mOf, sumM, oneR, dispCur, moneyOn, prefU, CURS, fmtVabs, fmtLim, fmtMs, num, dayKey, todayKey, evaluate, tradeStats, toast, render, spark, lsGet, lsSet, acctName, selAcct, FEELS, greet, money, inSession, MESES_L, NAV_APPS, appOf, ico, isDark } = A;
   const V = window.TK_VIEWS;
   if (!(NAV_APPS || []).some(a => a[0] === "calendario")) {
     let tried = false; try { tried = sessionStorage.getItem("tk-fresh") === "1"; sessionStorage.setItem("tk-fresh", "1"); } catch (e) {}
@@ -590,7 +590,7 @@
     lsSet("tk-car", String(a));
   }
   /* ===== «Tu día»: ideas en prueba (Marcos dirá cuáles se quedan) ===== */
-  const tagP = n => `<span class="hd-try" title="Idea en prueba">Prueba ${n}</span>`;
+  const tagP = () => "";
   const mins = m => m >= 60 ? Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : "") : Math.max(0, Math.round(m)) + " min";
   function dayX(D) {
     const p = D.p, mx = p.maxTrades || 3, L = p.dayLimitR || 2, dr = D.st.n ? D.st.tot : 0, ph = D.phase, now = Date.now();
@@ -633,7 +633,6 @@
     const tot = CM.reduce((a, t) => a + (+t.r || 0), 0), evs = EV.reduce((a, t) => a + (+t.r || 0), 0);
     X.cost = `<div class="hd-c">${tagP(3)}<h3>El precio de lo evitable</h3>${!CM.length ? `<p class="hd-e">Este mes aún no hay operaciones cerradas.</p>` : !EV.length ? `<p class="hd-big"><b class="mono">0</b> operaciones fuera de plan este mes</p><p class="hd-e">Todo lo que has operado este mes ha seguido tu plan.</p>` : evs < 0 ? `<p class="hd-big"><b class="mono">${fmtV(evs)}</b> te han costado ${EV.length} ${EV.length === 1 ? "operación" : "operaciones"} fuera de plan</p><p class="hd-e">Sin ellas irías <b>${fmtV(tot - evs)}</b> este mes en vez de <b>${fmtV(tot)}</b>.</p>` : `<p class="hd-big"><b class="mono">${fmtV(evs)}</b> te han dado ${EV.length} ${EV.length === 1 ? "operación" : "operaciones"} fuera de plan</p><p class="hd-e">Han salido bien, pero son hábitos que tarde o temprano salen caros.</p>`}</div>`;
     /* 4 · zona de no operar por noticias */
-    X.news = `<div class="hd-c hd-nz ${toNews != null && toNews <= 15 && toNews >= -15 ? "hot" : ""}">${tagP(4)}<h3>Zona de noticias</h3>${!S.news ? `<p class="hd-e">Cargando el calendario…</p>` : nh ? (toNews <= 15 && toNews >= -15 ? `<p class="hd-big"><b>Ahora mismo</b> estás en zona de noticia</p><p class="hd-e">${esc(nh.country || "")} ${esc(nh.title || "")} a las ${hhmm(nh.ts)}. Mejor fuera hasta las ${hhmm(nh.ts + 15 * 6e4)}.</p>` : `<p class="hd-big"><b class="mono">${mins(toNews)}</b> para ${esc(nh.country || "")} ${esc(nh.title || "")}</p><p class="hd-e">Mejor fuera de ${hhmm(nh.ts - 15 * 6e4)} a ${hhmm(nh.ts + 15 * 6e4)}.</p>`) : `<p class="hd-e">No quedan noticias de impacto alto hoy.</p>`}</div>`;
     /* 5 · aviso de calentón y pausa */
     const pu = S.pauseUntil && S.pauseUntil > now ? S.pauseUntil : 0, tool = ((PCALM.find(c => c[0] === ((S.menteP || {}).calm || [])[0]) || PCALM[4])[2]);
     X.heat = `<div class="hd-c hd-heat ${pu || ((twoLoss || fastBack) && ph === "en") ? "hot" : ""}">${tagP(5)}<h3>Calentón</h3>${pu ? `<p class="hd-big">Pausa hasta las <b class="mono">${hhmm(pu)}</b></p><p class="hd-e">Quedan ${mins((pu - now) / 6e4)}. Mientras: ${esc(tool)}.</p><button type="button" class="x-ch" data-hx="pause0">Terminar la pausa</button>` : (twoLoss || fastBack) ? `<p class="hd-big">${twoLoss ? "Dos pérdidas seguidas" : "Has vuelto a entrar muy rápido tras perder"}</p><p class="hd-e">Antes de la siguiente, 10 minutos fuera. Es cuando más se arriesga para recuperar.</p><button type="button" class="x-ch pri" data-hx="pause">Empezar pausa de 10 min</button>` : `<p class="hd-e">Sin señales. Te avisaré si encadenas dos pérdidas o vuelves a entrar menos de 5 minutos después de perder.</p>`}</div>`;
@@ -713,10 +712,10 @@
       return `<li><a href="#op/${encodeURIComponent(t.id)}"><span class="mono">${hhmm(t.open_time)}</span><b>${esc(t.symbol || "")}</b><span>${side}</span><span class="mono r">${t.status === "closed" && t.r != null ? fmtV(+t.r, mOf(t)) : "abierta"}</span>${ev ? `<em class="${ev.good ? "ok" : "bad"}">${ev.good ? "Dentro del plan" : "Fuera: " + esc((ev.fail[0] && NLAB[NK(ev.fail[0].fix)]) || "revisar")}</em>` : `<em>en curso</em>`}</a></li>`; }).join("")}</ul>` : `<p class="hd-e">${ph === "antes" ? "Tu sesión aún no ha empezado." : ph === "en" ? "Aún no has operado. No operar también es una buena sesión si no aparece tu setup." : "Hoy no has operado."}</p>`}<button type="button" class="hd-more" data-hd="informe">Ver el informe del día</button></div>`;
     // semana
     const mon = new Date(); mon.setHours(12, 0, 0, 0); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
-    let wt = 0, wd = 0, wok = 0;
-    const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dayKey(d), Ld = byDay[k] || [], st = tradeStats(Ld); if (Ld.length) { wt += st.tot; wd++; if (Ld.every(t => evaluate(t).good)) wok++; }
-      return `<div class="hd-wd ${Ld.length ? (st.tot > 0 ? "p" : st.tot < 0 ? "n" : "z") : ""}${k === todayKey() ? " hoy" : ""}"><span>${["L", "M", "X", "J", "V", "S", "D"].at(i)}</span><b class="mono">${Ld.length ? fmtV(st.tot, st.mt) : "·"}</b></div>`; }).join("");
-    const week = `<div class="hd-c"><h3>Esta semana</h3><div class="hd-week">${days}</div><p class="hd-ws"><b class="mono">${wd ? fmtV(wt) : fmtV(0, 0)}</b> en ${wd} ${wd === 1 ? "día" : "días"} · <b>${wok} de ${wd}</b> en plan</p><a class="hd-more" href="#calendario">Abrir el calendario</a></div>`;
+    let wt = 0, wm = 0, wd = 0, wok = 0;
+    const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dayKey(d), Ld = byDay[k] || [], st = tradeStats(Ld); if (Ld.length) { wt += st.tot; wm += st.mt || 0; wd++; if (Ld.every(t => evaluate(t).good)) wok++; }
+      return `<div class="hd-wd ${Ld.length ? (st.tot > 0 ? "p" : st.tot < 0 ? "n" : "z") : ""}${k === todayKey() ? " hoy" : ""}"><span>${["L", "M", "X", "J", "V", "S", "D"].at(i)}</span><b class="mono">${Ld.length ? fmtMs(st.tot, st.mt) : "·"}</b></div>`; }).join("");
+    const week = `<div class="hd-c"><h3>Esta semana</h3><div class="hd-week">${days}</div><p class="hd-ws"><b class="mono">${wd ? fmtV(wt, wm) : fmtV(0, 0)}</b> en ${wd} ${wd === 1 ? "día" : "días"} · <b>${wok} de ${wd}</b> en plan</p><a class="hd-more" href="#calendario">Abrir el calendario</a></div>`;
     // cuentas de fondeo: lo que te queda hoy
     const F = (S.accts || []).filter(a => a.status !== "archivada" && a.type === "fondeo").slice(0, 3);
     const acc = F.length ? `<div class="hd-c"><h3>Tus cuentas de fondeo</h3><ul class="hd-acc">${F.map(a => { const rp = +a.risk || (S.basePlan || p).riskPct || 1, dd = +a.dailyDD || 0, lim = dd ? (a.dailyU === "R" ? dd : dd / rp) : 0;
@@ -727,7 +726,7 @@
     const order = ph === "despues" ? [kpis, `<div class="hd-g">${ops}${close}</div>`, `<div class="hd-g">${week}${advice}${acc || news}</div>`] : ph === "en" ? [kpis, `<div class="hd-g">${ops}${advice}</div>`, `<div class="hd-g">${news}${week}${acc || prep}</div>`] : [kpis, `<div class="hd-g">${prep}${news}${advice}</div>`, `<div class="hd-g">${ops}${week}</div>`, acc ? `<div class="hd-g two">${acc}${close}</div>` : `<div class="hd-g two">${close}</div>`];
     const X = dayX(D);
     const top = `<div class="hd-top">${X.sem}${X.ayer}</div>`;
-    const prot = `<div class="hd-g">${X.news}${X.heat}${X.hours}</div>`;
+    const prot = `<div class="hd-g two">${X.heat}${X.hours}</div>`;
     const learn = `<div class="hd-sub"><h2>Para aprender más rápido</h2></div><div class="hd-g">${X.focus}${X.learn}${X.disc}</div><div class="hd-g ${X.reto ? "" : "two"}">${X.cost}${X.vs}${X.reto}</div>`;
     order.splice(0, 1, top, kpis, ph === "despues" ? "" : prot);
     order.push(learn);
@@ -1097,9 +1096,9 @@
         grid += `<${s.n ? `button type="button" data-cday="${k}" aria-label="${dt.getDate()}: ${fmtVt(s.tot, s.mt)}, ${s.n} operaciones. Ver informe"` : "div"} class="calc ${inM ? "" : "out"} ${cls} ${k === todayKey() ? "today" : ""} ${S.calSel === k ? "sel" : ""}" style="--a:${a}"><span class="cald">${dt.getDate()}</span>${s.n ? `<b class="mono">${fmtV(s.tot, s.mt)}</b><small>${s.n} op.${s.win != null ? " · " + num(s.win, 0) + " %" : ""}</small>` : ""}</${s.n ? "button" : "div"}>`;
       }
       const ws = tradeStats(wl); W.push({ w: w + 1, l: wl, st: ws });
-      grid += `<div class="calc calw"><span class="cald">Semana ${w + 1}</span>${ws.n ? `${cR(ws.tot)}<small>${(n => n + (n === 1 ? " día" : " días"))(new Set(wl.map(t => dayKey(dateOf(t)))).size)} · ${ws.n} op.</small>` : `<small>—</small>`}</div>`;
+      grid += `<div class="calc calw"><span class="cald">Semana ${w + 1}</span>${ws.n ? `${cR(ws.tot, ws.mt)}<small>${(n => n + (n === 1 ? " día" : " días"))(new Set(wl.map(t => dayKey(dateOf(t)))).size)} · ${ws.n} op.</small>` : `<small>—</small>`}</div>`;
     }
-    const wkRows = W.map(x => `<tr><td><b>Semana ${x.w}</b></td><td class="mono">${x.st.n || "—"}</td><td class="mono">${x.st.win == null ? "—" : num(x.st.win, 0) + " %"}</td><td class="mono">${x.st.avgW != null ? fmtV(x.st.avgW, x.st.mW) : "—"}</td><td class="mono">${x.st.avgL != null ? fmtV(x.st.avgL, x.st.mL) : "—"}</td><td>${x.st.n ? cR(x.st.tot) : "—"}</td></tr>`).join("");
+    const wkRows = W.map(x => `<tr><td><b>Semana ${x.w}</b></td><td class="mono">${x.st.n || "—"}</td><td class="mono">${x.st.win == null ? "—" : num(x.st.win, 0) + " %"}</td><td class="mono">${x.st.avgW != null ? fmtV(x.st.avgW, x.st.mW) : "—"}</td><td class="mono">${x.st.avgL != null ? fmtV(x.st.avgL, x.st.mL) : "—"}</td><td>${x.st.n ? cR(x.st.tot, x.st.mt) : "—"}</td></tr>`).join("");
     return `<div class="card stack calcard" style="gap:16px"><div class="calh"><div><div class="calbig">${mst.n ? cR(mst.tot, mst.mt) : `<b class="mono">${fmtV(0, 0)}</b>`}</div><div class="small muted">${cap(MESES_L[st.m])} de ${st.y} · ${inMonth.length} días operados · <span class="cpos">${pos} positivos</span>, <span class="cneg">${neg} negativos</span></div></div>
         <div class="row" style="gap:8px;flex-wrap:wrap">${src}${modeB}<div class="calnav"><button type="button" class="xpb" data-cnav="-1" aria-label="Mes anterior">${I(IC.left, 16, 2)}</button><b>${cap(MESES_L[st.m])} ${st.y}</b><button type="button" class="xpb" data-cnav="1" aria-label="Mes siguiente">${I(IC.right, 16, 2)}</button></div><button type="button" class="btn2" data-ctoday style="height:34px">Hoy</button></div></div>
       <div class="calwrap"><div class="calgrid big" style="--wk:${weeks}">${grid}</div></div>${leg}</div>
@@ -1123,8 +1122,8 @@
     const emo = !bt && healthOk() ? C.filter(t => (t.review || {}).feel) : [], notes = bt ? [] : (S.pages || []).filter(p => !p.isTpl && p.day === k);
     const news = !bt && S.news ? (S.news.events || []).filter(e => dayKey(e.ts) === k && e.impact === "High") : [];
     const rows = L.map(t => bt
-      ? `<div class="dp-op"><span><i class="dp-t"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"}</i><small>${esc(sessName(t.session_id))}${t.exit_time ? " · " + new Date(t.exit_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : ""}</small></span>${t.r != null ? cR(+t.r) : "<b>abierta</b>"}</div>`
-      : `<a class="dp-op" href="#op/${encodeURIComponent(t.id)}"><span><i class="dp-t"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"}</i><small>${new Date(t.open_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })} · ${t.status === "closed" ? (evaluate(t).good ? "dentro del plan" : evaluate(t).fail.length + " norma(s) sin cumplir") : "abierta"}</small></span>${t.status === "closed" ? cR(t.r) : "<b>abierta</b>"}</a>`).join("");
+      ? `<div class="dp-op"><span><i class="dp-t"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"}</i><small>${esc(sessName(t.session_id))}${t.exit_time ? " · " + new Date(t.exit_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : ""}</small></span>${t.r != null ? cR(+t.r, mOf(t)) : "<b>abierta</b>"}</div>`
+      : `<a class="dp-op" href="#op/${encodeURIComponent(t.id)}"><span><i class="dp-t"><b>${esc(t.symbol)}</b> · ${t.side === "buy" ? "Compra" : "Venta"}</i><small>${new Date(t.open_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })} · ${t.status === "closed" ? (evaluate(t).good ? "dentro del plan" : evaluate(t).fail.length + " norma(s) sin cumplir") : "abierta"}</small></span>${t.status === "closed" ? cR(t.r, mOf(t)) : "<b>abierta</b>"}</a>`).join("");
     const box = document.createElement("div"); box.className = "xdrawer"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Informe del día");
     box.innerHTML = `<div class="xdrawer-p dpanel"><div class="xdr-h"><div><div class="small muted">${bt ? "Práctica" : "Informe del día"}</div><b style="font-size:18px">${cap(dt.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))}</b></div><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
       <div class="xdr-b">

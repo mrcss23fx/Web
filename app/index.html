@@ -943,6 +943,7 @@ function mFor(r,m){if(m===undefined){const o=oneR();m=o==null||r==null?null:r*o}
 function fmtV(r,m){if(r==null||!isFinite(r))return "—";if(!moneyOn())return fmtR(r);m=mFor(r,m);if(m==null||!isFinite(m))return fmtR(r);return `<span class="mv">${fmtMoney(m)}<tk-r>${fmtR(r)}</tk-r></span>`}
 function fmtVt(r,m){if(r==null||!isFinite(r))return "—";if(!moneyOn())return fmtR(r);m=mFor(r,m);if(m==null||!isFinite(m))return fmtR(r);return fmtMoney(m)+" ("+fmtR(r)+")"}
 const fmtVabs=r=>fmtV(Math.abs(r)).replace('<span class="mv">+','<span class="mv">').replace("<tk-r>+","<tk-r>").replace(/^\+/,"");
+const fmtMs=(r,m)=>{if(!moneyOn())return fmtR(r);m=mFor(r,m);if(m==null||!isFinite(m))return fmtR(r);const c=dispCur(),v=Math.round(m);return (v>0?"+":v<0?"−":"")+num(Math.abs(v),0)+"\u00a0"+(CURS[c]||c)};
 const fmtLim=(r,short)=>{const o=oneR(),rt=num(r,1).replace(/,0$/,"");if(!(moneyOn()&&o!=null))return num(r,1)+" R";const m=Math.round(r*o),c=dispCur();return num(m,0)+"\u00a0"+(CURS[c]||c)+(short?"":" ("+rt+" R)")};
 fxLoad();
 const fmtPct=p=>p==null?"—":num(p,p<1?2:1).replace(/,?0+$/,"")+" %";
@@ -2215,11 +2216,11 @@ if(SB_OK){
   sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>onSession(session,event),0)});
   sb.auth.getSession().then(({data})=>onSession(data.session,"INIT"));
 }else render();
-window.TKAPP={S,sb,esc,SVG,fmtR,fmtV,fmtVt,fmtMoney,mOf,sumM,oneR,dispCur,moneyOn,prefU,CURS,fmtVabs,fmtLim,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
+window.TKAPP={S,sb,esc,SVG,fmtR,fmtV,fmtVt,fmtMoney,mOf,sumM,oneR,dispCur,moneyOn,prefU,CURS,fmtVabs,fmtLim,fmtMs,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
 })();
 </script>
 <link rel="stylesheet" href="extra2.css?v=32">
 <script src="extra.js?v=6"></script>
-<script src="extra2.js?v=34"></script>
+<script src="extra2.js?v=36"></script>
 </body>
 </html>
