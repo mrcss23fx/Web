@@ -379,6 +379,7 @@
     finally { S.menteLoading = false; }
     const t = document.querySelector('.hb-t[data-hc="resultados"]:not(.sel)');
     if (t) { t.innerHTML = appTile("resultados", hData()); bindWidgets(t); }
+    if (document.getElementById("hxq") && window.__tkHero && !S.hqStep) window.__tkHero();
   }
   /* gráfico del cuadro: velas reales de los últimos minutos, en azul y gris */
   const chartSym = () => (S.an && S.an.sym) || (S.trades[0] && S.trades[0].symbol) || "EURUSD";
@@ -440,18 +441,117 @@
       if (on && kb) { const f = t.querySelector(".hc-c,.hc-go"); f && f.focus({ preventScroll: true }); }
     });
   }
+  /* ===== portada «conversación»: saludo, preguntas de cómo llegas y carrusel de cuadros ===== */
+  const CARS = ["hoy", "plan", "calendario", "analizar", "resultados", "diario", "cartera", "backtest", "asistente"];
+  const HQ = [["r", "¿Cómo has dormido?", ["Fatal", "Poco", "Normal", "Bien", "Genial"]], ["c", "¿Qué tal de nervios?", ["Muy nervioso", "Algo tenso", "Normal", "Tranquilo", "Muy tranquilo"]], ["f", "¿Y la cabeza, centrada?", ["Dispersa", "Me cuesta", "Normal", "Centrada", "Muy centrada"]]];
+  const saveMente = (id, data) => sb.from("docs").upsert({ user_id: S.user.id, col: "mente", id, data, updated_at: new Date().toISOString() }).then(({ error }) => { if (error) toast("No se pudo guardar"); });
+  const homeSw = mode => `<div class="hx-sw" role="group" aria-label="Vista de la portada"><button type="button" data-home="car" aria-pressed="${mode === "car"}" title="Vista conversación">${I('<rect x="6" y="5" width="8" height="10" rx="2"/><path d="M3 7v6M17 7v6"/>', 15, 1.8)}</button><button type="button" data-home="grid" aria-pressed="${mode === "grid"}" title="Vista de cuadros">${I('<rect x="3.5" y="3.5" width="5.5" height="5.5" rx="1.5"/><rect x="11" y="3.5" width="5.5" height="5.5" rx="1.5"/><rect x="3.5" y="11" width="5.5" height="5.5" rx="1.5"/><rect x="11" y="11" width="5.5" height="5.5" rx="1.5"/>', 15, 1.8)}</button></div>`;
+  function heroQ(D) {
+    if (!healthOk()) return `<p class="hx-sub">Cada día te preguntaré cómo llegas, para ayudarte a operar con la cabeza en su sitio. Necesita tu permiso y solo lo ves tú.</p><div class="hx-ans"><a class="hx-a pri" href="#ajustes">Activar en Ajustes</a></div>`;
+    const day = todayKey(), m = (S.mente || {})[day];
+    if (mDone(m) && !S.hqEdit) {
+      const a = psyAdvice(m, D), sc = mScore(m);
+      return `<p class="hx-sub">Llegas <b>${mLabel(sc).toLowerCase()}</b> <span class="hx-sc mono">${sc}</span> · Para hoy: <b>${esc(a.tip[0].toLowerCase())}</b></p><div class="hx-ans"><button type="button" class="hx-a pri" data-hq="panel">Ver mi consejo</button><button type="button" class="hx-a" data-hq="redo">Cambiar respuestas</button>${S.menteP ? "" : `<button type="button" class="hx-a" data-hq="perfil">Conócete · 1 minuto</button>`}</div>`;
+    }
+    const st = S.hqStep || 0, M = S.hqM || (S.hqM = Object.assign({}, m || {}));
+    const prog = `<div class="hx-prog" aria-label="Pregunta ${st + 1} de 5">${[0, 1, 2, 3, 4].map(i => `<i class="${i < st ? "d" : i === st ? "c" : ""}"></i>`).join("")}${st ? `<button type="button" data-hq="back">Atrás</button>` : ""}</div>`;
+    if (st < 3) { const [k, q, opts] = HQ.at(st); return `${prog}<p class="hx-qt">${q}</p><div class="hx-ans">${opts.map((o, i) => `<button type="button" class="hx-a" data-hv="${k}:${i + 1}" aria-pressed="${M[k] === i + 1}">${o}</button>`).join("")}</div>`; }
+    if (st === 3) return `${prog}<p class="hx-qt">¿Cómo ves el mercado hoy?</p><div class="hx-ans">${PMOOD.map(([k, l]) => `<button type="button" class="hx-a" data-hv="mood:${k}" aria-pressed="${M.mood === k}">${esc(l)}</button>`).join("")}</div>`;
+    return `${prog}<p class="hx-qt">¿Algo te ronda la cabeza?</p><div class="hx-ans">${PHEAD.map(([k, l]) => `<button type="button" class="hx-a" data-hv="head:${k}" aria-pressed="${(M.head || []).includes(k)}">${esc(l)}</button>`).join("")}<button type="button" class="hx-a pri" data-hq="fin">Listo</button></div>`;
+  }
+  function carCats() {
+    const k = CARS.filter(x => appDef(x)).at(S.hcar), a = appDef(k), cats = a[2];
+    return `<div class="hx-dots">${CARS.filter(x => appDef(x)).map((x, i) => `<button type="button" data-cgo="${i}" aria-label="${esc(appDef(x)[1])}" aria-current="${i === S.hcar}"></button>`).join("")}</div>
+      <div class="hx-cl"><b>${esc(a[1])}</b>${cats.length > 1 ? cats.map(([ck, cl]) => `<a href="#${ck}">${esc(cl)}</a>`).join("") : `<span>${esc(APPDESC[k] || "")}</span>`}</div>`;
+  }
+  function placeCar() {
+    const cards = $$(".hx-c"), n = cards.length; if (!n) return;
+    const vw = (document.querySelector(".hx-car") || {}).clientWidth || innerWidth, W = Math.min(380, Math.max(260, vw - 72)), gap = vw < 640 ? 14 : 26, a = S.hcar;
+    cards.forEach((c, i) => {
+      let d = ((i - a) % n + n) % n; if (d > n / 2) d -= n; const ad = Math.abs(d);
+      c.style.width = W + "px"; c.style.transform = `translateX(calc(-50% + ${d * (W + gap)}px)) scale(${ad ? .9 : 1})`;
+      c.style.opacity = ad === 0 ? 1 : ad === 1 ? .5 : ad === 2 ? .14 : 0; c.style.zIndex = 10 - ad; c.style.pointerEvents = ad > 1 ? "none" : "";
+      c.classList.toggle("on", ad === 0); c.setAttribute("tabindex", ad ? "-1" : "0"); c.setAttribute("aria-hidden", ad > 1 ? "true" : "false");
+    });
+    const cl = document.getElementById("hxcats"); if (cl) cl.innerHTML = carCats();
+    lsSet("tk-car", String(a));
+  }
+  function homeCar(D, first) {
+    const n = CARS.filter(k => appDef(k)).length;
+    S.hcar = ((S.hcar != null ? S.hcar : +lsGet("tk-car", "0") || 0) % n + n) % n;
+    let hl = greetLine(D).replace(/(a las \d{1,2}:\d{2})/, "<em>$1</em>"); if (!/<em>/.test(hl)) hl = hl.replace(/(\S+ \S+)$/, "<em>$1</em>");
+    return `<div class="hx">
+      <div class="hx-top"><span class="hx-pill">${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))} · ${D.phase === "en" ? "En tu horario" : D.phase === "antes" ? "Antes de tu horario" : "Fuera de horario"}</span>${homeSw("car")}</div>
+      <h1 class="hx-hi">Hola, ${first},<br>${hl}</h1>
+      <div class="hx-q" id="hxq" aria-live="polite">${heroQ(D)}</div>
+      <div class="hx-car" role="region" aria-roledescription="carrusel" aria-label="Tus apartados">
+        <div class="hx-glow" aria-hidden="true"></div>
+        <div class="hx-track">${CARS.filter(k => appDef(k)).map((k, i) => `<div class="hb-t hx-c t-${k}" data-ci="${i}" data-hc="${k}" data-href="${appHref(k)}" role="button" tabindex="-1" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k] || "")}">${appTile(k, D)}</div>`).join("")}</div>
+        <button type="button" class="hx-arr l" data-car="-1" aria-label="Anterior">${I(IC.left, 18, 2)}</button>
+        <button type="button" class="hx-arr r" data-car="1" aria-label="Siguiente">${I(IC.right, 18, 2)}</button>
+      </div>
+      <div class="hx-cats" id="hxcats"></div>
+    </div>`;
+  }
+  function bindHero() {
+    const q = document.getElementById("hxq"); if (!q || q.__b) return; q.__b = true;
+    const repaint = () => { q.innerHTML = heroQ(hData()); const f = q.querySelector(".hx-a"); if (f && q.contains(document.activeElement) === false && S.hqKb) f.focus({ preventScroll: true }); };
+    window.__tkHero = repaint;
+    q.addEventListener("click", e => {
+      const b = e.target.closest("[data-hv],[data-hq]"); if (!b) return; S.hqKb = e.detail === 0;
+      const M = S.hqM || (S.hqM = {});
+      if (b.dataset.hv) {
+        const [k, v] = b.dataset.hv.split(":");
+        if (k === "head") { let arr = M.head || []; if (v === "nada") arr = arr.includes("nada") ? [] : ["nada"]; else { arr = arr.filter(x => x !== "nada"); arr = arr.includes(v) ? arr.filter(x => x !== v) : arr.concat(v); } M.head = arr; }
+        else { if (k === "mood") M.mood = v; else M[k] = +v; S.hqStep = (S.hqStep || 0) + 1; }
+        return setTimeout(repaint, k === "head" ? 0 : 140);
+      }
+      const g = b.dataset.hq;
+      if (g === "back") { S.hqStep = Math.max(0, (S.hqStep || 0) - 1); repaint(); }
+      else if (g === "redo") { S.hqEdit = true; S.hqStep = 0; S.hqM = Object.assign({}, (S.mente || {})[todayKey()] || {}); repaint(); }
+      else if (g === "fin") {
+        const day = todayKey(); M.ts = Date.now(); S.mente = S.mente || {}; S.mente[day] = Object.assign({}, (S.mente[day] || {}), M);
+        saveMente("d" + day, S.mente[day]); S.hqStep = 0; S.hqM = null; S.hqEdit = false; repaint();
+        ["resultados", "plan"].forEach(k => { const t = document.querySelector('.hb-t[data-hc="' + k + '"]'); if (t) { t.innerHTML = appTile(k, hData()); bindWidgets(t); } });
+        toast("Gracias. Tu consejo de hoy ya está listo");
+      }
+      else if (g === "panel") psyPanel();
+      else if (g === "perfil") psyPanel("perfil");
+    });
+  }
+  function bindCar() {
+    bindHero(); bindWidgets(document); loadMini(); loadMente(); loadPlanOk();
+    if (!window.__tkMini) { window.__tkMini = setInterval(() => { if (document.visibilityState === "visible") loadMini(); }, 60000); }
+    const n = CARS.filter(k => appDef(k)).length, go = i => { S.hcar = ((i % n) + n) % n; placeCar(); };
+    placeCar();
+    $$("[data-car]").forEach(b => b.onclick = () => go(S.hcar + +b.dataset.car));
+    const cats = document.getElementById("hxcats"); if (cats) cats.onclick = e => { const b = e.target.closest("[data-cgo]"); if (b) go(+b.dataset.cgo); };
+    $$(".hx-c").forEach(c => {
+      const open = () => { const k = c.dataset.hc; if (k === "resultados") psyPanel(); else location.hash = c.dataset.href; };
+      c.addEventListener("click", e => { if (e.target.closest("[data-stop]")) return; if (S.hxSwiped && Date.now() - S.hxSwiped < 400) return; const i = +c.dataset.ci; if (i !== S.hcar) go(i); else open(); });
+      c.addEventListener("keydown", e => { if (e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); open(); } });
+    });
+    const car = $(".hx-car");
+    if (car) {
+      car.addEventListener("keydown", e => { if (e.key === "ArrowLeft") { e.preventDefault(); go(S.hcar - 1); const c = $(".hx-c.on"); c && c.focus({ preventScroll: true }); } if (e.key === "ArrowRight") { e.preventDefault(); go(S.hcar + 1); const c = $(".hx-c.on"); c && c.focus({ preventScroll: true }); } });
+      let x0 = null; car.addEventListener("pointerdown", e => { x0 = e.clientX; }); car.addEventListener("pointerup", e => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 45) { S.hxSwiped = Date.now(); go(S.hcar + (dx < 0 ? 1 : -1)); } });
+    }
+    if (!window.__tkCarR) { window.__tkCarR = true; addEventListener("resize", () => { if ($(".hx-c")) placeCar(); }); }
+  }
+  function bindHomeSw() { $$("[data-home]").forEach(b => b.onclick = () => { lsSet("tk-home", b.dataset.home); re(); }); }
   V.inicio = {
     view() {
       loadAll();
       const D = hData(), first = esc((S.name || "").split(" ")[0] || "trader");
+      if (lsGet("tk-home", "car") !== "grid") return homeCar(D, first);
       setTimeout(() => { S.hbAnim = true; }, 600);
       return `<div class="hb hb-full${HAPPS.filter(k => appDef(k)).length === 9 ? " bento" : ""}">
-        <section class="hb-l">${metaRow(D)}
+        <section class="hb-l"><div class="hb-mrow">${metaRow(D)}${homeSw("grid")}</div>
           <h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1>
           <div class="hb-grid${HAPPS.filter(k => appDef(k)).length === 9 ? " g9" : ""}${S.hcSel ? " has" : ""}">${HAPPS.filter(k => appDef(k)).map(k => { const on = S.hcSel === k; return `<div class="hb-t t-${k} ${S.hbAnim ? "noanim" : ""}${on ? " sel" : ""}" role="button" tabindex="0" data-hc="${k}" data-href="${appHref(k)}" aria-expanded="${on}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${on ? calmOpen(k, D) : appTile(k, D)}</div>`; }).join("")}</div>
         </section></div>`;
     },
-    bind() { bindTiles(); }
+    bind() { bindHomeSw(); if (lsGet("tk-home", "car") !== "grid") bindCar(); else bindTiles(); }
   };
   V.app = {
     view(r) {
