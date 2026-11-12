@@ -725,10 +725,12 @@
     if (!hx || !car || !cats) return;
     const tabs = document.querySelector(".tabs"), tb = tabs && getComputedStyle(tabs).display !== "none" ? tabs.offsetHeight : 0;
     const top = hx.getBoundingClientRect().top + scrollY, avail = Math.max(420, innerHeight - top - tb);
-    car.style.height = ""; const H0 = car.offsetHeight; S.hxk = 1;
-    const need = cats.getBoundingClientRect().bottom - hx.getBoundingClientRect().top + (dn ? dn.offsetHeight + 14 : 0) + 6;
-    const over = need - avail;
-    if (over > 0) { const k = Math.max(.52, (H0 - over) / H0); S.hxk = k; car.style.height = Math.round(H0 * k) + "px"; }
+    car.style.height = ""; hx.classList.add("hx-meas"); const H0 = car.offsetHeight; S.hxk = 1;
+    const need = cats.getBoundingClientRect().bottom - hx.getBoundingClientRect().top + (dn && dn.offsetParent ? dn.offsetHeight + 14 : 0) + 6;
+    hx.classList.remove("hx-meas");
+    const over = need - avail, kmax = innerWidth > 640 ? .9 : 1;
+    let k = over > 0 ? Math.max(.52, (H0 - over) / H0) : 1; k = Math.min(k, kmax);
+    if (k < 1) { S.hxk = k; car.style.height = Math.round(H0 * k) + "px"; }
     hx.style.setProperty("--hxH", avail + "px"); hx.style.setProperty("--hxk", S.hxk);
     placeCar();
   }

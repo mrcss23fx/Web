@@ -1577,3 +1577,27 @@ button.mc-d:focus-visible{outline:2px solid var(--cobalto);outline-offset:1px}
 .lr-pace.calm{color:color-mix(in srgb,#86a9ff 85%,var(--hb-ink));border-color:color-mix(in srgb,#86a9ff 35%,var(--hb-line))}
 @media (max-width:760px){.lf-d i{width:32px;height:32px}.lc-r{grid-template-columns:88px minmax(0,1fr) auto}}
 @media (prefers-reduced-motion:reduce){.lf-d.hoy i{animation:none}}
+/* ---------- Portada: la pregunta en una sola píldora, cuadros algo más pequeños y más abajo ---------- */
+.hx .hx-q{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 12px;min-height:0;max-width:min(980px,100%);margin:26px 0 30px;padding:6px 6px 6px 18px;border-radius:26px;border:1px solid var(--hb-line);background:var(--hb-t);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 30px -22px rgba(0,0,0,.6)}
+.hx .hx-prog{height:auto;gap:4px}
+.hx .hx-prog i{width:5px;height:5px}.hx .hx-prog i.c{width:12px}
+.hx .hx-prog button{margin-left:6px;font-size:12px}
+.hx .hx-qt{font-size:14px;font-weight:600;letter-spacing:-.005em;white-space:nowrap}
+.hx .hx-ans{flex-wrap:wrap;justify-content:center;gap:2px;max-width:none}
+.hx .hx-a{font-size:13px;padding:7px 13px;border-color:transparent;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+.hx .hx-a:hover{background:var(--hb-t2)}
+.hx .hx-a[aria-pressed="true"]{background:var(--hb-ink);border-color:var(--hb-ink);color:var(--hx-on)}
+.hx .hx-a.pri{background:var(--hb-ink);border-color:var(--hb-ink);color:var(--hx-on)}
+.hx .hx-a:disabled{opacity:.4}
+.hx .hx-sub{font-size:13.5px;line-height:1.4;max-width:none;padding:2px 0}
+.hx .hx-sc{font-size:11px}
+.hx .hx-car{margin-top:auto}
+.hx .hx-down{margin-top:auto}
+.hx.hx-meas .hx-car{margin-top:0}.hx.hx-meas .hx-down{margin-top:14px}
+@media (max-height:860px) and (min-width:641px){.hx .hx-q{margin:18px 0 22px}}
+@media (max-height:720px) and (min-width:641px){.hx .hx-q{margin:12px 0 14px}}
+@media (max-width:640px){
+  .hx .hx-q{flex-direction:column;gap:6px;padding:10px 8px;border-radius:22px;width:100%;margin:16px 0 18px}
+  .hx .hx-ans{flex-wrap:nowrap;justify-content:flex-start;max-width:100%}
+  .hx .hx-a{padding:7px 12px}
+  .hx .hx-sub{padding:0 8px;text-align:center}}
