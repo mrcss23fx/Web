@@ -589,7 +589,7 @@
     if (!S.goalsLoaded) return "";
     if (!gHas()) return `<button type="button" class="gs-cta" data-goals>${I(ITG, 16, 1.8)}<span><b>Elige tus 3 objetivos</b><small>Uno para esta semana, otro para el mes y uno a lo grande</small></span>${I(IC.right, 15, 2)}</button>`;
     const ix = gIx();
-    return `<button type="button" class="gs" data-goals aria-label="Tus objetivos. Toca para verlos">${GH.filter(h => S.goals[h.k]).map(h => { const g = S.goals[h.k], p = gProg(g, ix); return `<span class="gs-i${p.done ? " ok" : ""}" style="--gc:${h.c}"><span class="gs-t"><em>${h.n}</em><b class="mono">${gPct(p)} %</b></span><span class="gs-bar"><i style="width:${(p.pct * 100).toFixed(1)}%"></i></span><small>${esc(g.t)}</small></span>`; }).join("")}</button>`;
+    return `<button type="button" class="gs" data-goals aria-label="Tus objetivos. Toca para verlos">${GH.filter(h => S.goals[h.k]).map(h => { const g = S.goals[h.k], p = gProg(g, ix); return `<span class="gs-i${p.done ? " ok" : ""}" style="--gc:${h.c}"><span class="gs-t"><em>${h.n.replace(" plazo", "")}<span class="gs-pz"> plazo</span></em><b class="mono">${gPct(p)} %</b></span><span class="gs-bar"><i style="width:${(p.pct * 100).toFixed(1)}%"></i></span><small>${esc(g.t)}</small></span>`; }).join("")}</button>`;
   }
   function goalBlock() {
     if (!S.goalsLoaded) return "";
@@ -603,7 +603,7 @@
         <div class="gb-h"><span class="gb-k">${h.n}</span><b class="gb-t">${esc(g.t)}</b><span class="gb-p mono">${pc}<small>%</small></span></div>
         <div class="gb-bar" role="progressbar" aria-label="${esc(g.t)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pc}"><i style="width:${(p.pct * 100).toFixed(1)}%"></i>${[25, 50, 75].map(x => `<s style="left:${x}%"></s>`).join("")}</div>
         <div class="gb-f"><span class="mono">${p.pts} / ${p.target} puntos</span><span>${stt}</span></div>
-        ${g.why ? `<p class="gb-why"><span>Por qué lo haces</span>${esc(g.why)}</p>` : ""}</div>`;
+        ${g.why ? `<p class="gb-why"><span>Por qué lo haces</span><q>${esc(g.why)}</q></p>` : ""}</div>`;
     }).join("");
     return `<div class="hd-c gb"><div class="gb-top"><h3>Tus objetivos</h3><span class="gb-st${st ? " on" : ""}">${I(IFL, 14, 1.8)}Racha de <b class="mono">${st}</b> ${st === 1 ? "día" : "días"}</span><button type="button" class="x-ch" data-goals>Editar</button></div>${today}<div class="gb-rows">${rows}</div></div>`;
   }
@@ -688,12 +688,26 @@
     return `<div class="hx-dots">${CARS.filter(x => appDef(x)).map((x, i) => `<button type="button" data-cgo="${i}" aria-label="${esc(appDef(x)[1])}" aria-current="${i === S.hcar}"></button>`).join("")}</div>
       <div class="hx-cl"><b>${esc(a[1])}</b>${cats.length > 1 ? cats.map(([ck, cl]) => `<a href="#${ck}">${esc(cl)}</a>`).join("") : `<span>${esc(APPDESC[k] || "")}</span>`}</div>`;
   }
+  // La portada ocupa justo la pantalla: si no cabe hasta las palabras de los cuadros, el carrusel se encoge
+  function fitHero() {
+    const hx = document.querySelector(".hx"), car = hx && hx.querySelector(".hx-car"), cats = hx && hx.querySelector("#hxcats"), dn = hx && hx.querySelector(".hx-down");
+    if (!hx || !car || !cats) return;
+    const tabs = document.querySelector(".tabs"), tb = tabs && getComputedStyle(tabs).display !== "none" ? tabs.offsetHeight : 0;
+    const top = hx.getBoundingClientRect().top + scrollY, avail = Math.max(420, innerHeight - top - tb);
+    car.style.height = ""; const H0 = car.offsetHeight; S.hxk = 1;
+    const need = cats.getBoundingClientRect().bottom - hx.getBoundingClientRect().top + (dn ? dn.offsetHeight + 14 : 0) + 6;
+    const over = need - avail;
+    if (over > 0) { const k = Math.max(.52, (H0 - over) / H0); S.hxk = k; car.style.height = Math.round(H0 * k) + "px"; }
+    hx.style.setProperty("--hxH", avail + "px"); hx.style.setProperty("--hxk", S.hxk);
+    placeCar();
+  }
+  let fitQ = 0; const fitSoon = () => { cancelAnimationFrame(fitQ); fitQ = requestAnimationFrame(fitHero); };
   function placeCar() {
     const cards = $$(".hx-c"), n = cards.length; if (!n) return;
     const vw = (document.querySelector(".hx-car") || {}).clientWidth || innerWidth, W = Math.min(380, Math.max(260, vw - 72)), gap = vw < 640 ? 14 : 26, a = S.hcar;
     cards.forEach((c, i) => {
       let d = ((i - a) % n + n) % n; if (d > n / 2) d -= n; const ad = Math.abs(d);
-      c.style.width = W + "px"; c.style.transform = `translateX(calc(-50% + ${d * (W + gap)}px)) scale(${ad ? .9 : 1})`;
+      const k = S.hxk || 1; c.style.width = W + "px"; c.style.transform = `translateX(calc(-50% + ${d * (W + gap) * k}px)) scale(${(ad ? .9 : 1) * k})`;
       c.style.opacity = ad === 0 ? 1 : ad === 1 ? .5 : ad === 2 ? .14 : 0; c.style.zIndex = 10 - ad; c.style.pointerEvents = ad > 1 ? "none" : "";
       c.classList.toggle("on", ad === 0); c.setAttribute("tabindex", ad ? "-1" : "0"); c.setAttribute("aria-hidden", ad > 1 ? "true" : "false");
     });
@@ -928,7 +942,9 @@
       car.addEventListener("keydown", e => { if (e.key === "ArrowLeft") { e.preventDefault(); go(S.hcar - 1); const c = $(".hx-c.on"); c && c.focus({ preventScroll: true }); } if (e.key === "ArrowRight") { e.preventDefault(); go(S.hcar + 1); const c = $(".hx-c.on"); c && c.focus({ preventScroll: true }); } });
       let x0 = null; car.addEventListener("pointerdown", e => { x0 = e.clientX; }); car.addEventListener("pointerup", e => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 45) { S.hxSwiped = Date.now(); go(S.hcar + (dx < 0 ? 1 : -1)); } });
     }
-    if (!window.__tkCarR) { window.__tkCarR = true; addEventListener("resize", () => { if ($(".hx-c")) placeCar(); }); }
+    if (!window.__tkCarR) { window.__tkCarR = true; addEventListener("resize", () => { if ($(".hx-c")) fitSoon(); }); }
+    fitSoon(); if (window.ResizeObserver) { if (window.__tkHxRO) window.__tkHxRO.disconnect(); const ro = window.__tkHxRO = new ResizeObserver(() => fitSoon()); ["#hxq", ".hx-goals", ".hx-hi"].forEach(q => { const el = document.querySelector(q); el && ro.observe(el); }); }
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSoon);
   }
   function bindHomeSw() { $$("[data-home]").forEach(b => b.onclick = () => { lsSet("tk-home", b.dataset.home); re(); }); }
   V.inicio = {
