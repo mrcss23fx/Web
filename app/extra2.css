@@ -1688,3 +1688,13 @@ button.mc-d:focus-visible{outline:2px solid var(--cobalto);outline-offset:1px}
 .hx .hx-prog i{width:4px;height:4px}.hx .hx-prog i.c{width:10px}
 .hx .hx-prog button{font-size:11px}
 @media (max-width:640px){.hx .hx-q{padding:8px 6px;gap:4px;border-radius:18px}.hx .hx-a{padding:6px 11px}}
+/* pregunta sin contestar: borde de color que gira y brillo suave, para invitar a responder */
+@property --hxang{syntax:"<angle>";inherits:false;initial-value:0deg}
+:root{--hx-qbg:#f4f4f6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hx-qbg:#131317}}
+:root[data-theme="dark"]{--hx-qbg:#131317}
+@keyframes hxSpin{to{--hxang:360deg}}
+@keyframes hxGlow{0%,100%{box-shadow:0 0 18px -8px rgba(134,169,255,.55),0 0 0 0 rgba(134,169,255,0)}50%{box-shadow:0 0 28px -6px rgba(196,157,255,.65),0 0 0 4px rgba(134,169,255,.08)}}
+.hx .hx-q:has(.hx-qt){border:1.5px solid transparent;background:linear-gradient(var(--hx-qbg),var(--hx-qbg)) padding-box,conic-gradient(from var(--hxang),#86a9ff,#c49dff,#5fd4c0,#86a9ff) border-box;animation:hxSpin 6s linear infinite,hxGlow 3.2s ease-in-out infinite}
+.hx .hx-q:has(.hx-qt) .hx-qt{background:linear-gradient(90deg,var(--hb-ink),color-mix(in srgb,#c49dff 55%,var(--hb-ink)));-webkit-background-clip:text;background-clip:text;color:transparent}
+@media (prefers-reduced-motion:reduce){.hx .hx-q:has(.hx-qt){animation:none}}
