@@ -1206,6 +1206,7 @@ function initials(){const n=(S.name||"").trim().split(/\s+/);return ((n[0]||"?")
 function homeShell(content,view){
   const cv=view||"inicio",nav=NAV.map(([k,l])=>`<a href="#${k}" ${cv===k||(k==="mas"&&!NAV.some(n=>n[0]===cv))?'aria-current="page"':""}>${ico(k)}${l}</a>`).join("");
   return `<div class="hbshell"><header class="hbtop"><div class="hbtop-l"><button type="button" class="hbtb navd-b" data-navd aria-label="Ver todas las categorías" title="Todas las categorías">${SVG('<path d="M3.5 6h13M3.5 10h13M3.5 14h9"/>',18)}</button><a class="brand2" href="#inicio" aria-label="Tickora, inicio"><svg class="tlogo" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="var(--cobalto)"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="var(--cobalto)"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="var(--cobalto2)" opacity=".8"/></svg><span>TICKORA</span></a></div>
+    <div class="hbtop-c" data-gtop>${window.tkGoalTop?tkGoalTop():""}</div>
     <div class="hbtop-r">${acctSwitch("mini")}<button type="button" class="hbtb" data-pal aria-label="Buscar (Ctrl/⌘ K)" title="Buscar (Ctrl/⌘ K)">${SVG('<circle cx="9" cy="9" r="5.5"/><path d="M13.2 13.2L17 17"/>',18)}</button><button type="button" class="hbtb" data-style-open aria-label="Estilo y colores" title="Estilo y colores">${SVG('<path d="M10 2.5a7.5 7.5 0 100 15c1 0 1.5-.6 1.5-1.4 0-.9-.7-1.2-.7-2 0-.7.6-1.3 1.4-1.3h1.7a3.6 3.6 0 003.6-3.6c0-3.7-3.4-6.7-7.5-6.7z"/><circle cx="6.5" cy="9" r="1" fill="currentColor"/><circle cx="9.5" cy="6" r="1" fill="currentColor"/><circle cx="13.5" cy="7" r="1" fill="currentColor"/>',18)}</button><button type="button" class="hbtb" data-theme-toggle aria-label="Cambiar entre claro y oscuro" title="Claro u oscuro">${SVG('<path d="M15.5 12.5A6 6 0 017.5 4.5a6 6 0 108 8z"/>',18)}</button><a class="avatar" href="#ajustes" title="${esc(S.name)} · ${esc(S.user.email||"")}">${esc(initials())}</a></div></header>
   <main class="${view?"main pgmain":"hbmain"}" id="main">${content}</main><nav class="tabs" aria-label="Secciones">${nav}</nav></div>`;
 }
@@ -2219,8 +2220,8 @@ if(SB_OK){
 window.TKAPP={S,sb,esc,SVG,fmtR,fmtV,fmtVt,fmtMoney,mOf,sumM,oneR,dispCur,moneyOn,prefU,CURS,fmtVabs,fmtLim,fmtMs,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
 })();
 </script>
-<link rel="stylesheet" href="extra2.css?v=40">
+<link rel="stylesheet" href="extra2.css?v=43">
 <script src="extra.js?v=6"></script>
-<script src="extra2.js?v=44"></script>
+<script src="extra2.js?v=46"></script>
 </body>
 </html>

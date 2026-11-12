@@ -554,6 +554,9 @@
       const { data, error } = await sb.from("docs").select("col,id,data").in("col", ["metas", "plandia"]);
       if (!error) { S.plandias = {}; S.goals = null; (data || []).forEach(d => { if (d.col === "metas" && d.id === "obj") S.goals = d.data; else if (d.col === "plandia") S.plandias[String(d.id).slice(1)] = 1; }); S.goalsLoaded = true; }
     } catch (e) { } finally { S.goalsLoading = false; }
+    const paintTop = () => document.querySelectorAll("[data-gtop]").forEach(el => { el.innerHTML = goalTop(); });
+    paintTop();
+    if (gHas()) { await Promise.all([!S.menteLoaded && healthOk() ? loadMente() : 0, !S.pagesLoaded && DI() ? DI().loadPages() : 0, !S.btLoaded && BT() ? BT().loadSessions() : 0].map(x => Promise.resolve(x).catch(() => { }))); paintTop(); }
   }
   const saveGoals = () => sb.from("docs").upsert({ user_id: S.user.id, col: "metas", id: "obj", data: S.goals, updated_at: new Date().toISOString() }).then(({ error }) => { if (error) toast("No se pudo guardar"); });
   const addD = (k, n) => { const d = new Date(k + "T12:00:00"); d.setDate(d.getDate() + n); return dayKey(d); };
@@ -591,6 +594,13 @@
     const ix = gIx();
     return `<button type="button" class="gs" data-goals aria-label="Tus objetivos. Toca para verlos">${GH.filter(h => S.goals[h.k]).map(h => { const g = S.goals[h.k], p = gProg(g, ix); return `<span class="gs-i${p.done ? " ok" : ""}" style="--gc:${h.c}"><span class="gs-t"><em>${h.n.replace(" plazo", "")}<span class="gs-pz"> plazo</span></em><b class="mono">${gPct(p)} %</b></span><span class="gs-bar"><i style="width:${(p.pct * 100).toFixed(1)}%"></i></span><small>${esc(g.t)}</small></span>`; }).join("")}</button>`;
   }
+  function goalTop() {
+    if (!S.goalsLoaded) { if (!S.goalsTried && S.user) { S.goalsTried = true; setTimeout(loadGoals, 0); } return ""; }
+    if (!gHas()) return `<button type="button" class="gt gt-new" data-goals aria-label="Elige tus objetivos" title="Elige tus objetivos">${I(ITG, 15, 1.7)}<span>Objetivos</span></button>`;
+    const ix = gIx(), H = GH.filter(h => S.goals[h.k]), P = H.map(h => gProg(S.goals[h.k], ix));
+    return `<button type="button" class="gt" data-goals aria-label="Tus objetivos: ${H.map((h, i) => h.n + " " + gPct(P[i]) + " %").join(", ")}">${H.map((h, i) => `<span class="gt-i${P[i].done ? " ok" : ""}" style="--gc:${h.c}" title="${esc(h.n)} · ${esc(S.goals[h.k].t)} · ${gPct(P[i])} %"><em>${h.n.replace(" plazo", "")}</em><span class="gt-bar"><i style="width:${(P[i].pct * 100).toFixed(1)}%"></i></span><b class="mono">${gPct(P[i])}<small>%</small></b></span>`).join("")}</button>`;
+  }
+  window.tkGoalTop = goalTop;
   function goalBlock() {
     if (!S.goalsLoaded) return "";
     if (!gHas()) return `<div class="hd-c gb gb-empty"><div class="gb-ei">${I(ITG, 26, 1.6)}</div><div><h3>Tus objetivos</h3><p>Elige una meta para esta semana, otra para este mes y una a lo grande, con tu porqué. Cada cosa que hagas bien llenará las barras.</p></div><button type="button" class="x-ch pri" data-goals>Elegir mis objetivos</button></div>`;
@@ -620,15 +630,36 @@
       <div class="pz-chips gl-sug">${WSUG.map(s => `<button type="button" class="pz-chip" data-fill="why" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div>
       <div class="gl-l">Plazo<div class="pz-chips">${h.d.map(d => `<button type="button" class="pz-chip" data-days="${d}" aria-pressed="${f.days === d}">${d} días</button>`).join("")}</div><small class="gl-m">Meta: <b class="mono" data-meta>${f.days * GPD}</b> puntos</small></div>
     </section>`; };
-    box.innerHTML = `<div class="xdrawer-p pzp"><div class="xdr-h pz-h"><div><b>Tus objetivos</b><small>Corto, medio y largo plazo. Cada día que haces las cosas bien, las barras crecen.</small></div><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
-      <div class="xdr-b">${GH.map(sec).join("")}
-        <div class="gl-how"><b>Cómo se suman puntos</b><ul>${GPTS.map(([k, l, v]) => `<li><span>${{ chk: "Haces el chequeo de cómo llegas", com: "Te comprometes con tu plan", plan: "Ese día no rompes ninguna norma (o decides no operar)", dia: "Escribes en tu diario", bt: "Haces una sesión de práctica" }[k]}</span><b class="mono">+${v}</b></li>`).join("")}</ul><small>Un buen día suma de 4 a 6. La meta pide unos ${GPD} al día de media, así que hay margen para los días malos. No se pierden puntos: lo que sumas, se queda.</small></div>
-      </div><div class="xdr-f"><button type="button" class="btn" data-gsave>Guardar mis objetivos</button></div></div>`;
+    const how = `<div class="gl-how"><b>Cómo se suman puntos</b><ul>${GPTS.map(([k, l, v]) => `<li><span>${{ chk: "Haces el chequeo de cómo llegas", com: "Te comprometes con tu plan", plan: "Ese día no rompes ninguna norma (o decides no operar)", dia: "Escribes en tu diario", bt: "Haces una sesión de práctica" }[k]}</span><b class="mono">+${v}</b></li>`).join("")}</ul><small>Un buen día suma de 4 a 6. La meta pide unos ${GPD} al día de media, así que hay margen para los días malos. No se pierden puntos: lo que sumas, se queda.</small></div>`;
+    function summary() {
+      const td = gDay(todayKey(), ix), tp = gSum(td), st = gStreak(ix);
+      return `<div class="gv-top"><span class="gb-tl">Hoy llevas <b class="mono">+${tp}</b> de 6</span><span class="gb-st${st ? " on" : ""}">${I(IFL, 14, 1.8)}Racha de <b class="mono">${st}</b> ${st === 1 ? "día" : "días"}</span></div>
+        <div class="gb-today gv-today">${GPTS.map(([k, l, v]) => `<span class="gb-pt${td[k] ? " on" : ""}">${l} <em>+${v}</em></span>`).join("")}</div>
+        <div class="gb-rows gv-rows">${GH.filter(h => G0[h.k]).map(h => {
+          const g = G0[h.k], p = gProg(g, ix), pc = gPct(p), need = p.left ? Math.max(0, (p.target - p.pts) / p.left) : 0;
+          const stt = p.done ? `<b class="gb-ok">¡Conseguido! Ponte el siguiente</b>` : p.over ? `Terminó con el ${pc} %. Ponte uno nuevo` : `Faltan <b class="mono">${p.target - p.pts}</b> puntos en ${p.left} ${p.left === 1 ? "día" : "días"} · unos ${num(need, 1).replace(/,0$/, "")} al día`;
+          return `<div class="gb-r${p.done ? " ok" : ""}" style="--gc:${h.c}"><div class="gb-h"><span class="gb-k">${h.n}</span><b class="gb-t">${esc(g.t)}</b><span class="gb-p mono">${pc}<small>%</small></span></div>
+            <div class="gb-bar" role="progressbar" aria-label="${esc(g.t)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pc}"><i style="width:${(p.pct * 100).toFixed(1)}%"></i></div>
+            <div class="gb-f"><span class="mono">${p.pts} / ${p.target} puntos</span><span>${stt}</span></div>
+            ${g.why ? `<p class="gb-why"><span>Por qué lo haces</span><q>${esc(g.why)}</q></p>` : ""}</div>`; }).join("")}</div>
+        <details class="gv-how"><summary>Cómo se suman puntos</summary>${how}</details>`;
+    }
+    let mode = gHas() ? "ver" : "editar";
+    function paint() {
+      const ver = mode === "ver";
+      box.innerHTML = `<div class="xdrawer-p pzp"><div class="xdr-h pz-h"><div><b>Tus objetivos</b><small>${ver ? "Cada día que haces las cosas bien, las barras crecen." : "Corto, medio y largo plazo, con tu porqué."}</small></div><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
+        <div class="xdr-b">${ver ? summary() : `${GH.map(sec).join("")}` + how}</div>
+        <div class="xdr-f">${ver ? `<button type="button" class="btn gv-edit" data-gedit>Editar objetivos</button>` : `<button type="button" class="btn" data-gsave>Guardar mis objetivos</button>${gHas() ? `<button type="button" class="x-ch" data-gback>Volver</button>` : ""}`}</div></div>`;
+      const b0 = box.querySelector(".xdr-b"); if (b0) b0.scrollTop = 0;
+    }
+    paint();
     const close = () => { box.classList.remove("in"); setTimeout(() => box.remove(), 200); document.removeEventListener("keydown", ek); };
     const ek = e => { if (e.key === "Escape") close(); };
     box.addEventListener("input", e => { const s = e.target.closest(".gl-s"); if (s && e.target.dataset.f) F[s.dataset.k][e.target.dataset.f] = e.target.value; });
     box.addEventListener("click", async e => {
       if (e.target === box || e.target.closest("[data-x]")) return close();
+      if (e.target.closest("[data-gedit]")) { mode = "editar"; paint(); const x = box.querySelector("[data-f]"); x && x.focus({ preventScroll: true }); return; }
+      if (e.target.closest("[data-gback]")) { mode = "ver"; paint(); return; }
       const s = e.target.closest(".gl-s"), fl = e.target.closest("[data-fill]");
       if (s && fl) { const inp = s.querySelector(`[data-f="${fl.dataset.fill}"]`); inp.value = fl.dataset.v; F[s.dataset.k][fl.dataset.fill] = fl.dataset.v; inp.focus(); return; }
       const dy = e.target.closest("[data-days]");
@@ -645,7 +676,7 @@
     document.addEventListener("keydown", ek); document.body.appendChild(box);
     requestAnimationFrame(() => box.classList.add("in")); setTimeout(() => { const x = box.querySelector("[data-f]"); x && x.focus({ preventScroll: true }); }, 220);
   }
-  function gRefresh() { document.querySelectorAll("[data-gslot]").forEach(el => { el.innerHTML = goalStrip(); }); if (document.getElementById("hday") && window.__tkDay) window.__tkDay(); }
+  function gRefresh() { document.querySelectorAll("[data-gtop]").forEach(el => { el.innerHTML = goalTop(); }); if (document.getElementById("hday") && window.__tkDay) window.__tkDay(); }
   function gToast(n, why) { if (!gHas()) return; toast(`+${n} ${n === 1 ? "punto" : "puntos"} · ${why}. Tus objetivos avanzan`); setTimeout(gRefresh, 50); }
   document.addEventListener("click", e => { if (e.target.closest("[data-goals]")) goalsPanel(); });
   /* ===== portada «conversación»: saludo, preguntas de cómo llegas y carrusel de cuadros ===== */
@@ -857,7 +888,7 @@
     const top = `<div class="hd-top">${X.sem}${X.ayer}</div>`;
     const prot = `<div class="hd-g two">${X.heat}${X.hours}</div>`;
     const learn = `<div class="hd-sub"><h2>Para aprender más rápido</h2></div><div class="hd-g">${X.focus}${X.learn}${X.disc}</div><div class="hd-g ${X.reto ? "" : "two"}">${X.cost}${X.vs}${X.reto}</div>`;
-    order.splice(0, 1, goalBlock(), top, kpis, ph === "despues" ? "" : prot);
+    order.splice(0, 1, top, kpis, ph === "despues" ? "" : prot);
     order.push(learn);
     return `<div class="hd-head"><h2>Tu día</h2><span>${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))} · ${ph === "antes" ? "antes de tu horario" : ph === "en" ? "en tu horario" : "sesión terminada"}</span></div>${order.join("")}`;
   }
@@ -870,7 +901,6 @@
     return `<div class="hx">
       <div class="hx-top"><span class="hx-pill">${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))} · ${D.phase === "en" ? "En tu horario" : D.phase === "antes" ? "Antes de tu horario" : "Fuera de horario"}</span>${homeSw("car")}</div>
       <h1 class="hx-hi">Hola, ${first},<br>${hl}</h1>
-      <div class="hx-goals" data-gslot>${goalStrip()}</div>
       <div class="hx-q" id="hxq" aria-live="polite">${heroQ(D)}</div>
       <div class="hx-car" role="region" aria-roledescription="carrusel" aria-label="Tus apartados">
         <div class="hx-glow" aria-hidden="true"></div>
@@ -943,7 +973,7 @@
       let x0 = null; car.addEventListener("pointerdown", e => { x0 = e.clientX; }); car.addEventListener("pointerup", e => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 45) { S.hxSwiped = Date.now(); go(S.hcar + (dx < 0 ? 1 : -1)); } });
     }
     if (!window.__tkCarR) { window.__tkCarR = true; addEventListener("resize", () => { if ($(".hx-c")) fitSoon(); }); }
-    fitSoon(); if (window.ResizeObserver) { if (window.__tkHxRO) window.__tkHxRO.disconnect(); const ro = window.__tkHxRO = new ResizeObserver(() => fitSoon()); ["#hxq", ".hx-goals", ".hx-hi"].forEach(q => { const el = document.querySelector(q); el && ro.observe(el); }); }
+    fitSoon(); if (window.ResizeObserver) { if (window.__tkHxRO) window.__tkHxRO.disconnect(); const ro = window.__tkHxRO = new ResizeObserver(() => fitSoon()); ["#hxq", ".hx-hi"].forEach(q => { const el = document.querySelector(q); el && ro.observe(el); }); }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSoon);
   }
   function bindHomeSw() { $$("[data-home]").forEach(b => b.onclick = () => { lsSet("tk-home", b.dataset.home); re(); }); }
@@ -955,7 +985,7 @@
       setTimeout(() => { S.hbAnim = true; }, 600);
       return `<div class="hb hb-full${HAPPS.filter(k => appDef(k)).length === 9 ? " bento" : ""}">
         <section class="hb-l"><div class="hb-mrow">${metaRow(D)}${homeSw("grid")}</div>
-          <div class="hb-hirow"><h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1><div class="hb-goals" data-gslot>${goalStrip()}</div></div>
+          <h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1>
           <div class="hb-grid${HAPPS.filter(k => appDef(k)).length === 9 ? " g9" : ""}${S.hcSel ? " has" : ""}">${HAPPS.filter(k => appDef(k)).map(k => { const on = S.hcSel === k; return `<div class="hb-t t-${k} ${S.hbAnim ? "noanim" : ""}${on ? " sel" : ""}" role="button" tabindex="0" data-hc="${k}" data-href="${appHref(k)}" aria-expanded="${on}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${on ? calmOpen(k, D) : appTile(k, D)}</div>`; }).join("")}</div>
         </section></div>`;
     },
