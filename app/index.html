@@ -1977,20 +1977,41 @@ function viewConsent(){
 
 function viewAuth(){
   const m=S.authMode;
-  const title={login:"Entra en Tickora",signup:"Crea tu cuenta",reset:"Recupera tu contraseña",newpass:"Elige una contraseña nueva"}[m];
-  return `<div class="auth"><form class="card stack authcard" id="authForm" style="padding:24px" novalidate>
-    <div class="brand"><div class="logo" aria-hidden="true"></div><div style="font-weight:800;font-size:19px">Tickora</div></div>
-    <h1 style="font-size:24px">${title}</h1>
-    ${m==="signup"?`<label class="field"><span>Tu nombre</span><input class="input" id="aName" autocomplete="name" required maxlength="40"></label>`:""}
-    ${m!=="newpass"?`<label class="field"><span>Correo</span><input class="input" id="aEmail" type="email" autocomplete="email" required></label>`:""}
-    ${m!=="reset"?`<label class="field"><span>Contraseña</span><input class="input" id="aPass" type="password" autocomplete="${m==="login"?"current-password":"new-password"}" minlength="8" required></label>`:""}
-    ${S.authErr?`<div class="err" role="alert">${esc(S.authErr)}</div>`:""}${S.authMsg?`<div class="ok">${esc(S.authMsg)}</div>`:""}
-    <button class="btn" type="submit">${{login:"Entrar",signup:"Crear cuenta",reset:"Enviar enlace",newpass:"Guardar contraseña"}[m]}</button>
-    <div class="row small" style="justify-content:space-between;flex-wrap:wrap">
-      ${m==="login"?`<button type="button" class="link" data-mode="signup">Crear cuenta</button><button type="button" class="link" data-mode="reset">He olvidado la contraseña</button>`:`<button type="button" class="link" data-mode="login">Ya tengo cuenta</button>`}
-    </div>
-    <div class="small muted">Solo para mayores de 18. <a href="legal.html" target="_blank">Aviso de riesgo y privacidad</a>.</div>
-  </form></div>`;
+  const H={login:["Hola de nuevo.","Opera con calma."],signup:["Empieza hoy.","Opera con calma."],reset:["¿Sin contraseña?","Te ayudamos."],newpass:["Nueva contraseña.","Casi listo."]}[m];
+  const SUB={login:"Tu diario de trading centrado en la cabeza, no solo en el gráfico.",signup:"Un minuto para crearla. Lo demás, cada día, a tu ritmo.",reset:"Te enviaremos un enlace a tu correo para elegir otra.",newpass:"Elige una contraseña de al menos 8 caracteres."}[m];
+  const LOGO='<svg viewBox="0 0 28 24" aria-hidden="true"><path d="M2 3h24l-2.6 4.6H4.6z" fill="currentColor"/><path d="M11.2 9.4h6.2L13.6 21H7.4z" fill="currentColor"/><path d="M19 9.4h4.2L21.6 12H17.5z" fill="currentColor" opacity=".75"/></svg>';
+  const EYE='<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.5"/></svg>';
+  const fld=(id,lbl,type,ac,extra)=>`<label class="au-f"><input class="au-in" id="${id}" type="${type}" autocomplete="${ac}" placeholder=" " ${extra||""}><span>${lbl}</span>${type==="password"?`<button type="button" class="au-eye" data-eye aria-label="Ver la contraseña">${EYE}</button>`:""}</label>`;
+  const C=[[.2,.65,.4,.9,.55,.75,.35,.8,.6,.95,.5,.7],[.35,.55,.3,.8,.45,.6,.25,.7,.5,.85,.4,.65]];
+  const CL=[30,26,28,22,24,19,21,15,18,12,16,10],OP=[34,30,25,29,21,25,18,22,14,19,11,17];
+  const candles=`<svg viewBox="0 0 120 50" class="au-cd">${CL.map((c,i)=>{const o=OP[i],x=6+i*9.6,up=c<o,top=Math.min(o,c)-3-(i%3),bot=Math.max(o,c)+2+(i%2)*3;return `<line x1="${x}" y1="${top}" x2="${x}" y2="${bot}"/><rect x="${x-2.7}" y="${Math.min(o,c)}" width="5.4" height="${Math.max(2,Math.abs(c-o))}" class="${up?"u":"d"}"/>`}).join("")}<path d="M6 38 C30 34,50 30,70 24 S105 14,114 12" fill="none" class="au-ma"/></svg>`;
+  const W=`<div class="au-bg" aria-hidden="true">
+    <div class="au-w w1"><span class="au-k">Hoy</span><div class="au-sem"><i></i><span><b>Opera con cuidado</b><small>Medio riesgo y una operación menos</small></span></div></div>
+    <div class="au-w w2"><span class="au-k">Cómo llegas</span><b class="au-q">¿Cómo has dormido?</b><div class="au-ch"><span>Poco</span><span>Normal</span><span class="on">Bien</span></div></div>
+    <div class="au-w w3"><span class="au-k">Tus objetivos</span>${[["Corto",72,"var(--hb-ink)"],["Medio",38,"#86a9ff"],["Largo",14,"#c49dff"]].map(([n,v,c])=>`<div class="au-g" style="--gc:${c}"><em>${n}</em><span><i style="width:${v}%"></i></span><b>${v} %</b></div>`).join("")}</div>
+    <div class="au-w w4"><span class="au-k">EURUSD · 15 min</span>${candles}</div>
+    <div class="au-w w5"><span class="au-k">Noviembre</span><div class="au-cal">${Array.from({length:21},(_,i)=>`<i class="${[0,5,6,12,13,19,20].includes(i)?"we":[2,9,15].includes(i)?"n":[1,3,4,7,8,10,11,14,16].includes(i)?"p":"x"}"></i>`).join("")}</div></div>
+    <div class="au-w w6"><span class="au-k">Lo que te dijiste ayer</span><p class="au-n">«No entrar antes de las 15:45, aunque el precio se mueva.»</p></div>
+    <div class="au-w w7"><span class="au-k">Racha</span><div class="au-st"><b>12</b><span>días seguidos<br>cumpliendo tu plan</span></div></div>
+    <div class="au-w w8"><span class="au-k">Asistente</span><p class="au-b me">¿A qué hora opero mejor?</p><p class="au-b">De 16 a 17 h: el 100 % de tus operaciones dentro del plan.</p></div>
+  </div>`;
+  const tabs=m==="login"||m==="signup"?`<div class="au-seg" role="tablist"><button type="button" role="tab" data-mode="login" aria-selected="${m==="login"}">Entrar</button><button type="button" role="tab" data-mode="signup" aria-selected="${m==="signup"}">Crear cuenta</button></div>`:"";
+  return `<div class="au">${W}
+  <div class="au-c">
+    <div class="au-logo">${LOGO}<span>TICKORA</span></div>
+    <h1 class="au-h">${H[0]}<br><em>${H[1]}</em></h1>
+    <p class="au-sub">${SUB}</p>
+    <form class="au-card" id="authForm" novalidate>
+      ${tabs}
+      ${m==="signup"?fld("aName","Tu nombre","text","name",'required maxlength="40"'):""}
+      ${m!=="newpass"?fld("aEmail","Correo","email","email","required"):""}
+      ${m!=="reset"?fld("aPass",m==="newpass"?"Contraseña nueva":"Contraseña","password",m==="login"?"current-password":"new-password",'minlength="8" required'):""}
+      ${S.authErr?`<div class="au-msg err" role="alert">${esc(S.authErr)}</div>`:""}${S.authMsg?`<div class="au-msg ok" role="status">${esc(S.authMsg)}</div>`:""}
+      <button class="au-btn" type="submit">${{login:"Entrar",signup:"Crear mi cuenta",reset:"Enviar enlace",newpass:"Guardar contraseña"}[m]}</button>
+      <div class="au-links">${m==="login"?`<button type="button" data-mode="reset">¿Olvidaste la contraseña?</button>`:m==="signup"?`<span>¿Ya tienes cuenta? <button type="button" data-mode="login">Entrar</button></span>`:`<button type="button" data-mode="login">← Volver a entrar</button>`}</div>
+    </form>
+    <p class="au-legal">Solo para mayores de 18. <a href="legal.html" target="_blank">Aviso de riesgo y privacidad</a>.</p>
+  </div></div>`;
 }
 
 /* ---------- render y eventos ---------- */
@@ -2034,6 +2055,7 @@ function render(){
 function bindAuth(){
   const f=document.getElementById("authForm");
   f.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{S.authMode=b.dataset.mode;S.authErr=S.authMsg="";render()});
+  f.querySelectorAll("[data-eye]").forEach(b=>b.onclick=()=>{const i=b.parentElement.querySelector("input");const sh=i.type==="password";i.type=sh?"text":"password";b.setAttribute("aria-label",sh?"Ocultar la contraseña":"Ver la contraseña");b.classList.toggle("on",sh)});
   f.onsubmit=async e=>{
     e.preventDefault();S.authErr=S.authMsg="";
     const v=id=>{const el=document.getElementById(id);return el?el.value.trim():""};
@@ -2220,7 +2242,7 @@ if(SB_OK){
 window.TKAPP={S,sb,esc,SVG,fmtR,fmtV,fmtVt,fmtMoney,mOf,sumM,oneR,dispCur,moneyOn,prefU,CURS,fmtVabs,fmtLim,fmtMs,num,fmtPct,dayKey,todayKey,evaluate,tradeStats,toast,render,spark,MARKETS,symbolsInfo,lsGet,lsSet,acctName,selAcct,FEELS,greet,initials,minOf,minOfDate,money,inSession,MESES_L,NAV_APPS,appOf,ico,isDark,refreshWidgets,effectivePlan,applyAcct,thumb};
 })();
 </script>
-<link rel="stylesheet" href="extra2.css?v=51">
+<link rel="stylesheet" href="extra2.css?v=54">
 <script src="extra.js?v=6"></script>
 <script src="extra2.js?v=52"></script>
 </body>
