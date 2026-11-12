@@ -1679,3 +1679,12 @@ button.mc-d:focus-visible{outline:2px solid var(--cobalto);outline-offset:1px}
 @media (max-width:860px){.au-c{max-width:440px}.au-h{font-size:clamp(34px,10vw,46px)}.au-h{margin-top:22px}}
 @media (max-height:760px) and (min-width:861px){.au-h{font-size:44px;margin-top:18px}.au-sub{margin:10px 0 18px}}
 @media (prefers-reduced-motion:reduce){.au-w,.au-c{animation:none}}
+/* píldora de la pregunta, más pequeña */
+.hx .hx-q{gap:2px 10px;padding:4px 4px 4px 14px;border-radius:22px}
+.hx .hx-qt{font-size:12.5px}
+.hx .hx-a{font-size:12px;padding:5px 11px}
+.hx .hx-sub{font-size:12.5px}
+.hx .hx-sc{font-size:10px;padding:0 7px}
+.hx .hx-prog i{width:4px;height:4px}.hx .hx-prog i.c{width:10px}
+.hx .hx-prog button{font-size:11px}
+@media (max-width:640px){.hx .hx-q{padding:8px 6px;gap:4px;border-radius:18px}.hx .hx-a{padding:6px 11px}}
