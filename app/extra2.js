@@ -157,6 +157,7 @@
     if (!S.news && window.tkLoadNews) tkLoadNews().then(again);
     if (!S.btLoaded && BT()) BT().loadSessions().then(again);
     if (!S.pagesLoaded && DI()) DI().loadPages().then(again);
+    if (!S.goalsLoaded) loadGoals().then(again);
   };
   /* botones propios de cada cuadro (temporalidad, sesiones, pregunta) */
   function bindWidgets(root) {
@@ -181,7 +182,7 @@
       const day = todayKey(); S.planOk = { day, ts: Date.now() };
       const t = b.closest(".hb-t"); if (t) { t.innerHTML = appTile("plan", hData()); bindWidgets(t); }
       const { error } = await sb.from("docs").upsert({ user_id: S.user.id, col: "plandia", id: "d" + day, data: { ts: S.planOk.ts }, updated_at: new Date().toISOString() });
-      if (error) toast("No se pudo guardar tu compromiso"); else toast("Comprometido. Tus normas, a la vista toda la sesión"); if (document.getElementById("hday")) { window.__tkDay && window.__tkDay(); const pt = document.querySelector('.hb-t[data-hc="plan"]'); if (pt) { pt.innerHTML = appTile("plan", hData()); bindWidgets(pt); } }
+      S.plandias = S.plandias || {}; S.plandias[day] = 1; if (error) toast("No se pudo guardar tu compromiso"); else if (gHas()) gToast(1, "te has comprometido"); else toast("Comprometido. Tus normas, a la vista toda la sesión"); if (document.getElementById("hday")) { window.__tkDay && window.__tkDay(); const pt = document.querySelector('.hb-t[data-hc="plan"]'); if (pt) { pt.innerHTML = appTile("plan", hData()); bindWidgets(pt); } }
     });
     q("[data-mt]").forEach(b => b.onclick = async () => {
       const [k, v] = b.dataset.mt.split(":"), day = todayKey(); S.mente = S.mente || {};
@@ -409,7 +410,7 @@
       const go = e.target.closest("[data-go]"); if (!go || go.disabled) return;
       const g = go.dataset.go;
       if (g === "perfil-ok") { S.menteP = { trig: P.trig, calm: P.calm, tone: P.tone }; save("perfil", S.menteP); step = mDone(M) ? "resultado" : "hoy"; paint(); refresh(); }
-      else if (g === "hoy-ok") { M.ts = Date.now(); S.mente[day] = Object.assign({}, M); save("d" + day, S.mente[day]); step = "resultado"; paint(); refresh(); }
+      else if (g === "hoy-ok") { M.ts = Date.now(); const was = mDone(S.mente[day]); S.mente[day] = Object.assign({}, M); save("d" + day, S.mente[day]); if (!was) gToast(1, "chequeo hecho"); step = "resultado"; paint(); refresh(); }
       else if (g === "si-add") { const a = psyAdvice(M, hData()); M.sit = a.sit; M.then = a.then; S.mente[day] = Object.assign({}, M); save("d" + day, S.mente[day]); paint(); refresh(); toast("Añadida a tu cuadro de Mi plan"); }
       else { step = g; paint(); }
     });
@@ -537,6 +538,116 @@
     requestAnimationFrame(() => box.classList.add("in")); setTimeout(() => { const a = box.querySelector('[aria-current="page"]') || box.querySelector(".navd-a"); a && a.focus(); }, 60);
   }
   document.addEventListener("click", e => { if (e.target.closest("[data-navd]")) navDrawer(); });
+
+  // ---------- Objetivos: corto, medio y largo plazo. Las barras crecen con lo que haces bien ----------
+  const GH = [
+    { k: "c", n: "Corto plazo", d: [7, 14], c: "#f1b55e", sug: ["Cumplir mi plan 5 días seguidos", "Hacer el chequeo cada día", "No pasar mi límite ni una vez"] },
+    { k: "m", n: "Medio plazo", d: [30, 60], c: "#86a9ff", sug: ["Pasar la fase 1 del reto", "Un mes sin operaciones fuera de plan", "20 sesiones de práctica"] },
+    { k: "l", n: "Largo plazo", d: [90, 180, 365], c: "#c49dff", sug: ["Conseguir mi cuenta fondeada", "Vivir del trading", "Ser un trader constante"] }];
+  const WSUG = ["Tener libertad para organizar mi tiempo", "Dejar mi trabajo actual", "Dar tranquilidad a mi familia", "Demostrarme que soy constante"];
+  const GPTS = [["chk", "Chequeo", 1], ["com", "Compromiso", 1], ["plan", "Día en plan", 2], ["dia", "Diario", 1], ["bt", "Práctica", 1]];
+  const GPD = 3, IFL = '<path d="M10 2.5c.8 2.6 4.2 4.3 4.2 8.3a4.2 4.2 0 0 1-8.4 0c0-1.7.8-2.9 1.7-3.8.1 1.4.8 2.3 1.8 2.7-.3-2.4-.1-4.9.7-7.2z"/>';
+  const ICK = '<path d="M4.5 10.5l3.5 3.5 7.5-8"/>', ITG = '<circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="3.5"/><circle cx="10" cy="10" r=".6"/>';
+  async function loadGoals() {
+    if (S.goalsLoaded || S.goalsLoading) return; S.goalsLoading = true;
+    try {
+      const { data, error } = await sb.from("docs").select("col,id,data").in("col", ["metas", "plandia"]);
+      if (!error) { S.plandias = {}; S.goals = null; (data || []).forEach(d => { if (d.col === "metas" && d.id === "obj") S.goals = d.data; else if (d.col === "plandia") S.plandias[String(d.id).slice(1)] = 1; }); S.goalsLoaded = true; }
+    } catch (e) { } finally { S.goalsLoading = false; }
+  }
+  const saveGoals = () => sb.from("docs").upsert({ user_id: S.user.id, col: "metas", id: "obj", data: S.goals, updated_at: new Date().toISOString() }).then(({ error }) => { if (error) toast("No se pudo guardar"); });
+  const addD = (k, n) => { const d = new Date(k + "T12:00:00"); d.setDate(d.getDate() + n); return dayKey(d); };
+  function gIx() {
+    const td = {}, pd = {}, bd = {};
+    (S.allTrades || S.trades || []).forEach(t => { if (t.open_time && t.status === "closed") { const k = dayKey(t.open_time); (td[k] = td[k] || []).push(t); } });
+    (S.pages || []).forEach(p => [p.created, p.updated].forEach(x => { if (x) pd[dayKey(x)] = 1; }));
+    (S.btTrades || []).forEach(t => { if (t.created_at) bd[dayKey(t.created_at)] = 1; });
+    return { td, pd, bd };
+  }
+  function gDay(k, ix) {
+    const r = {}; if (mDone((S.mente || {})[k])) r.chk = 1;
+    const com = (S.plandias || {})[k] || (S.planOk && S.planOk.day === k); if (com) r.com = 1;
+    if (com && (ix.td[k] || []).every(t => evaluate(t).good)) r.plan = 2;
+    if (ix.pd[k]) r.dia = 1; if (ix.bd[k]) r.bt = 1;
+    return r;
+  }
+  const gSum = r => Object.values(r).reduce((a, b) => a + b, 0);
+  function gProg(g, ix) {
+    const end = addD(g.start, g.days - 1), today = todayKey(), last = today < end ? today : end;
+    let pts = 0, k = g.start, n = 0; while (k <= last && n < 400) { pts += gSum(gDay(k, ix)); k = addD(k, 1); n++; }
+    const target = g.target || g.days * GPD, left = today > end ? 0 : Math.round((new Date(end + "T12:00:00") - new Date(today + "T12:00:00")) / 864e5) + 1;
+    return { pts, target, pct: Math.min(1, pts / target), end, left, done: pts >= target, over: today > end, n };
+  }
+  function gStreak(ix) {
+    let s = 0, k = todayKey(); if (gSum(gDay(k, ix)) < 2) k = addD(k, -1);
+    for (let i = 0; i < 400; i++) { const wd = new Date(k + "T12:00:00").getDay(); if (gSum(gDay(k, ix)) >= 2) s++; else if (wd !== 0 && wd !== 6) break; k = addD(k, -1); }
+    return s;
+  }
+  const gHas = () => !!(S.goals && GH.some(h => S.goals[h.k]));
+  const gPct = p => Math.round(p.pct * 100);
+  function goalStrip() {
+    if (!S.goalsLoaded) return "";
+    if (!gHas()) return `<button type="button" class="gs-cta" data-goals>${I(ITG, 16, 1.8)}<span><b>Elige tus 3 objetivos</b><small>Uno para esta semana, otro para el mes y uno a lo grande</small></span>${I(IC.right, 15, 2)}</button>`;
+    const ix = gIx();
+    return `<button type="button" class="gs" data-goals aria-label="Tus objetivos. Toca para verlos">${GH.filter(h => S.goals[h.k]).map(h => { const g = S.goals[h.k], p = gProg(g, ix); return `<span class="gs-i${p.done ? " ok" : ""}" style="--gc:${h.c}"><span class="gs-t"><em>${h.n}</em><b class="mono">${gPct(p)} %</b></span><span class="gs-bar"><i style="width:${(p.pct * 100).toFixed(1)}%"></i></span><small>${esc(g.t)}</small></span>`; }).join("")}</button>`;
+  }
+  function goalBlock() {
+    if (!S.goalsLoaded) return "";
+    if (!gHas()) return `<div class="hd-c gb gb-empty"><div class="gb-ei">${I(ITG, 26, 1.6)}</div><div><h3>Tus objetivos</h3><p>Elige una meta para esta semana, otra para este mes y una a lo grande, con tu porqué. Cada cosa que hagas bien llenará las barras.</p></div><button type="button" class="x-ch pri" data-goals>Elegir mis objetivos</button></div>`;
+    const ix = gIx(), td = gDay(todayKey(), ix), tp = gSum(td), st = gStreak(ix);
+    const today = `<div class="gb-today"><span class="gb-tl">Hoy llevas <b class="mono">+${tp}</b> de 6</span>${GPTS.map(([k, l, v]) => `<span class="gb-pt${td[k] ? " on" : ""}">${td[k] ? I(ICK, 11, 2.8) : ""}${l} <em>+${v}</em></span>`).join("")}</div>`;
+    const rows = GH.filter(h => S.goals[h.k]).map(h => {
+      const g = S.goals[h.k], p = gProg(g, ix), pc = gPct(p), need = p.left ? Math.max(0, (p.target - p.pts) / p.left) : 0;
+      const stt = p.done ? `<b class="gb-ok">¡Conseguido! Ponte el siguiente</b>` : p.over ? `Terminó con el ${pc} %. Ponte uno nuevo` : `Faltan <b class="mono">${p.target - p.pts}</b> puntos en ${p.left} ${p.left === 1 ? "día" : "días"} · unos ${num(need, 1).replace(/,0$/, "")} al día`;
+      return `<div class="gb-r${p.done ? " ok" : ""}" style="--gc:${h.c}">
+        <div class="gb-h"><span class="gb-k">${h.n}</span><b class="gb-t">${esc(g.t)}</b><span class="gb-p mono">${pc}<small>%</small></span></div>
+        <div class="gb-bar" role="progressbar" aria-label="${esc(g.t)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pc}"><i style="width:${(p.pct * 100).toFixed(1)}%"></i>${[25, 50, 75].map(x => `<s style="left:${x}%"></s>`).join("")}</div>
+        <div class="gb-f"><span class="mono">${p.pts} / ${p.target} puntos</span><span>${stt}</span></div>
+        ${g.why ? `<p class="gb-why"><span>Por qué lo haces</span>${esc(g.why)}</p>` : ""}</div>`;
+    }).join("");
+    return `<div class="hd-c gb"><div class="gb-top"><h3>Tus objetivos</h3><span class="gb-st${st ? " on" : ""}">${I(IFL, 14, 1.8)}Racha de <b class="mono">${st}</b> ${st === 1 ? "día" : "días"}</span><button type="button" class="x-ch" data-goals>Editar</button></div>${today}<div class="gb-rows">${rows}</div></div>`;
+  }
+  function goalsPanel() {
+    const old = document.querySelector(".xdrawer.gld"); if (old) old.remove();
+    const box = document.createElement("div"); box.className = "xdrawer gld"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", "Tus objetivos");
+    const G0 = S.goals || {}, F = {}; GH.forEach(h => { const g = G0[h.k]; F[h.k] = { t: g ? g.t : "", why: g ? g.why || "" : "", days: g ? g.days : h.d[0] }; });
+    const ix = gIx();
+    const sec = h => { const f = F[h.k], g = G0[h.k], p = g ? gProg(g, ix) : null; return `<section class="gl-s" style="--gc:${h.c}" data-k="${h.k}">
+      <div class="gl-h"><span class="gl-dot"></span><b>${h.n}</b>${p ? `<small class="mono">${gPct(p)} % · ${p.over || p.done ? "terminado" : p.left + " días restantes"}</small>` : ""}</div>
+      <label class="gl-l">Tu objetivo<input class="input" data-f="t" maxlength="70" value="${esc(f.t)}" placeholder="${esc(h.sug[0])}"></label>
+      <div class="pz-chips gl-sug">${h.sug.map(s => `<button type="button" class="pz-chip" data-fill="t" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div>
+      <label class="gl-l">Por qué lo haces<textarea class="input" data-f="why" rows="2" maxlength="160" placeholder="Lo que de verdad te mueve. Lo verás cada día.">${esc(f.why)}</textarea></label>
+      <div class="pz-chips gl-sug">${WSUG.map(s => `<button type="button" class="pz-chip" data-fill="why" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div>
+      <div class="gl-l">Plazo<div class="pz-chips">${h.d.map(d => `<button type="button" class="pz-chip" data-days="${d}" aria-pressed="${f.days === d}">${d} días</button>`).join("")}</div><small class="gl-m">Meta: <b class="mono" data-meta>${f.days * GPD}</b> puntos</small></div>
+    </section>`; };
+    box.innerHTML = `<div class="xdrawer-p pzp"><div class="xdr-h pz-h"><div><b>Tus objetivos</b><small>Corto, medio y largo plazo. Cada día que haces las cosas bien, las barras crecen.</small></div><button type="button" class="xib" data-x aria-label="Cerrar">${I(IC.x, 18, 2)}</button></div>
+      <div class="xdr-b">${GH.map(sec).join("")}
+        <div class="gl-how"><b>Cómo se suman puntos</b><ul>${GPTS.map(([k, l, v]) => `<li><span>${{ chk: "Haces el chequeo de cómo llegas", com: "Te comprometes con tu plan", plan: "Ese día no rompes ninguna norma (o decides no operar)", dia: "Escribes en tu diario", bt: "Haces una sesión de práctica" }[k]}</span><b class="mono">+${v}</b></li>`).join("")}</ul><small>Un buen día suma de 4 a 6. La meta pide unos ${GPD} al día de media, así que hay margen para los días malos. No se pierden puntos: lo que sumas, se queda.</small></div>
+      </div><div class="xdr-f"><button type="button" class="btn" data-gsave>Guardar mis objetivos</button></div></div>`;
+    const close = () => { box.classList.remove("in"); setTimeout(() => box.remove(), 200); document.removeEventListener("keydown", ek); };
+    const ek = e => { if (e.key === "Escape") close(); };
+    box.addEventListener("input", e => { const s = e.target.closest(".gl-s"); if (s && e.target.dataset.f) F[s.dataset.k][e.target.dataset.f] = e.target.value; });
+    box.addEventListener("click", async e => {
+      if (e.target === box || e.target.closest("[data-x]")) return close();
+      const s = e.target.closest(".gl-s"), fl = e.target.closest("[data-fill]");
+      if (s && fl) { const inp = s.querySelector(`[data-f="${fl.dataset.fill}"]`); inp.value = fl.dataset.v; F[s.dataset.k][fl.dataset.fill] = fl.dataset.v; inp.focus(); return; }
+      const dy = e.target.closest("[data-days]");
+      if (s && dy) { F[s.dataset.k].days = +dy.dataset.days; s.querySelectorAll("[data-days]").forEach(b => b.setAttribute("aria-pressed", b === dy)); s.querySelector("[data-meta]").textContent = F[s.dataset.k].days * GPD; return; }
+      if (e.target.closest("[data-gsave]")) {
+        const G = Object.assign({}, S.goals || {}), today = todayKey(); let n = 0;
+        GH.forEach(h => { const f = F[h.k], t = (f.t || "").trim(), old = G[h.k]; if (!t) { delete G[h.k]; return; } n++;
+          const fresh = !old || old.t !== t || gProg(old, ix).over || gProg(old, ix).done;
+          G[h.k] = { t, why: (f.why || "").trim(), days: f.days, target: f.days * GPD, start: fresh ? today : old.start }; });
+        if (!n) { toast("Escribe al menos un objetivo"); return; }
+        S.goals = G; await saveGoals(); close(); toast("Objetivos guardados. A por ellos"); gRefresh();
+      }
+    });
+    document.addEventListener("keydown", ek); document.body.appendChild(box);
+    requestAnimationFrame(() => box.classList.add("in")); setTimeout(() => { const x = box.querySelector("[data-f]"); x && x.focus({ preventScroll: true }); }, 220);
+  }
+  function gRefresh() { document.querySelectorAll("[data-gslot]").forEach(el => { el.innerHTML = goalStrip(); }); if (document.getElementById("hday") && window.__tkDay) window.__tkDay(); }
+  function gToast(n, why) { if (!gHas()) return; toast(`+${n} ${n === 1 ? "punto" : "puntos"} · ${why}. Tus objetivos avanzan`); setTimeout(gRefresh, 50); }
+  document.addEventListener("click", e => { if (e.target.closest("[data-goals]")) goalsPanel(); });
   /* ===== portada «conversación»: saludo, preguntas de cómo llegas y carrusel de cuadros ===== */
   const CARS = ["hoy", "plan", "calendario", "analizar", "resultados", "diario", "cartera", "backtest", "asistente"];
   /* las 5 preguntas del día: cada una aporta un dato que cambia el consejo */
@@ -732,7 +843,7 @@
     const top = `<div class="hd-top">${X.sem}${X.ayer}</div>`;
     const prot = `<div class="hd-g two">${X.heat}${X.hours}</div>`;
     const learn = `<div class="hd-sub"><h2>Para aprender más rápido</h2></div><div class="hd-g">${X.focus}${X.learn}${X.disc}</div><div class="hd-g ${X.reto ? "" : "two"}">${X.cost}${X.vs}${X.reto}</div>`;
-    order.splice(0, 1, top, kpis, ph === "despues" ? "" : prot);
+    order.splice(0, 1, goalBlock(), top, kpis, ph === "despues" ? "" : prot);
     order.push(learn);
     return `<div class="hd-head"><h2>Tu día</h2><span>${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))} · ${ph === "antes" ? "antes de tu horario" : ph === "en" ? "en tu horario" : "sesión terminada"}</span></div>${order.join("")}`;
   }
@@ -745,6 +856,7 @@
     return `<div class="hx">
       <div class="hx-top"><span class="hx-pill">${cap(new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }))} · ${D.phase === "en" ? "En tu horario" : D.phase === "antes" ? "Antes de tu horario" : "Fuera de horario"}</span>${homeSw("car")}</div>
       <h1 class="hx-hi">Hola, ${first},<br>${hl}</h1>
+      <div class="hx-goals" data-gslot>${goalStrip()}</div>
       <div class="hx-q" id="hxq" aria-live="polite">${heroQ(D)}</div>
       <div class="hx-car" role="region" aria-roledescription="carrusel" aria-label="Tus apartados">
         <div class="hx-glow" aria-hidden="true"></div>
@@ -765,8 +877,8 @@
       const b = e.target.closest("[data-hv],[data-hq]"); if (!b) return; S.hqKb = e.detail === 0;
       const M = S.hqM || (S.hqM = {});
       const fin = () => {
-        const day = todayKey(); M.ts = Date.now(); S.mente = S.mente || {}; S.mente[day] = mDerive(Object.assign({}, (S.mente[day] || {}), M));
-        saveMente("d" + day, S.mente[day]); S.hqStep = 0; S.hqM = null; S.hqEdit = false; repaint();
+        const day = todayKey(); M.ts = Date.now(); S.mente = S.mente || {}; const wasDone = mDone(S.mente[day]); S.mente[day] = mDerive(Object.assign({}, (S.mente[day] || {}), M));
+        saveMente("d" + day, S.mente[day]); S.hqStep = 0; S.hqM = null; S.hqEdit = false; repaint(); if (!wasDone && mDone(S.mente[day])) gToast(1, "chequeo hecho");
         ["resultados", "plan"].forEach(k => { const t = document.querySelector('.hb-t[data-hc="' + k + '"]'); if (t) { t.innerHTML = appTile(k, hData()); bindWidgets(t); } });
         toast("Gracias. Tu consejo de hoy ya está listo"); window.__tkDay && window.__tkDay();
       };
@@ -827,7 +939,7 @@
       setTimeout(() => { S.hbAnim = true; }, 600);
       return `<div class="hb hb-full${HAPPS.filter(k => appDef(k)).length === 9 ? " bento" : ""}">
         <section class="hb-l"><div class="hb-mrow">${metaRow(D)}${homeSw("grid")}</div>
-          <h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1>
+          <div class="hb-hirow"><h1 class="hb-hi">Hola, ${first},<br>${greetLine(D)}</h1><div class="hb-goals" data-gslot>${goalStrip()}</div></div>
           <div class="hb-grid${HAPPS.filter(k => appDef(k)).length === 9 ? " g9" : ""}${S.hcSel ? " has" : ""}">${HAPPS.filter(k => appDef(k)).map(k => { const on = S.hcSel === k; return `<div class="hb-t t-${k} ${S.hbAnim ? "noanim" : ""}${on ? " sel" : ""}" role="button" tabindex="0" data-hc="${k}" data-href="${appHref(k)}" aria-expanded="${on}" aria-label="${esc(appDef(k)[1])}: ${esc(APPDESC[k])}">${on ? calmOpen(k, D) : appTile(k, D)}</div>`; }).join("")}</div>
         </section></div>`;
     },
