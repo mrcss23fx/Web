@@ -157,7 +157,7 @@
     if (!S.news && window.tkLoadNews) tkLoadNews().then(again);
     if (!S.btLoaded && BT()) BT().loadSessions().then(again);
     if (!S.pagesLoaded && DI()) DI().loadPages().then(again);
-    if (!S.goalsLoaded) loadGoals().then(again);
+    if (!S.goalsLoaded && !S.goalsTried) { S.goalsTried = true; loadGoals().then(again); }
   };
   /* botones propios de cada cuadro (temporalidad, sesiones, pregunta) */
   function bindWidgets(root) {
